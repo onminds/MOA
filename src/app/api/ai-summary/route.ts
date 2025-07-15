@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { YoutubeTranscript } from 'youtube-transcript';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import YoutubeTranscriptApi from 'youtube-transcript-api';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import puppeteer from 'puppeteer';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import mammoth from 'mammoth';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { Document } from 'docx';
 
