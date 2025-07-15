@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Header from '../components/Header';
 import {
-  Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn, Download, Upload, X
+  Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn, Download, X
 } from 'lucide-react';
 
 const STYLES = [
@@ -69,7 +69,7 @@ export default function ImageCreate() {
         })
       );
       setImages(results);
-    } catch (e) {
+    } catch {
       setError("서버 오류가 발생했습니다.");
     } finally {
       setLoading(false);

@@ -3,109 +3,18 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Search, Keyboard, Mic, ScanSearch,
-  Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn, Menu,
+  Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
   Image as ImageIcon, Video, Wand2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Header from './components/Header';
-
-function ImageCreateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [prompt, setPrompt] = useState("");
-  const [ratio, setRatio] = useState("1:1");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleGenerate = async () => {
-    setLoading(true);
-    setTimeout(() => {
-      setImageUrl("https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80");
-      setLoading(false);
-    }, 1200);
-  };
-
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl relative animate-fade-in">
-        <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold"
-          onClick={onClose}
-          aria-label="닫기"
-        >
-          ×
-        </button>
-        <h2 className="text-2xl font-bold mb-6 text-center">이미지 생성</h2>
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* 입력 영역 */}
-          <div className="flex-1 flex flex-col gap-4">
-            <label className="font-semibold">이미지 설명 <span className="text-blue-500">*</span></label>
-            <textarea
-              className="w-full h-24 p-4 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-900"
-              placeholder="예) 우주를 여행하는 강아지 그려줘"
-              maxLength={300}
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              disabled={loading}
-            />
-            <div className="text-right text-xs text-gray-400">{prompt.length}/300</div>
-            <label className="font-semibold mt-2">가로 세로 비율 <span className="text-blue-500">*</span></label>
-            <div className="flex gap-4 mb-2">
-              <button
-                className={`flex-1 py-2 rounded-lg border ${ratio === "1:1" ? "bg-blue-500 text-white border-blue-500" : "bg-white text-gray-800 border-gray-200"}`}
-                onClick={() => setRatio("1:1")}
-                disabled={loading}
-              >
-                1:1
-              </button>
-              <button
-                className={`flex-1 py-2 rounded-lg border ${ratio === "16:9" ? "bg-blue-500 text-white border-blue-500" : "bg-white text-gray-800 border-gray-200"}`}
-                onClick={() => setRatio("16:9")}
-                disabled={loading}
-              >
-                16:9
-              </button>
-            </div>
-            <button
-              className="w-full py-3 mt-2 rounded-xl bg-blue-500 text-white font-bold text-lg shadow hover:bg-blue-600 transition-colors disabled:bg-gray-300"
-              onClick={handleGenerate}
-              disabled={loading || !prompt.trim()}
-            >
-              {loading ? "이미지 생성 중..." : "이미지 제작"}
-            </button>
-          </div>
-          {/* 결과 영역 */}
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <h3 className="text-base font-semibold mb-2">미리보기</h3>
-            {imageUrl ? (
-              <div className="bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center">
-                <img
-                  src={imageUrl}
-                  alt="생성된 이미지"
-                  className="rounded-xl object-cover"
-                  style={{ width: ratio === "1:1" ? 200 : 300, height: 200 }}
-                />
-              </div>
-            ) : (
-              <div className="w-[200px] h-[200px] flex items-center justify-center bg-gray-100 rounded-xl text-gray-400">
-                미리보기
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 type Message = { role: 'user' | 'assistant'; content: string };
 type Conversation = { id: number; title: string; messages: Message[] };
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
-  const [showImageModal, setShowImageModal] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,38 +124,6 @@ export default function Home() {
               </button>
             </div>
           </aside>
-
-          {/* 왼쪽 배너 - 모바일 오버레이 */}
-          {sidebarOpen && (
-            <div className="fixed inset-0 z-40 flex">
-              {/* 오버레이 배경 */}
-              <div
-                className="fixed inset-0 bg-black bg-opacity-30"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="사이드바 닫기"
-              />
-              {/* 사이드바 */}
-              <aside className="relative w-72 bg-gray-50 min-h-screen p-6 border-r flex flex-col justify-between animate-slide-in-left shadow-xl">
-                <nav className="space-y-2">
-                  {sideMenus.map((menu) => (
-                    <a
-                      key={menu.name}
-                      href={menu.href}
-                      className="flex items-center px-4 py-3 rounded-lg text-gray-800 hover:bg-gray-200 transition-colors font-medium"
-                    >
-                      {menu.icon}
-                      {menu.name}
-                    </a>
-                  ))}
-                </nav>
-                <div className="mt-8">
-                  <button className="w-full flex items-center justify-center gap-2 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold">
-                    <LogIn className="w-5 h-5" /> 로그인
-                  </button>
-                </div>
-              </aside>
-            </div>
-          )}
 
           {/* 중앙 메인 영역 */}
           <div className="flex flex-col justify-between min-h-[100vh] bg-white transition-all duration-500 items-center w-full">
