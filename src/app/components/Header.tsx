@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,10 +28,10 @@ export default function Header() {
             </span>
           </div>
           <nav className="hidden md:flex space-x-8">
-            <a href="/" className="text-gray-700 hover:text-gray-900">홈</a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">AI 목록</a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">추천</a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">커뮤니티</a>
+            <Link href="/" className="text-gray-700 hover:text-gray-900">홈</Link>
+            <Link href="#" className="text-gray-700 hover:text-gray-900">AI 목록</Link>
+            <Link href="#" className="text-gray-700 hover:text-gray-900">추천</Link>
+            <Link href="#" className="text-gray-700 hover:text-gray-900">커뮤니티</Link>
           </nav>
           <div className="flex items-center space-x-4">
             <button className="text-gray-700 hover:text-gray-900">로그인</button>

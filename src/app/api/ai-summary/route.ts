@@ -10,9 +10,6 @@ import puppeteer from 'puppeteer';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import mammoth from 'mammoth';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { Document } from 'docx';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -82,7 +79,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('기본 자막 추출 성공:', transcriptText.length, '문자');
@@ -107,7 +104,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('한국어 자막 추출 성공:', transcriptText.length, '문자');
@@ -128,7 +125,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('영어 자막 추출 성공:', transcriptText.length, '문자');
@@ -147,7 +144,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('자동 생성 자막 추출 성공:', transcriptText.length, '문자');
@@ -166,7 +163,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('다른 언어 자막 추출 성공:', transcriptText.length, '문자');
@@ -183,7 +180,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('자막 없이 추출 성공:', transcriptText.length, '문자');
@@ -436,7 +433,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('youtube-transcript-api 성공:', transcriptText.length, '문자');
@@ -453,7 +450,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
       
       if (transcripts && transcripts.length > 0) {
         const transcriptText = transcripts
-          .map((item: any) => item.text)
+          .map((item: { text: string }) => item.text)
           .join(' ');
         
         console.log('youtube-transcript-api 기본 성공:', transcriptText.length, '문자');
@@ -841,7 +838,7 @@ async function generateSummary(content: string, type: string): Promise<string> {
     // 토큰 제한 오류인 경우 더 짧은 요약 시도
     if (error instanceof Error && error.message.includes('context length')) {
       console.log('토큰 제한 오류 발생. 더 짧은 요약으로 재시도...');
-      return await generateShortSummary(content, type);
+      return await generateShortSummary(content);
     }
     
     throw new Error('요약을 생성할 수 없습니다.');
@@ -849,7 +846,7 @@ async function generateSummary(content: string, type: string): Promise<string> {
 }
 
 // 더 짧은 요약을 생성하는 함수
-async function generateShortSummary(content: string, type: string): Promise<string> {
+async function generateShortSummary(content: string): Promise<string> {
   try {
     // 내용을 더 많이 압축
     const maxLength = 8000 * 4; // 약 32,000 문자

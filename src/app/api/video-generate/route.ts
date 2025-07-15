@@ -34,7 +34,14 @@ export async function POST(request: NextRequest) {
     const dataUri = `data:${referenceImage.type};base64,${base64Image}`;
 
     // 영상 생성 파라미터 설정 (Runway API 문서에 맞게)
-    const videoParams: any = {
+    const videoParams: {
+      promptImage: string;
+      model: string;
+      ratio: string;
+      duration: number;
+      seed: number;
+      promptText?: string;
+    } = {
       promptImage: dataUri,
       model: "gen4_turbo",
       ratio: selectedRatio,
