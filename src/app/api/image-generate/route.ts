@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         }
         
         styleDescription += "참고 이미지와 동일한 아트 스타일, 색상 팔레트, 조명, 브러시 스타일, 질감, 분위기로";
-      } catch (error) {
+      } catch {
         styleDescription = "참고 이미지와 동일한 아트 스타일, 색상 팔레트, 조명, 구도, 브러시 스타일, 질감, 분위기로";
       }
 
