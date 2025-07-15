@@ -3,7 +3,7 @@ import { useState } from "react";
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  ArrowLeft, Youtube, FileText, Globe, Type, Upload, Play, Download, Copy
+  ArrowLeft, Youtube, FileText, Globe, Type, Upload, Download, Copy
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
