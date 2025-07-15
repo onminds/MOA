@@ -55,7 +55,7 @@ export default function AIChat() {
         assistantMsg,
       ];
       setConversations([...newConvs]);
-    } catch (err) {
+    } catch {
       const assistantMsg: Message = { role: "assistant", content: "오류가 발생했습니다. 다시 시도해 주세요." };
       newConvs[currentConv].messages = [
         ...newConvs[currentConv].messages,

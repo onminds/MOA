@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import {
-  Search, Keyboard, Mic, ScanSearch, Star,
+  Search, Keyboard, Mic, ScanSearch,
   Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn, Menu,
-  Image as ImageIcon, Video, Wand2, Heart, Percent, Palmtree, PhoneCall
+  Image as ImageIcon, Video, Wand2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -53,7 +53,7 @@ export default function Home() {
   const [conversations, setConversations] = useState<Conversation[]>([
     { id: 1, title: '새 대화', messages: [] },
   ]);
-  const [currentConv, setCurrentConv] = useState(0);
+  const [currentConv] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -86,7 +86,7 @@ export default function Home() {
         assistantMsg,
       ];
       setConversations([...newConvs]);
-    } catch (err) {
+    } catch {
       const assistantMsg: Message = { role: "assistant", content: "오류가 발생했습니다. 다시 시도해 주세요." };
       newConvs[currentConv].messages = [
         ...newConvs[currentConv].messages,
@@ -97,33 +97,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  const InputBox = (
-    <form
-      onSubmit={handleSend}
-      className="flex items-center border px-4 py-3 bg-white rounded-2xl shadow-md w-full max-w-xl mx-auto mt-4"
-    >
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="무엇이든 물어보세요"
-        className="flex-1 px-4 py-2 rounded-full border bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900"
-        disabled={loading}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) handleSend(e);
-        }}
-      />
-      <button
-        type="submit"
-        className="ml-2 p-2 rounded-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-300"
-        disabled={loading || !input.trim()}
-        aria-label="전송"
-      >
-        <Search className="w-5 h-5" />
-      </button>
-    </form>
-  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -162,7 +135,7 @@ export default function Home() {
         {/* 왼쪽 배너 - 데스크탑 */}
         <aside className="hidden md:flex w-72 bg-gray-50 min-h-screen p-6 border-r flex-col justify-between">
           <nav className="space-y-2">
-            {sideMenus.map((menu, idx) => (
+            {sideMenus.map((menu) => (
               <a
                 key={menu.name}
                 href={menu.href}
@@ -192,7 +165,7 @@ export default function Home() {
             {/* 사이드바 */}
             <aside className="relative w-72 bg-gray-50 min-h-screen p-6 border-r flex flex-col justify-between animate-slide-in-left shadow-xl">
               <nav className="space-y-2">
-                {sideMenus.map((menu, idx) => (
+                {sideMenus.map((menu) => (
                   <a
                     key={menu.name}
                     href={menu.href}
@@ -248,7 +221,7 @@ export default function Home() {
                 </div>
               </form>
               <div className="flex flex-row flex-wrap gap-4 mt-8 justify-center w-full max-w-2xl">
-                {featureButtons.map((btn, idx) => (
+                {featureButtons.map((btn) => (
                   <button
                     key={btn.label}
                     className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm hover:bg-gray-100 transition-colors min-w-[90px]"
@@ -267,9 +240,9 @@ export default function Home() {
             <div className="w-full max-w-2xl mx-auto mt-20 mb-0 flex flex-col flex-1">
               <div className="flex flex-col w-full max-w-2xl mx-auto flex-1">
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-[200px] max-h-[60vh] bg-white">
-                  {messages.map((msg, idx) => (
+                  {messages.map((msg) => (
                     <div
-                      key={idx}
+                      key={msg.content}
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
@@ -326,14 +299,3 @@ export default function Home() {
     </div>
   );
 }
-
-// tailwind.config.js에 아래 애니메이션 추가 필요
-// animation: {
-//   'slide-in-left': 'slide-in-left 0.3s ease-out',
-// },
-// keyframes: {
-//   'slide-in-left': {
-//     '0%': { transform: 'translateX(-100%)' },
-//     '100%': { transform: 'translateX(0)' },
-//   },
-// },
