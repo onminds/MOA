@@ -9,11 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "axios": "^1.10.0",
+    "docx": "^9.5.1",
     "lucide-react": "^0.525.0",
+    "mammoth": "^1.9.1",
     "next": "15.3.5",
     "openai": "^5.9.0",
+    "puppeteer": "^24.12.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sharp": "^0.34.3",
+    "youtube-transcript": "^1.2.1",
+    "youtube-transcript-api": "^3.0.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

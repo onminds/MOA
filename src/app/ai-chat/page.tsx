@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Send, Plus, MessageSquare, Settings } from "lucide-react";
+import Header from '../components/Header';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 type Conversation = { id: number; title: string; messages: Message[] };
@@ -96,7 +97,9 @@ export default function AIChat() {
   );
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <>
+      <Header />
+      <div className="min-h-screen flex bg-white">
       {/* 왼쪽 네비게이션 */}
       <aside className="w-64 bg-white border-r flex flex-col h-screen p-4 hidden md:flex">
         <button
@@ -163,5 +166,6 @@ export default function AIChat() {
         )}
       </main>
     </div>
+    </>
   );
 } 
