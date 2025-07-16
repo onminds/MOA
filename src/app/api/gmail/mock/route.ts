@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Mock 이메일 데이터
   const mockEmails = [
     {
@@ -31,40 +31,14 @@ export async function GET(request: NextRequest) {
     },
     {
       id: '3',
-      internalDate: '1704056400000',
-      labelIds: ['INBOX', 'UNREAD'],
-      snippet: '긴급: 서버 장애가 발생했습니다. 즉시 확인이 필요합니다.',
-      payload: {
-        headers: [
-          { name: 'From', value: 'alert@company.com' },
-          { name: 'Subject', value: '긴급: 서버 장애 발생' },
-          { name: 'Date', value: 'Mon, 01 Jan 2024 07:00:00 +0900' }
-        ]
-      }
-    },
-    {
-      id: '4',
-      internalDate: '1704049200000',
-      labelIds: ['INBOX'],
+      internalDate: '1704060000000',
+      labelIds: ['INBOX', 'IMPORTANT'],
       snippet: '월간 리포트가 준비되었습니다. 첨부 파일을 확인해주세요.',
       payload: {
         headers: [
-          { name: 'From', value: 'report@company.com' },
+          { name: 'From', value: 'reports@company.com' },
           { name: 'Subject', value: '월간 리포트 - 2024년 1월' },
-          { name: 'Date', value: 'Mon, 01 Jan 2024 05:00:00 +0900' }
-        ]
-      }
-    },
-    {
-      id: '5',
-      internalDate: '1704042000000',
-      labelIds: ['INBOX'],
-      snippet: '새로운 팀원이 합류했습니다. 환영 메시지를 보내주세요.',
-      payload: {
-        headers: [
-          { name: 'From', value: 'hr@company.com' },
-          { name: 'Subject', value: '새로운 팀원 합류 안내' },
-          { name: 'Date', value: 'Mon, 01 Jan 2024 03:00:00 +0900' }
+          { name: 'Date', value: 'Mon, 01 Jan 2024 08:00:00 +0900' }
         ]
       }
     }

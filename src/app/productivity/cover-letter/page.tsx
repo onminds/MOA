@@ -3,7 +3,7 @@ import { useState } from "react";
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  ArrowLeft, FileText, Search as SearchIcon, BookOpen, Download, Copy, Loader2, Upload, Link, Globe, X, Plus, HelpCircle, Paperclip
+  ArrowLeft, FileText, Search as SearchIcon, Download, Copy, Loader2, X, Plus, HelpCircle, Paperclip
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

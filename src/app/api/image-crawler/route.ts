@@ -5,6 +5,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface ImageData {
+  id: string;
+  url: string;
+  thumb: string;
+  alt: string;
+  photographer: string;
+  downloadUrl: string;
+  source?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { topic, contentType } = await request.json();
@@ -24,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function crawlImages(topic: string, contentType: string): Promise<any[]> {
+async function crawlImages(topic: string, contentType: string): Promise<ImageData[]> {
   try {
     // 1. AI를 사용하여 검색 키워드 생성
     const searchKeywords = await generateSearchKeywords(topic, contentType);
@@ -97,7 +107,7 @@ async function generateSearchKeywords(topic: string, contentType: string): Promi
   }
 }
 
-async function searchGoogleImages(keywords: string[]): Promise<any[]> {
+async function searchGoogleImages(keywords: string[]): Promise<ImageData[]> {
   try {
     const query = keywords.join(' ');
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch&tbs=isz:l`;
@@ -127,7 +137,7 @@ async function searchGoogleImages(keywords: string[]): Promise<any[]> {
   }
 }
 
-async function searchNaverImages(keywords: string[]): Promise<any[]> {
+async function searchNaverImages(keywords: string[]): Promise<ImageData[]> {
   try {
     const query = keywords.join(' ');
     const searchUrl = `https://search.naver.com/search.naver?where=image&query=${encodeURIComponent(query)}`;
@@ -157,8 +167,8 @@ async function searchNaverImages(keywords: string[]): Promise<any[]> {
   }
 }
 
-function extractImagesFromGoogle(html: string, query: string): any[] {
-  const images: any[] = [];
+function extractImagesFromGoogle(html: string, query: string): ImageData[] {
+  const images: ImageData[] = [];
   
   try {
     // Google 이미지 검색 결과에서 이미지 URL 추출 (다양한 패턴 시도)
@@ -195,8 +205,8 @@ function extractImagesFromGoogle(html: string, query: string): any[] {
   return images;
 }
 
-function extractImagesFromNaver(html: string, query: string): any[] {
-  const images: any[] = [];
+function extractImagesFromNaver(html: string, query: string): ImageData[] {
+  const images: ImageData[] = [];
   
   try {
     // Naver 이미지 검색 결과에서 이미지 URL 추출 (다양한 패턴 시도)
@@ -233,8 +243,8 @@ function extractImagesFromNaver(html: string, query: string): any[] {
   return images;
 }
 
-function removeDuplicateImages(images: any[]): any[] {
-  const seen = new Set();
+function removeDuplicateImages(images: ImageData[]): ImageData[] {
+  const seen = new Set<string>();
   return images.filter(img => {
     const key = img.url;
     if (seen.has(key)) {
@@ -245,7 +255,21 @@ function removeDuplicateImages(images: any[]): any[] {
   });
 }
 
-function generateMockImages(keywords: string[]): any[] {
-  // 크롤링 실패 시 빈 배열 반환
-  return [];
+function generateMockImages(keywords: string[]): ImageData[] {
+  const mockImages: ImageData[] = [];
+  const query = keywords.join(' ');
+  
+  for (let i = 0; i < 10; i++) {
+    mockImages.push({
+      id: `mock_${i}`,
+      url: `https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=${encodeURIComponent(query)}`,
+      thumb: `https://via.placeholder.com/200x150/4F46E5/FFFFFF?text=${encodeURIComponent(query)}`,
+      alt: `${query} 관련 이미지 ${i + 1}`,
+      photographer: 'Mock',
+      downloadUrl: `https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=${encodeURIComponent(query)}`,
+      source: 'Mock'
+    });
+  }
+  
+  return mockImages;
 } 

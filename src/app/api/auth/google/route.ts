@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 개발 환경에서만 Google OAuth 사용
     if (process.env.NODE_ENV === 'development' && 

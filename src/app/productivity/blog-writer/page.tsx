@@ -3,7 +3,7 @@ import { useState } from "react";
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  ArrowLeft, FileText, Search as SearchIcon, BookOpen, Download, Copy, Loader2, Upload, Link, Globe, X, Plus, HelpCircle, Camera, Image as ImageIcon
+  ArrowLeft, Search as SearchIcon, BookOpen, Download, Copy, Loader2, Link, HelpCircle, Camera, Image as ImageIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -171,7 +171,7 @@ export default function BlogWriter() {
     
     try {
       // 이미지가 선택되지 않았고 예시 이미지가 활성화되어 있다면 자동으로 이미지 크롤링
-      let autoImages: any[] = [];
+      let autoImages: ImageData[] = [];
       if (useExampleImage && selectedImages.length === 0 && images.length === 0) {
         try {
           const imageResponse = await fetch('/api/image-crawler', {
@@ -905,7 +905,7 @@ export default function BlogWriter() {
                         {images.length > 0 && (
                           <div className="mt-6">
                             <div className="flex gap-4 overflow-x-auto pb-4 justify-center">
-                              {images.slice(0, 6).map((image, index) => (
+                              {images.slice(0, 6).map((image) => (
                                 <div key={image.id} className="flex-shrink-0">
                                   <img
                                     src={image.url}

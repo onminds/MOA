@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Gmail API 클라이언트 생성
-function createGmailClient(accessToken: string) {
+async function createGmailClient(accessToken: string) {
   // 개발 환경에서만 실제 Google API 사용
   if (process.env.NODE_ENV === 'development' && accessToken !== 'mock_access_token') {
-    const { google } = require('googleapis');
+    const { google } = await import('googleapis');
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
     return google.gmail({ version: 'v1', auth: oauth2Client });
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const gmail = createGmailClient(accessToken);
+    const gmail = await createGmailClient(accessToken);
     
     if (gmail) {
       // 실제 Gmail API 사용
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
       const messages = response.data.messages || [];
       const detailedMessages = await Promise.all(
-        messages.map(async (message: any) => {
+        messages.map(async (message) => {
           const detail = await gmail.users.messages.get({
             userId: 'me',
             id: message.id!
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const gmail = createGmailClient(accessToken);
+    const gmail = await createGmailClient(accessToken);
     
     if (gmail) {
       // 실제 Gmail API 사용

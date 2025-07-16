@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Calendar API 클라이언트 생성
-function createCalendarClient(accessToken: string) {
+async function createCalendarClient(accessToken: string) {
   // 개발 환경에서만 실제 Google API 사용
   if (process.env.NODE_ENV === 'development' && accessToken !== 'mock_access_token') {
-    const { google } = require('googleapis');
+    const { google } = await import('googleapis');
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
     return google.calendar({ version: 'v3', auth: oauth2Client });
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const calendar = createCalendarClient(accessToken);
+    const calendar = await createCalendarClient(accessToken);
     
     if (calendar) {
       // 실제 Google Calendar API 사용
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const calendar = createCalendarClient(accessToken);
+    const calendar = await createCalendarClient(accessToken);
     
     if (calendar) {
       // 실제 Google Calendar API 사용

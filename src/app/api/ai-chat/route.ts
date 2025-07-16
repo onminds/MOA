@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context } = await request.json();
+    const { message } = await request.json();
 
     // 실제 AI API 호출 (현재는 Mock 응답)
     // TODO: OpenAI, Claude, 또는 다른 AI 서비스 연동
     
     // 메시지 분석 및 응답 생성
-    const response = generateAIResponse(message, context);
+    const response = generateAIResponse(message);
     
     return NextResponse.json({
       success: true,
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateAIResponse(message: string, context?: any) {
+function generateAIResponse(message: string) {
   const lowerMessage = message.toLowerCase();
   
   // 이메일 관련 응답들

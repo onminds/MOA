@@ -3,9 +3,9 @@ import { useState, useEffect, useRef } from "react";
 import Header from '../../components/Header';
 import { useSidebar } from '../../contexts/SidebarContext';
 import {
-  Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  ArrowLeft, Mail, Send, Copy, Download, Edit3, Sparkles, Clock, User, Building, Heart, AlertCircle,
-  Bot, Loader2, ThumbsUp, ThumbsDown, RefreshCw, Zap, Calendar, Filter, Star, Archive, Trash2,
+  Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
+  ArrowLeft, Mail, Send, Edit3, Clock, User, AlertCircle,
+  Bot, Loader2, RefreshCw, Calendar, Filter, Star,
   X, ChevronLeft, ChevronRight, HelpCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -23,73 +23,9 @@ const sideMenus = [
   { name: '설정', icon: <Settings className="w-5 h-5 mr-2" />, href: '/settings' },
 ];
 
-const emailTemplates = [
-  {
-    id: 'business',
-    name: '비즈니스 이메일',
-    description: '업무, 협업, 제안 등 전문적인 비즈니스 이메일',
-    icon: <Building className="w-6 h-6" />,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200'
-  },
-  {
-    id: 'personal',
-    name: '개인 이메일',
-    description: '친구, 가족, 개인적인 소통을 위한 이메일',
-    icon: <User className="w-6 h-6" />,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200'
-  },
-  {
-    id: 'formal',
-    name: '공식 이메일',
-    description: '공식적인 업무, 신청, 문의 등 정중한 이메일',
-    icon: <Mail className="w-6 h-6" />,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200'
-  },
-  {
-    id: 'friendly',
-    name: '친근한 이메일',
-    description: '동료, 친구와의 편안하고 친근한 이메일',
-    icon: <Heart className="w-6 h-6" />,
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50',
-    borderColor: 'border-pink-200'
-  }
-];
-
-const toneOptions = [
-  { id: 'professional', name: '전문적', description: '정중하고 전문적인 톤' },
-  { id: 'friendly', name: '친근함', description: '따뜻하고 친근한 톤' },
-  { id: 'casual', name: '편안함', description: '자연스럽고 편안한 톤' },
-  { id: 'formal', name: '공식적', description: '매우 정중하고 공식적인 톤' }
-];
-
-const urgencyOptions = [
-  { id: 'low', name: '낮음', description: '여유있게 처리 가능' },
-  { id: 'medium', name: '보통', description: '적절한 시일 내 처리' },
-  { id: 'high', name: '높음', description: '빠른 답변 필요' },
-  { id: 'urgent', name: '긴급', description: '즉시 처리 필요' }
-];
-
 export default function EmailAssistant() {
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [emailType, setEmailType] = useState<'compose' | 'reply' | 'summary'>('compose');
-  const [recipient, setRecipient] = useState('');
-  const [subject, setSubject] = useState('');
-  const [context, setContext] = useState('');
-  const [tone, setTone] = useState('professional');
-  const [urgency, setUrgency] = useState('medium');
-  const [emailContent, setEmailContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [generatedEmail, setGeneratedEmail] = useState<string | null>(null);
   
   // 개선된 챗봇 상태
   const [chatMessages, setChatMessages] = useState<Array<{
@@ -104,18 +40,38 @@ export default function EmailAssistant() {
     }>;
   }>>([]);
   const [chatInput, setChatInput] = useState('');
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [emails, setEmails] = useState<any[]>([]);
-  const [selectedEmail, setSelectedEmail] = useState<any>(null);
+  const [emails, setEmails] = useState<Array<{
+    id: string;
+    internalDate: string;
+    labelIds: string[];
+    snippet: string;
+    payload: {
+      headers: Array<{
+        name: string;
+        value: string;
+      }>;
+    };
+  }>>([]);
+  const [selectedEmail, setSelectedEmail] = useState<{
+    id: string;
+    internalDate: string;
+    labelIds: string[];
+    snippet: string;
+    payload: {
+      headers: Array<{
+        name: string;
+        value: string;
+      }>;
+    };
+  } | null>(null);
   const [emailLoading, setEmailLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   
   // Shortwave 스타일 레이아웃 상태
-  const [isEmailDetailOpen, setIsEmailDetailOpen] = useState(false);
   const { isSidebarCollapsed, toggleSidebar } = useSidebar();
 
   // AI 챗봇 응답 생성
-  const generateAIResponse = async (message: string, context?: any) => {
+  const generateAIResponse = async (message: string) => {
     setIsTyping(true);
     
     try {
@@ -304,19 +260,27 @@ export default function EmailAssistant() {
   }, []);
 
   // 이메일 상세보기 토글
-  const toggleEmailDetail = (email?: any) => {
+  const toggleEmailDetail = (email?: {
+    id: string;
+    internalDate: string;
+    labelIds: string[];
+    snippet: string;
+    payload: {
+      headers: Array<{
+        name: string;
+        value: string;
+      }>;
+    };
+  }) => {
     if (email) {
       // 같은 이메일을 클릭한 경우 닫기
       if (selectedEmail?.id === email.id) {
-        setIsEmailDetailOpen(false);
         setSelectedEmail(null);
       } else {
         // 다른 이메일을 클릭한 경우 새로 열기
         setSelectedEmail(email);
-        setIsEmailDetailOpen(true);
       }
     } else {
-      setIsEmailDetailOpen(false);
       setSelectedEmail(null);
     }
   };
@@ -421,14 +385,14 @@ export default function EmailAssistant() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-2">
                               <div className="font-medium text-gray-900 truncate flex-1">
-                                {email.payload.headers.find((h: any) => h.name === 'From')?.value}
+                                {email.payload.headers.find((h: { name: string; value: string }) => h.name === 'From')?.value}
                               </div>
                               <div className="text-xs text-gray-700 flex-shrink-0 ml-2">
                                 {new Date(parseInt(email.internalDate)).toLocaleDateString()}
                               </div>
                             </div>
                             <div className="text-sm font-medium text-gray-900 mb-1 truncate">
-                              {email.payload.headers.find((h: any) => h.name === 'Subject')?.value}
+                              {email.payload.headers.find((h: { name: string; value: string }) => h.name === 'Subject')?.value}
                             </div>
                             <div className="text-sm text-gray-800 line-clamp-2">
                               {email.snippet}
@@ -452,7 +416,7 @@ export default function EmailAssistant() {
                   {/* 이메일 헤더 */}
                   <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {selectedEmail.payload.headers.find((h: any) => h.name === 'Subject')?.value}
+                      {selectedEmail.payload.headers.find((h: { name: string; value: string }) => h.name === 'Subject')?.value}
                     </h3>
                     <button
                       onClick={() => toggleEmailDetail()}
@@ -466,7 +430,7 @@ export default function EmailAssistant() {
                   <div className="flex-1 p-4 overflow-y-auto">
                     <div className="mb-4">
                       <div className="text-sm text-gray-800 mb-4">
-                        <span className="font-medium">From:</span> {selectedEmail.payload.headers.find((h: any) => h.name === 'From')?.value}
+                        <span className="font-medium">From:</span> {selectedEmail.payload.headers.find((h: { name: string; value: string }) => h.name === 'From')?.value}
                       </div>
                     </div>
                     <div className="prose max-w-none">

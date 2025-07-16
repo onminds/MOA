@@ -67,7 +67,12 @@ async function generateBlogContent({
   useExampleImage: boolean;
   keyContent: string;
   selectedImages: string[];
-  autoImages: any[];
+  autoImages: Array<{
+    id: string;
+    url: string;
+    alt: string;
+    photographer: string;
+  }>;
 }): Promise<string> {
   const contentTypeMap = {
     review: '리뷰',

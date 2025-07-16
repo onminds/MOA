@@ -37,17 +37,7 @@ export async function GET(request: NextRequest) {
       // 사용자 정보 가져오기
       oauth2Client.setCredentials(tokens);
       const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-      const userInfo = await oauth2.userinfo.get();
-
-      // 세션에 토큰과 사용자 정보 저장 (실제로는 데이터베이스에 저장)
-      const sessionData = {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        email: userInfo.data.email,
-        name: userInfo.data.name,
-        picture: userInfo.data.picture,
-        expiresAt: tokens.expiry_date
-      };
+      await oauth2.userinfo.get();
 
       // 성공 시 리다이렉트 (토큰은 쿠키나 세션에 저장)
       const response = NextResponse.redirect(new URL('/productivity/email-assistant', request.url));
