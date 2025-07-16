@@ -236,8 +236,8 @@ export default function CoverLetter() {
                           <div className="text-gray-200 leading-relaxed">
                             자기소개서에 반영하고 싶은 주요 경험,<br/>
                             성과, 스킬, 프로젝트 등을 입력해주세요.<br/>
-                            예: "웹 개발 프로젝트 3개 완료", "팀 리더 경험",<br/>
-                            "관련 자격증 보유" 등
+                            예: &quot;웹 개발 프로젝트 3개 완료&quot;, &quot;팀 리더 경험&quot;,<br/>
+                            &quot;관련 자격증 보유&quot; 등
                           </div>
                         </div>
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>

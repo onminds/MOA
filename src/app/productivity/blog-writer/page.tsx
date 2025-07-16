@@ -6,6 +6,7 @@ import {
   ArrowLeft, Search as SearchIcon, BookOpen, Download, Copy, Loader2, Link, HelpCircle, Camera, Image as ImageIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const sideMenus = [
   { name: '홈', icon: <HomeIcon className="w-5 h-5 mr-2" />, href: '/' },
@@ -766,9 +767,11 @@ export default function BlogWriter() {
                                 : 'border-gray-200 hover:border-blue-300'
                             }`}
                           >
-                            <img
+                            <Image
                               src={image.thumb}
                               alt={image.alt}
+                              width={200}
+                              height={150}
                               className="w-full h-24 object-cover"
                             />
                             {selectedImages.includes(image.id) && (
@@ -907,9 +910,11 @@ export default function BlogWriter() {
                             <div className="flex gap-4 overflow-x-auto pb-4 justify-center">
                               {images.slice(0, 6).map((image) => (
                                 <div key={image.id} className="flex-shrink-0">
-                                  <img
+                                  <Image
                                     src={image.url}
                                     alt={image.alt}
+                                    width={128}
+                                    height={96}
                                     className="w-32 h-24 object-cover rounded-lg border-2 border-gray-200 shadow-md"
                                     onError={(e) => {
                                       // 이미지 로드 실패 시 기본 이미지로 대체
