@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn, Download, X
 } from 'lucide-react';
+import Image from 'next/image';
 
 const STYLES = [
   { name: '원본', suffix: '', example: '/images/original.jpg' },
@@ -151,9 +152,11 @@ export default function ImageCreate() {
             {referenceImage && (
               <div className="mb-6">
                 <div className="relative inline-block">
-                  <img
+                  <Image
                     src={referenceImage}
                     alt="참고 이미지"
+                    width={80}
+                    height={80}
                     className="w-20 h-20 object-cover rounded-lg border border-gray-200"
                   />
                   <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded-full">
@@ -204,9 +207,11 @@ export default function ImageCreate() {
                 <div className="w-full max-w-md rounded-2xl bg-[#f9f9fb] p-8 flex flex-col items-center relative" style={{ boxShadow: 'none', border: '1.5px solid #f3f4f6', height: 380 }} key={style.name}>
                   {/* 미리보기 이미지 - 항상 표시 */}
                   <div className="w-[300px] h-[300px] flex items-center justify-center rounded-xl text-gray-400 text-xl bg-[#f5f6fa] relative overflow-hidden mb-2">
-                    <img
+                    <Image
                       src={style.example}
                       alt={style.name + " 예시"}
+                      width={300}
+                      height={300}
                       className="w-full h-full object-cover rounded-xl"
                       onError={(e) => {
                         // 이미지 로드 실패 시 기본 텍스트 표시
@@ -242,11 +247,13 @@ export default function ImageCreate() {
                           </div>
                         </div>
                       ) : (
-                        <img
+                        <Image
                           src={images[idx] as string}
                           alt={style.name + " 생성된 이미지"}
+                          width={ratio === "1:1" ? 300 : 400}
+                          height={300}
                           className="rounded-xl object-cover mb-2"
-                          style={{ width: ratio === "1:1" ? 300 : 400, height: 300, background: '#f3f4f6' }}
+                          style={{ background: '#f3f4f6' }}
                         />
                       )}
                       

@@ -654,7 +654,7 @@ export default function BlogWriter() {
                           <div className="font-semibold mb-1">말투 예시 문장이란?</div>
                           <div className="text-gray-200 leading-relaxed">
                             블로그에서 사용하고 싶은 말투의 예시를 입력해주세요.<br/>
-                            예: "정말 맛있었어요!", "이 제품은 추천합니다", "꼭 한번 가보세요"<br/>
+                            예: &quot;정말 맛있었어요!&quot;, &quot;이 제품은 추천합니다&quot;, &quot;꼭 한번 가보세요&quot;<br/>
                             AI가 이 예시를 참고하여 일관된 말투로 블로그를 작성해요.
                           </div>
                         </div>
