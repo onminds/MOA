@@ -738,15 +738,118 @@ async function extractDocumentContent(file: File): Promise<string> {
 
 async function extractWebsiteContent(url: string): Promise<string> {
   try {
-    const response = await fetch(url);
-    const html = await response.text();
+    console.log('웹사이트 스크래핑 시작:', url);
     
-    // HTML에서 텍스트 추출 (간단한 구현)
-    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    return text;
+    // URL 유효성 검사
+    let targetUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      targetUrl = 'https://' + url;
+    }
+    
+    // AbortController를 사용한 타임아웃 설정
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃
+    
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const html = await response.text();
+    console.log('HTML 길이:', html.length);
+    
+    // HTML에서 메타데이터 추출
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+    
+    const descriptionMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+    const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+    
+    const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i);
+    const keywords = keywordsMatch ? keywordsMatch[1].trim() : '';
+    
+    // HTML 태그 제거 및 텍스트 정리
+    let text = html
+      // 스크립트와 스타일 태그 제거
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      // HTML 태그 제거
+      .replace(/<[^>]*>/g, ' ')
+      // HTML 엔티티 디코딩
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      // 연속된 공백 정리
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // 텍스트가 너무 짧으면 기본적인 텍스트 추출 시도
+    if (text.length < 100) {
+      console.log('기본 텍스트 추출이 너무 짧음, 대안 방법 시도');
+      
+      // 더 간단한 텍스트 추출
+      text = html
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+    
+    // 메타데이터와 본문을 결합
+    let fullContent = '';
+    
+    if (title) {
+      fullContent += `제목: ${title}\n\n`;
+    }
+    
+    if (description) {
+      fullContent += `설명: ${description}\n\n`;
+    }
+    
+    if (keywords) {
+      fullContent += `키워드: ${keywords}\n\n`;
+    }
+    
+    fullContent += `웹사이트 내용:\n${text}`;
+    
+    // 내용이 너무 짧은지 확인
+    if (fullContent.length < 50) {
+      throw new Error('웹사이트에서 충분한 텍스트를 추출할 수 없습니다.');
+    }
+    
+    console.log('웹사이트 스크래핑 완료:', fullContent.length, '문자');
+    console.log('추출된 제목:', title);
+    console.log('추출된 설명:', description);
+    
+    return fullContent;
+    
   } catch (error) {
     console.error('웹사이트 내용 추출 오류:', error);
-    throw new Error('웹사이트 내용을 가져올 수 없습니다.');
+    
+    // 구체적인 오류 메시지 제공
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('웹사이트 로딩 시간이 초과되었습니다.');
+      } else if (error.message.includes('fetch')) {
+        throw new Error('웹사이트에 접근할 수 없습니다. URL을 확인해주세요.');
+      } else if (error.message.includes('HTTP')) {
+        throw new Error('웹사이트에서 오류가 발생했습니다. URL을 확인해주세요.');
+      }
+    }
+    
+    throw new Error('웹사이트 내용을 가져올 수 없습니다. URL을 확인해주세요.');
   }
 }
 

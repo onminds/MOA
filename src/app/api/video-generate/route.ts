@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,10 +29,52 @@ export async function POST(request: NextRequest) {
 
     const selectedRatio = ratioMapping[aspectRatio || "16:9"];
 
-    // 이미지를 base64로 변환하여 data URI 형식으로 생성
+    // 이미지 처리 및 검증
     const imageBuffer = await referenceImage.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
-    const dataUri = `data:${referenceImage.type};base64,${base64Image}`;
+    
+    // Sharp를 사용하여 이미지 처리
+    let processedImageBuffer: Buffer;
+    try {
+      const image = sharp(Buffer.from(imageBuffer));
+      const metadata = await image.metadata();
+      
+      // 이미지 크기 제한 (Runway API 요구사항에 맞게)
+      const maxSize = 1024;
+      let processedImage = image;
+      
+      if (metadata.width && metadata.height) {
+        // 비율에 따라 크기 조정
+        if (aspectRatio === "16:9") {
+          processedImage = image.resize(maxSize, Math.round(maxSize * 9 / 16), {
+            fit: 'cover',
+            position: 'center'
+          });
+        } else if (aspectRatio === "9:16") {
+          processedImage = image.resize(Math.round(maxSize * 9 / 16), maxSize, {
+            fit: 'cover',
+            position: 'center'
+          });
+        } else {
+          processedImage = image.resize(maxSize, maxSize, {
+            fit: 'cover',
+            position: 'center'
+          });
+        }
+      }
+      
+      // JPEG 형식으로 변환 (Runway API가 더 잘 지원하는 형식)
+      processedImageBuffer = await processedImage
+        .jpeg({ quality: 90 })
+        .toBuffer();
+        
+    } catch (imageError) {
+      console.error('이미지 처리 오류:', imageError);
+      return NextResponse.json({ error: '이미지 처리 중 오류가 발생했습니다.' }, { status: 400 });
+    }
+
+    // 처리된 이미지를 base64로 변환
+    const base64Image = processedImageBuffer.toString('base64');
+    const dataUri = `data:image/jpeg;base64,${base64Image}`;
 
     // 영상 생성 파라미터 설정 (Runway API 문서에 맞게)
     const videoParams: {
@@ -54,7 +97,10 @@ export async function POST(request: NextRequest) {
       videoParams.promptText = prompt;
     }
 
-    console.log('Runway API 요청 파라미터:', JSON.stringify(videoParams, null, 2));
+    console.log('Runway API 요청 파라미터:', JSON.stringify({
+      ...videoParams,
+      promptImage: dataUri.substring(0, 100) + '...' // 로그에서 전체 base64 숨김
+    }, null, 2));
 
     // Runway API 호출
     const response = await fetch(RUNWAY_API_URL, {

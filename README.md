@@ -8,7 +8,7 @@ First, create a `.env.local` file in the root directory and add your API keys:
 # OpenAI API Key
 OPENAI_API_KEY=your_openai_api_key_here
 
-# Runway API Key
+# Runway API Key (for video generation)
 RUNWAY_API_KEY=your_runway_api_key_here
 ```
 
@@ -37,7 +37,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 2. Create a new API key
 3. Add it to your `.env.local` file
 
-### Runway API Key
+### Runway API Key (Optional - for video generation)
 1. Go to [Runway ML](https://runwayml.com/)
 2. Sign up and get your API key
 3. Add it to your `.env.local` file

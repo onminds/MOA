@@ -195,6 +195,10 @@ export default function Productivity() {
     if (toolId === 1) {
       router.push('/productivity/ai-summary');
     }
+    // 레포트 작성 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 3) {
+      router.push('/productivity/report-writer');
+    }
     // 다른 도구들도 필요에 따라 추가
   };
 
