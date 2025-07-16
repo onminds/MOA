@@ -199,6 +199,18 @@ export default function Productivity() {
     else if (toolId === 3) {
       router.push('/productivity/report-writer');
     }
+    // 블로그 작성 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 4) {
+      router.push('/productivity/blog-writer');
+    }
+    // 자기소개서 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 5) {
+      router.push('/productivity/cover-letter');
+    }
+    // 이메일보조 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 2) {
+      router.push('/productivity/email-assistant');
+    }
     // 다른 도구들도 필요에 따라 추가
   };
 
