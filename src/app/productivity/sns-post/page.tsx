@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from 'next/image';
 import Header from '../../components/Header';
 import { 
-  MessageSquare, Hash, Image, Users, Briefcase, Target, 
+  MessageSquare, Hash, Image as ImageIcon, Users, Briefcase, Target, 
   Wand2, Copy, CheckCircle, ArrowLeft, Loader2, Upload, X, Crop,
   Heart, MessageCircle, Share, Bookmark, MoreHorizontal, 
-  Repeat2, Eye, ThumbsUp, Send, Play
+  Repeat2, ThumbsUp, Send, Play
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -16,6 +17,23 @@ interface SNSPlatform {
   charLimit: number;
   features: string[];
   color: string;
+}
+
+interface ImageRatio {
+  name: string;
+  ratio: string;
+  width: number;
+  height: number;
+}
+
+interface GeneratedResult {
+  post?: string;
+  title?: string;
+  description?: string;
+  charCount?: {
+    title?: number;
+    description?: number;
+  };
 }
 
 const snsplatforms: SNSPlatform[] = [
@@ -101,7 +119,7 @@ const contentTypes = [
   { id: 'education', name: '교육/정보', icon: <MessageSquare className="w-5 h-5" /> },
   { id: 'entertainment', name: '엔터테인먼트', icon: <Users className="w-5 h-5" /> },
   { id: 'news', name: '뉴스/업데이트', icon: <Hash className="w-5 h-5" /> },
-  { id: 'personal', name: '개인 스토리', icon: <Image className="w-5 h-5" /> },
+  { id: 'personal', name: '개인 스토리', icon: <ImageIcon className="w-5 h-5" /> },
   { id: 'business', name: '비즈니스', icon: <Briefcase className="w-5 h-5" /> }
 ];
 
@@ -118,15 +136,14 @@ export default function SNSPost() {
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmoji, setIncludeEmoji] = useState(false);
   const [generatedPost, setGeneratedPost] = useState('');
-  const [generatedResults, setGeneratedResults] = useState<any>({});
+  const [generatedResults, setGeneratedResults] = useState<Record<string, GeneratedResult>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   
   // 이미지 관련 state
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-  const [selectedRatio, setSelectedRatio] = useState<any>(null);
+  const [selectedRatio, setSelectedRatio] = useState<ImageRatio | null>(null);
   const [croppedImage, setCroppedImage] = useState<string>('');
 
   // 플랫폼이 변경될 때 첫 번째 권장 비율로 자동 설정
@@ -222,7 +239,6 @@ export default function SNSPost() {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
@@ -284,7 +300,6 @@ export default function SNSPost() {
   };
 
   const removeImage = () => {
-    setSelectedImage(null);
     setImagePreview('');
     setSelectedRatio(null);
     setCroppedImage('');
@@ -327,7 +342,7 @@ export default function SNSPost() {
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-w-md mx-auto">
             {/* Instagram Header */}
             <div className="flex items-center p-3 border-b border-gray-100">
-              <img src={commonProfileImage} alt="Profile" className="w-8 h-8 rounded-full mr-3" />
+              <Image src={commonProfileImage} alt="Profile" width={32} height={32} className="rounded-full mr-3" />
               <div className="flex-1">
                 <div className="font-semibold text-sm">your_account</div>
               </div>
@@ -337,7 +352,7 @@ export default function SNSPost() {
                          {/* Instagram Image */}
              {image ? (
                <div className="aspect-square bg-gray-100">
-                 <img src={image} alt="Post" className="w-full h-full object-cover" />
+                 <Image src={image} alt="Post" width={400} height={400} className="w-full h-full object-cover" />
                </div>
              ) : (
                <div className="aspect-square bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
@@ -375,7 +390,7 @@ export default function SNSPost() {
         return (
           <div className="bg-white border border-gray-200 rounded-xl p-4 max-w-lg mx-auto">
             <div className="flex space-x-3">
-              <img src={commonProfileImage} alt="Profile" className="w-10 h-10 rounded-full" />
+              <Image src={commonProfileImage} alt="Profile" width={40} height={40} className="rounded-full" />
               <div className="flex-1">
                                                   <div className="flex items-center space-x-1">
                    <span className="font-bold text-sm text-black">Your Name</span>
@@ -388,7 +403,7 @@ export default function SNSPost() {
                  
                  {image ? (
                    <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
-                     <img src={image} alt="Post" className="w-full object-cover" />
+                     <Image src={image} alt="Post" width={400} height={225} className="w-full object-cover" />
                    </div>
                  ) : post.length > 100 && (
                    <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200 bg-gradient-to-r from-blue-400 to-blue-600 p-8">
@@ -426,7 +441,7 @@ export default function SNSPost() {
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-w-lg mx-auto">
             <div className="p-4">
               <div className="flex items-center space-x-3 mb-3">
-                <img src={commonProfileImage} alt="Profile" className="w-10 h-10 rounded-full" />
+                <Image src={commonProfileImage} alt="Profile" width={40} height={40} className="rounded-full" />
                                  <div className="flex-1">
                    <div className="font-semibold text-sm text-black">Your Name</div>
                    <div className="text-gray-900 text-xs font-medium">1시간 전 · 🌍</div>
@@ -439,7 +454,7 @@ export default function SNSPost() {
             
             {image ? (
               <div className="bg-gray-100">
-                <img src={image} alt="Post" className="w-full object-cover" />
+                <Image src={image} alt="Post" width={400} height={225} className="w-full object-cover" />
               </div>
             ) : (
               <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-12 flex items-center justify-center">
@@ -479,7 +494,7 @@ export default function SNSPost() {
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-w-lg mx-auto">
             <div className="p-4">
               <div className="flex items-center space-x-3 mb-3">
-                <img src={commonProfileImage} alt="Profile" className="w-12 h-12 rounded-full" />
+                <Image src={commonProfileImage} alt="Profile" width={48} height={48} className="rounded-full" />
                                  <div className="flex-1">
                    <div className="font-semibold text-sm text-black">Your Name</div>
                    <div className="text-gray-900 text-xs font-medium">직책 | 회사명</div>
@@ -493,7 +508,7 @@ export default function SNSPost() {
             
             {image ? (
               <div className="bg-gray-100">
-                <img src={image} alt="Post" className="w-full object-cover" />
+                <Image src={image} alt="Post" width={400} height={225} className="w-full object-cover" />
               </div>
             ) : (
               <div className="bg-gradient-to-r from-blue-700 to-blue-900 p-12 flex items-center justify-center">
@@ -537,7 +552,7 @@ export default function SNSPost() {
                      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-w-md mx-auto">
              {image ? (
                <div className="relative aspect-video bg-gray-100">
-                 <img src={image} alt="Thumbnail" className="w-full h-full object-cover" />
+                 <Image src={image} alt="Thumbnail" width={400} height={225} className="w-full h-full object-cover" />
                  <div className="absolute inset-0 flex items-center justify-center">
                    <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
                      <Play className="w-8 h-8 text-white ml-1" />
@@ -566,7 +581,7 @@ export default function SNSPost() {
             
             <div className="p-3">
               <div className="flex space-x-3">
-                <img src={commonProfileImage} alt="Channel" className="w-9 h-9 rounded-full" />
+                <Image src={commonProfileImage} alt="Channel" width={36} height={36} className="rounded-full" />
                 <div className="flex-1">
                                      <div className="font-medium text-sm leading-tight mb-1 overflow-hidden text-black" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                      {post.split('\n')[0] || '영상 제목'}
@@ -585,7 +600,7 @@ export default function SNSPost() {
           <div className="bg-black text-white rounded-lg overflow-hidden max-w-xs mx-auto" style={{ aspectRatio: '9/16', minHeight: '500px' }}>
             <div className="relative h-full">
               {image ? (
-                <img src={image} alt="TikTok" className="w-full h-full object-cover" />
+                <Image src={image} alt="TikTok" width={300} height={533} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
                   <div className="text-center">
@@ -928,9 +943,11 @@ export default function SNSPost() {
                         <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                           {croppedImage ? (
                             <div className="text-center">
-                              <img
+                              <Image
                                 src={croppedImage}
                                 alt="Cropped preview"
+                                width={256}
+                                height={256}
                                 className="max-w-full max-h-64 mx-auto rounded-lg shadow-sm"
                               />
                               <p className="text-sm text-green-600 mt-2 font-medium">
@@ -939,9 +956,11 @@ export default function SNSPost() {
                             </div>
                           ) : (
                             <div className="text-center">
-                              <img
+                              <Image
                                 src={imagePreview}
                                 alt="Original preview"
+                                width={256}
+                                height={256}
                                 className="max-w-full max-h-64 mx-auto rounded-lg shadow-sm"
                               />
                               {selectedRatio && (
@@ -1092,9 +1111,11 @@ export default function SNSPost() {
                           {/* 이미지가 있으면 표시 */}
                           {croppedImage && (
                             <div className="mb-4">
-                              <img
+                              <Image
                                 src={croppedImage}
                                 alt="Post image"
+                                width={400}
+                                height={400}
                                 className="max-w-full rounded-lg shadow-sm"
                               />
                             </div>
@@ -1135,7 +1156,7 @@ export default function SNSPost() {
                   {/* 다중 플랫폼 결과 */}
                   {generateMode === 'multiple' && Object.keys(generatedResults).length > 0 && (
                     <div className="space-y-6">
-                      {Object.entries(generatedResults).map(([platformId, result]: [string, any]) => {
+                      {Object.entries(generatedResults).map(([platformId, result]: [string, GeneratedResult]) => {
                         const platform = snsplatforms.find(p => p.id === platformId);
                         if (!platform || !result) return null;
 
