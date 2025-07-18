@@ -182,20 +182,7 @@ export default function Home() {
                     로그아웃
                   </button>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <Link href="/auth/signin">
-                    <button className="w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition-colors font-semibold text-sm">
-                      로그인
-                    </button>
-                  </Link>
-                  <Link href="/auth/signup">
-                    <button className="w-full flex items-center justify-center gap-2 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold">
-                      <LogIn className="w-5 h-5" /> 회원가입
-                    </button>
-                  </Link>
-                </div>
-              )}
+              ) : null}
             </div>
           </aside>
 

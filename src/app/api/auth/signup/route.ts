@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         {
           userId: user.id,
           serviceType: "image-generate",
-          limitCount: 1, // 1회로 변경
+          limitCount: 2, // 2회로 변경
         },
         {
           userId: user.id,

@@ -70,13 +70,13 @@ export default function Header() {
               <>
                 <Link 
                   href="/auth/signin"
-                  className="text-gray-700 hover:text-gray-900"
+                  className="bg-white text-black px-4 py-2 rounded border border-black hover:bg-gray-50"
                 >
                   로그인
                 </Link>
                 <Link 
                   href="/auth/signup"
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  className="bg-black text-white px-4 py-2 rounded border border-white hover:bg-gray-800"
                 >
                   회원가입
                 </Link>
