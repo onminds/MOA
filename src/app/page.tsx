@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Search, Keyboard, Mic, ScanSearch,
   Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  Image as ImageIcon, Video, Wand2
+  Image as ImageIcon, Video, Wand2, Code
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Header from './components/Header';

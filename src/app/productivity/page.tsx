@@ -211,6 +211,34 @@ export default function Productivity() {
     else if (toolId === 2) {
       router.push('/productivity/email-assistant');
     }
+    // SNS 게시물 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 6) {
+      router.push('/productivity/sns-post');
+    }
+    // 강의 녹음 노트 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 7) {
+      router.push('/productivity/lecture-notes');
+    }
+    // 면접 준비 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 8) {
+      router.push('/productivity/interview-prep');
+    }
+    // 코드 생성 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 11) {
+      router.push('/productivity/code-generate');
+    }
+    // 코드 리뷰 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 12) {
+      router.push('/productivity/code-review');
+    }
+    // PPT 초안 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 9) {
+      router.push('/productivity/ppt-draft');
+    }
+    // 발표 대본 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 10) {
+      router.push('/productivity/presentation-script');
+    }
     // 다른 도구들도 필요에 따라 추가
   };
 
