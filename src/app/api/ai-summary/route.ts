@@ -10,13 +10,25 @@ import puppeteer from 'puppeteer';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import mammoth from 'mammoth';
+import { requireAuth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const prisma = new PrismaClient();
+
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
+
     const formData = await request.formData();
     const type = formData.get('type') as string;
 
@@ -53,7 +65,9 @@ export async function POST(request: NextRequest) {
     // OpenAI를 사용하여 요약 생성 (타입별로 다른 프롬프트 사용)
     const summary = await generateSummary(content, type);
 
-    return NextResponse.json({ summary });
+    return NextResponse.json({ 
+      summary
+    });
   } catch (error) {
     console.error('요약 생성 오류:', error);
     return NextResponse.json({ error: '요약 생성 중 오류가 발생했습니다.' }, { status: 500 });

@@ -33,6 +33,7 @@ async function checkImageGenerationUsage(userId: string) {
   let maxLimit = 2; // 기본 (로그인만)
   let planType = 'basic';
   
+  // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
   if (user.payments.length > 0) {
     const latestPayment = user.payments[0];
     planType = latestPayment.planType;
@@ -48,17 +49,88 @@ async function checkImageGenerationUsage(userId: string) {
         maxLimit = 2;
     }
   }
+  // 관리자이면서 결제 내역이 없으면 무제한
+  else if (user.role === 'ADMIN') {
+    maxLimit = 9999;
+    planType = 'admin';
+  }
 
   const currentUsage = usage?.usageCount || 0;
+  const remainingCount = Math.max(0, maxLimit - currentUsage);
   const allowed = currentUsage < maxLimit;
 
   return {
     allowed,
     usageCount: currentUsage,
     limitCount: maxLimit,
-    remainingCount: Math.max(0, maxLimit - currentUsage),
+    remainingCount,
     planType,
-    resetDate: usage?.resetDate || new Date()
+    resetDate: new Date().toISOString() // 이미지는 총 제한이므로 리셋 없음
+  };
+}
+
+// 영상 생성 전용 사용량 체크
+async function checkVideoGenerationUsage(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      payments: {
+        where: { status: 'completed' },
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      }
+    }
+  });
+
+  if (!user) {
+    return { allowed: false, error: '사용자를 찾을 수 없습니다.' };
+  }
+
+  const usage = await prisma.usage.findUnique({
+    where: {
+      userId_serviceType: {
+        userId,
+        serviceType: 'video-generate'
+      }
+    }
+  });
+
+  let maxLimit = 1; // 기본 (로그인만)
+  let planType = 'basic';
+  
+  // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
+  if (user.payments.length > 0) {
+    const latestPayment = user.payments[0];
+    planType = latestPayment.planType;
+    
+    switch (planType) {
+      case 'standard':
+        maxLimit = 20;
+        break;
+      case 'pro':
+        maxLimit = 45;
+        break;
+      default:
+        maxLimit = 1;
+    }
+  }
+  // 관리자이면서 결제 내역이 없으면 무제한
+  else if (user.role === 'ADMIN') {
+    maxLimit = 9999;
+    planType = 'admin';
+  }
+
+  const currentUsage = usage?.usageCount || 0;
+  const remainingCount = Math.max(0, maxLimit - currentUsage);
+  const allowed = currentUsage < maxLimit;
+
+  return {
+    allowed,
+    usageCount: currentUsage,
+    limitCount: maxLimit,
+    remainingCount,
+    planType,
+    resetDate: new Date().toISOString() // 영상은 총 제한이므로 리셋 없음
   };
 }
 
@@ -140,10 +212,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '서비스 타입이 필요합니다.' }, { status: 400 });
     }
 
+    // AI 요약, SNS 포스트, 코드 생성은 무제한으로 처리
+    if (serviceType === 'ai-summary' || serviceType === 'sns-post' || serviceType === 'code-generate') {
+      return NextResponse.json({
+        allowed: true,
+        usageCount: 0,
+        limitCount: 9999,
+        remainingCount: 9999,
+        planType: 'unlimited',
+        resetDate: new Date().toISOString()
+      });
+    }
+
     // 이미지 생성은 특별한 로직 사용
     let usageInfo;
     if (serviceType === 'image-generate') {
       usageInfo = await checkImageGenerationUsage(user.id);
+    } else if (serviceType === 'video-generate') {
+      usageInfo = await checkVideoGenerationUsage(user.id);
     } else {
       usageInfo = await checkUsageLimit(user.id, serviceType);
     }

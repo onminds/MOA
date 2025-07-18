@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Search, Keyboard, Mic, ScanSearch,
   Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  Image as ImageIcon, Video, Wand2
+  Image as ImageIcon, Video, Wand2, Activity
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Header from './components/Header';
@@ -45,6 +45,7 @@ export default function Home() {
     { name: '검색', icon: <Search className="w-5 h-5 mr-2" />, href: '#' },
     { name: 'AI 목록', icon: <List className="w-5 h-5 mr-2" />, href: '#' },
     { name: '순위', icon: <BarChart className="w-5 h-5 mr-2" />, href: '#' },
+    { name: '사용량 확인', icon: <Activity className="w-5 h-5 mr-2" />, href: '/usage' },
     { name: '광고', icon: <Megaphone className="w-5 h-5 mr-2" />, href: '#' },
     { name: 'AI 뉴스', icon: <Newspaper className="w-5 h-5 mr-2" />, href: '#' },
     { name: '문의하기', icon: <MessageCircle className="w-5 h-5 mr-2" />, href: '#' },

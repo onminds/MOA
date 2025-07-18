@@ -1,8 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
+import { PrismaClient } from '@prisma/client';
 import sharp from 'sharp';
+
+const prisma = new PrismaClient();
+
+// 플랜별 영상 생성 제한
+const VIDEO_LIMITS = {
+  basic: 1,
+  standard: 20,
+  pro: 45,
+};
 
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    // 사용자의 플랜 정보 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { 
+        payments: {
+          where: { status: 'completed' },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        } 
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: '사용자를 찾을 수 없습니다' }, { status: 404 });
+    }
+
+    const planType = user.payments.length > 0 ? user.payments[0].planType : 'basic';
+    const limit = VIDEO_LIMITS[planType as keyof typeof VIDEO_LIMITS];
+
+    // 관리자는 무제한으로 설정 (결제 내역이 없는 경우에만)
+    let actualLimit = limit;
+    if (user.role === 'ADMIN' && user.payments.length === 0) {
+      actualLimit = 9999;
+    }
+
+    // 현재 사용량 확인
+    const currentUsage = await prisma.usage.findUnique({
+      where: {
+        userId_serviceType: {
+          userId: userId,
+          serviceType: 'video-generate',
+        },
+      },
+    });
+
+    const usageCount = currentUsage?.usageCount || 0;
+
+    console.log(`영상 생성 요청 - 사용자: ${user.email}, 역할: ${user.role}, 플랜: ${planType}, 사용량: ${usageCount}/${actualLimit}`);
+
+    if (usageCount >= actualLimit) {
+      console.log(`사용량 초과 - 현재: ${usageCount}, 제한: ${actualLimit}`);
+      return NextResponse.json({ 
+        error: `영상 생성 한도(${actualLimit}회)를 초과했습니다. 플랜을 업그레이드해주세요.`,
+        usageCount,
+        limit: actualLimit
+      }, { status: 429 });
+    }
+
+    console.log(`사용량 확인 통과 - 현재: ${usageCount}, 제한: ${actualLimit}, 남은 횟수: ${actualLimit - usageCount}`);
+
     const formData = await request.formData();
     const prompt = formData.get('prompt') as string;
     const duration = formData.get('duration') as string;
@@ -161,7 +231,28 @@ export async function POST(request: NextRequest) {
       }
 
       if (videoUrl) {
-        return NextResponse.json({ url: videoUrl });
+        // 사용량 증가
+        if (currentUsage) {
+          await prisma.usage.update({
+            where: { id: currentUsage.id },
+            data: { usageCount: usageCount + 1 },
+          });
+        } else {
+          await prisma.usage.create({
+            data: {
+              userId: userId,
+              serviceType: 'video-generate',
+              usageCount: 1,
+              limitCount: actualLimit,
+            },
+          });
+        }
+
+        return NextResponse.json({ 
+          url: videoUrl,
+          usageCount: usageCount + 1,
+          limit: actualLimit
+        });
       } else {
         return NextResponse.json({ error: '영상 생성 시간이 초과되었습니다.' }, { status: 408 });
       }

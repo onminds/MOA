@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireAuth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const prisma = new PrismaClient();
 
 interface SNSRequest {
   platform: string;
@@ -287,6 +291,14 @@ ${includeHashtags ? `- 해시태그는 ${platformInfo.maxHashtags}개 이하로 
 
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
+
     const body: SNSRequest = await request.json();
     
     const {
@@ -324,7 +336,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-        const result = await generateSinglePlatform(platform, body);
+    const result = await generateSinglePlatform(platform, body);
     return NextResponse.json(result);
 
   } catch (error) {

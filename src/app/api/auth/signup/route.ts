@@ -63,22 +63,12 @@ export async function POST(request: NextRequest) {
         {
           userId: user.id,
           serviceType: "image-generate",
-          limitCount: 2, // 2회로 변경
+          limitCount: 2, // Basic 플랜: 2회
         },
         {
           userId: user.id,
-          serviceType: "ai-chat",
-          limitCount: 20,
-        },
-        {
-          userId: user.id,
-          serviceType: "code-generate",
-          limitCount: 15,
-        },
-        {
-          userId: user.id,
-          serviceType: "sns-post",
-          limitCount: 10,
+          serviceType: "video-generate",
+          limitCount: 1, // Basic 플랜: 1회
         },
       ],
     });

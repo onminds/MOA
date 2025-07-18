@@ -48,7 +48,7 @@ export default function Header() {
               <div className="text-gray-700">로딩...</div>
             ) : session ? (
               <>
-                {session.user?.role === "ADMIN" && (
+                {session.user?.email === 'admin@moa.com' && (
                   <Link 
                     href="/admin"
                     className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"

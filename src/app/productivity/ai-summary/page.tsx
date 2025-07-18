@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from 'next-auth/react';
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  ArrowLeft, Youtube, FileText, Globe, Type, Upload, Download, Copy
+  ArrowLeft, Youtube, FileText, Globe, Type, Upload, Download, Copy, X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -63,6 +64,7 @@ const inputTypes = [
 
 export default function AISummary() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
@@ -71,12 +73,25 @@ export default function AISummary() {
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      setIsLoginModalOpen(true);
+    }
+  }, [status]);
 
   const handleFileUpload = (file: File) => {
     setUploadedFile(file);
   };
 
   const handleGenerateSummary = async () => {
+    // 로그인 체크
+    if (!session) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+
     setLoading(true);
     setSummary(null);
     setError(null);
@@ -408,6 +423,50 @@ export default function AISummary() {
           </div>
         </div>
       </div>
+
+      {/* 로그인 모달 */}
+      {isLoginModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">로그인이 필요합니다</h2>
+              <button
+                onClick={() => setIsLoginModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="text-gray-600 mb-6">
+              <p className="mb-4">AI 완벽요약 기능을 사용하려면 로그인이 필요합니다.</p>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-blue-900 mb-2">플랜별 사용량</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• <strong>Basic:</strong> 2회</li>
+                  <li>• <strong>Standard:</strong> 무제한</li>
+                  <li>• <strong>Pro:</strong> 무제한</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push('/auth/signin')}
+                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                로그인하기
+              </button>
+              <button
+                onClick={() => setIsLoginModalOpen(false)}
+                className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              >
+                나중에
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 } 

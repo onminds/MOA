@@ -8,7 +8,12 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma),
+  // adapter: PrismaAdapter(prisma), // JWT 세션 사용 시 주석 처리
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: '/auth/signin',
+    signUp: '/auth/signup',
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -34,6 +39,13 @@ export const authOptions = {
         const user = await prisma.user.findUnique({
           where: {
             email: credentials.email
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            password: true,
+            role: true
           }
         });
 
@@ -54,33 +66,45 @@ export const authOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          role: user.role,
         };
       }
     })
   ],
   session: {
-    strategy: "database" as const,
+    strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
-    async session({ session, user }: any) {
-      if (user && session.user) {
-        session.user.id = user.id;
-        session.user.role = user.role;
+    async jwt({ token, user }: any) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }: any) {
+      if (token && session.user) {
+        session.user.id = token.id;
+        session.user.role = token.role;
       }
       return session;
     },
     async signIn({ user, account, profile }: any) {
+      // credentials 로그인의 경우 항상 허용
+      if (account?.provider === "credentials") {
+        return true;
+      }
+      
+      // 소셜 로그인의 경우 사용자 생성/업데이트 처리
       if (account?.provider === "google" || account?.provider === "kakao") {
         try {
-          // 소셜 로그인 시 사용자가 처음 가입하는 경우 기본 사용량 설정
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email }
           });
 
           if (!existingUser) {
-            // 새 사용자의 기본 사용량 설정
+            // 새 사용자 생성
             const newUser = await prisma.user.create({
               data: {
                 email: user.email,
@@ -90,41 +114,23 @@ export const authOptions = {
               }
             });
 
-            // 기본 사용량 설정
-            await prisma.usage.createMany({
-              data: [
-                {
-                  userId: newUser.id,
-                  serviceType: "image-generate",
-                  limitCount: 1,
-                },
-                {
-                  userId: newUser.id,
-                  serviceType: "ai-chat",
-                  limitCount: 20,
-                },
-                {
-                  userId: newUser.id,
-                  serviceType: "code-generate",
-                  limitCount: 15,
-                },
-                {
-                  userId: newUser.id,
-                  serviceType: "sns-post",
-                  limitCount: 10,
-                },
-              ],
-            });
+            // 소셜 로그인 사용자에게 사용자 ID 설정
+            user.id = newUser.id;
+            user.role = newUser.role;
+          } else {
+            // 기존 사용자의 정보 업데이트
+            user.id = existingUser.id;
+            user.role = existingUser.role;
           }
+
+          return true;
         } catch (error) {
-          console.error("소셜 로그인 사용자 설정 오류:", error);
+          console.error("소셜 로그인 오류:", error);
           return false;
         }
       }
+
       return true;
     },
-  },
-  pages: {
-    signIn: "/auth/signin",
   },
 }; 

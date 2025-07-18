@@ -50,9 +50,10 @@ export default function AdminPage() {
         throw new Error(data.error || "사용자 목록을 불러올 수 없습니다.");
       }
       
-      setUsers(data.users);
+      setUsers(data.users || []);
     } catch (error: any) {
       setError(error.message);
+      setUsers([]); // 오류 시 빈 배열로 설정
     } finally {
       setLoading(false);
     }
@@ -108,14 +109,41 @@ export default function AdminPage() {
     }
   };
 
+  const setUserPlan = async (userId: string, planType: string) => {
+    if (!confirm(`사용자 플랜을 ${planType}로 변경하시겠습니까?`)) return;
+    
+    setActionLoading(`plan-${userId}`);
+    try {
+      // 결제 내역 생성 및 사용량 제한 설정
+      const paymentResponse = await fetch("/api/admin/update-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, planType }),
+      });
+
+      if (!paymentResponse.ok) {
+        const errorData = await paymentResponse.json();
+        throw new Error(errorData.error || "플랜 설정에 실패했습니다.");
+      }
+      
+      alert(`${planType} 플랜으로 설정되었습니다.`);
+    } catch (error: any) {
+      alert(`오류: ${error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getServiceTypeName = (serviceType: string) => {
     const names: { [key: string]: string } = {
       "image-generate": "이미지 생성",
-      "ai-chat": "AI 채팅", 
-      "code-generate": "코드 생성",
-      "sns-post": "SNS 포스트"
+      "video-generate": "영상 생성"
     };
     return names[serviceType] || serviceType;
+  };
+
+  const filterUsageByService = (usage: Usage[]) => {
+    return usage.filter(u => u.serviceType === "image-generate" || u.serviceType === "video-generate");
   };
 
   if (loading) {
@@ -166,6 +194,9 @@ export default function AdminPage() {
                       역할
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      플랜 설정
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       사용량
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -198,9 +229,34 @@ export default function AdminPage() {
                           <option value="ADMIN">관리자</option>
                         </select>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => setUserPlan(user.id, "basic")}
+                            disabled={actionLoading === `plan-${user.id}`}
+                            className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 disabled:bg-gray-400 mr-1"
+                          >
+                            Basic
+                          </button>
+                          <button
+                            onClick={() => setUserPlan(user.id, "standard")}
+                            disabled={actionLoading === `plan-${user.id}`}
+                            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:bg-gray-400 mr-1"
+                          >
+                            Standard
+                          </button>
+                          <button
+                            onClick={() => setUserPlan(user.id, "pro")}
+                            disabled={actionLoading === `plan-${user.id}`}
+                            className="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600 disabled:bg-gray-400"
+                          >
+                            Pro
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          {user.usage.map((usage) => (
+                          {filterUsageByService(user.usage || []).map((usage) => (
                             <div key={usage.id} className="flex items-center space-x-2">
                               <span className="text-xs text-gray-600 w-20">
                                 {getServiceTypeName(usage.serviceType)}:

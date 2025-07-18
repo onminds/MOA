@@ -57,9 +57,16 @@ async function checkImageGenerationLimit(userId: string) {
         maxLimit = 2;
     }
   }
+  // 관리자이면서 결제 내역이 없으면 무제한
+  else if (user.role === 'ADMIN') {
+    maxLimit = 9999;
+    planType = 'admin';
+  }
 
   const currentUsage = usage?.usageCount || 0;
   const allowed = currentUsage < maxLimit;
+
+  console.log(`이미지 생성 요청 - 사용자: ${user.email}, 역할: ${user.role}, 플랜: ${planType}, 사용량: ${currentUsage}/${maxLimit}`);
 
   return {
     allowed,
@@ -67,7 +74,7 @@ async function checkImageGenerationLimit(userId: string) {
     limitCount: maxLimit,
     remainingCount: Math.max(0, maxLimit - currentUsage),
     planType,
-    error: allowed ? null : `${planType === 'basic' ? '기본' : planType === 'standard' ? 'Standard' : 'Pro'} 플랜의 이미지 생성 한도에 도달했습니다.`
+    error: allowed ? null : `${planType === 'basic' ? '기본' : planType === 'standard' ? 'Standard' : planType === 'pro' ? 'Pro' : 'Admin'} 플랜의 이미지 생성 한도에 도달했습니다.`
   };
 }
 

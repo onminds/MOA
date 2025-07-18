@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireAuth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const prisma = new PrismaClient();
 
 interface CodeGenerateRequest {
   request: string;
@@ -127,6 +131,14 @@ const codeTypeConfigs = {
 
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
+
     const {
       request: userRequest,
       language,
@@ -154,7 +166,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      result
+      result,
     });
 
   } catch (error) {
