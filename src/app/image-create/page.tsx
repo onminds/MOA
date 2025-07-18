@@ -215,12 +215,16 @@ export default function ImageCreate() {
                       className="w-full h-full object-cover rounded-xl"
                       onError={(e) => {
                         // 이미지 로드 실패 시 기본 텍스트 표시
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const fallback = target.parentElement?.querySelector('.image-fallback');
+                        if (fallback) {
+                          fallback.classList.remove('hidden');
+                        }
                       }}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xl bg-[#f5f6fa] bg-opacity-70 hidden">
-                      미리보기
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xl bg-[#f5f6fa] bg-opacity-70 hidden image-fallback">
+                      {style.name} 미리보기
                     </div>
                   </div>
                   
@@ -247,14 +251,28 @@ export default function ImageCreate() {
                           </div>
                         </div>
                       ) : (
-                        <Image
-                          src={images[idx] as string}
-                          alt={style.name + " 생성된 이미지"}
-                          width={ratio === "1:1" ? 300 : 400}
-                          height={300}
-                          className="rounded-xl object-cover mb-2"
-                          style={{ background: '#f3f4f6' }}
-                        />
+                        <div className="relative">
+                          <Image
+                            src={images[idx] as string}
+                            alt={style.name + " 생성된 이미지"}
+                            width={ratio === "1:1" ? 300 : 400}
+                            height={300}
+                            className="rounded-xl object-cover mb-2"
+                            style={{ background: '#f3f4f6' }}
+                            onError={(e) => {
+                              console.error('생성된 이미지 로드 실패:', images[idx]);
+                              const target = e.currentTarget;
+                              target.style.display = 'none';
+                              const fallback = target.parentElement?.querySelector('.generated-image-fallback');
+                              if (fallback) {
+                                fallback.classList.remove('hidden');
+                              }
+                            }}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xl bg-[#f5f6fa] bg-opacity-70 hidden generated-image-fallback">
+                            이미지 로드 실패
+                          </div>
+                        </div>
                       )}
                       
                       {/* 다운로드 버튼 - 생성 완료 시에만 표시 */}

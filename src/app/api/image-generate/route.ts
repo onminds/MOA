@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '프롬프트가 필요합니다.' }, { status: 400 });
     }
 
+    console.log('이미지 생성 요청:', { prompt, ratio, hasReferenceImage: !!referenceImage });
+
     // 비율에 따른 크기 설정
     const size = ratio === "1:1" ? "1024x1024" : "1792x1024";
 
@@ -57,12 +59,15 @@ export async function POST(request: NextRequest) {
         }
         
         styleDescription += "참고 이미지와 동일한 아트 스타일, 색상 팔레트, 조명, 브러시 스타일, 질감, 분위기로";
-      } catch {
+      } catch (error) {
+        console.error('이미지 분석 오류:', error);
         styleDescription = "참고 이미지와 동일한 아트 스타일, 색상 팔레트, 조명, 구도, 브러시 스타일, 질감, 분위기로";
       }
 
       // 참고 이미지의 스타일을 프롬프트에 추가
       const enhancedPrompt = `${prompt}, ${styleDescription} 생성해주세요. 참고 이미지의 모든 시각적 요소를 그대로 유지하면서`;
+
+      console.log('향상된 프롬프트:', enhancedPrompt);
 
       // 일반 이미지 생성 (참고 이미지 스타일을 프롬프트에 반영)
       response = await openai.images.generate({
@@ -73,6 +78,8 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // 일반 이미지 생성
+      console.log('일반 프롬프트로 이미지 생성:', prompt);
+      
       response = await openai.images.generate({
         model: "dall-e-3",
         prompt: prompt,
@@ -81,13 +88,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (response.data && response.data[0]) {
+    if (response.data && response.data[0] && response.data[0].url) {
+      console.log('이미지 생성 성공:', response.data[0].url);
       return NextResponse.json({ url: response.data[0].url });
     } else {
+      console.error('이미지 생성 응답 오류:', response);
       return NextResponse.json({ error: '이미지 생성에 실패했습니다.' }, { status: 500 });
     }
   } catch (error) {
     console.error('이미지 생성 오류:', error);
+    
+    // OpenAI API 에러 처리
+    if (error instanceof Error) {
+      if (error.message.includes('insufficient_quota')) {
+        return NextResponse.json({ error: 'OpenAI API 할당량이 부족합니다.' }, { status: 500 });
+      }
+      if (error.message.includes('content_policy_violation')) {
+        return NextResponse.json({ error: '프롬프트가 정책에 위반됩니다. 다른 설명을 시도해주세요.' }, { status: 400 });
+      }
+    }
+    
     return NextResponse.json({ error: '이미지 생성 중 오류가 발생했습니다.' }, { status: 500 });
   }
 } 
