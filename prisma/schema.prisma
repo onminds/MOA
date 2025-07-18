@@ -55,6 +55,7 @@ model Usage {
 model Payment {
   id            String   @id @default(cuid())
   userId        String
+  planType      String   @default("basic") // "basic", "standard", "pro"
   amount        Int      // 결제 금액 (원)
   creditsAdded  Int      // 추가된 크레딧
   paymentMethod String   // "card", "bank_transfer" 등
