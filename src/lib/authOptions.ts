@@ -59,26 +59,15 @@ export const authOptions = {
     })
   ],
   session: {
-    strategy: "jwt" as const,
+    strategy: "database" as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
-    async jwt({ token, user, account }: any) {
-      if (user) {
-        token.id = user.id;
-        // 사용자의 역할 정보를 토큰에 추가
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id }
-        });
-        if (dbUser) {
-          token.role = dbUser.role;
-        }
-      }
-      return token;
-    },
-    async session({ session, token }: any) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+    async session({ session, user }: any) {
+      if (user && session.user) {
+        session.user.id = user.id;
+        session.user.role = user.role;
       }
       return session;
     },
@@ -96,7 +85,8 @@ export const authOptions = {
               data: {
                 email: user.email,
                 name: user.name,
-                password: "", // 소셜 로그인은 비밀번호 불필요
+                image: user.image,
+                role: "USER"
               }
             });
 
