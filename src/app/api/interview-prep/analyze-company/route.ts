@@ -7,6 +7,15 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface CompanyAnalysis {
+  coreValues: string[];
+  idealCandidate: string;
+  vision: string;
+  businessAreas: string[];
+  companyCulture: string;
+  keyCompetencies: string[];
+}
+
 // 회사별 공식 사이트 URL 매핑
 const COMPANY_URLS: { [key: string]: string[] } = {
   '네이버': [
@@ -69,7 +78,7 @@ async function fetchWebContent(url: string): Promise<string> {
 }
 
 // 회사 정보 분석
-async function analyzeCompanyInfo(companyName: string, webContent: string[]): Promise<any> {
+async function analyzeCompanyInfo(companyName: string, webContent: string[]): Promise<CompanyAnalysis> {
   const combinedContent = webContent.join('\n\n');
   
   const analysisPrompt = `
@@ -141,7 +150,7 @@ ${combinedContent}
 
 export async function POST(request: NextRequest) {
   try {
-    const { companyName, jobTitle } = await request.json();
+    const { companyName } = await request.json();
 
     if (!companyName) {
       return NextResponse.json(

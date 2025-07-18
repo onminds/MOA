@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     filename: string;
-  };
+  }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const filename = decodeURIComponent(params.filename);
+    const { filename } = await params;
+    const decodedFilename = decodeURIComponent(filename);
     
-    console.log('PPT 파일 다운로드 요청:', filename);
+    console.log('PPT 파일 다운로드 요청:', decodedFilename);
 
     // 실제로는 외부 서비스에서 생성된 파일을 다운로드하거나
     // 서버에 저장된 파일을 반환
     
     // 현재는 시뮬레이션으로 더미 PPT 파일 생성
-    const pptContent = generateDummyPPTContent(filename);
+    const pptContent = generateDummyPPTContent(decodedFilename);
 
     return new NextResponse(pptContent, {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename="${decodedFilename}"`,
         'Content-Length': pptContent.byteLength.toString(),
       },
     });
@@ -73,35 +74,4 @@ function generateDummyPPTContent(filename: string): ArrayBuffer {
   combined.set(dummyContent, pptHeader.length);
 
   return combined.buffer;
-}
-
-// 실제 외부 API 파일 다운로드 함수 (미래 구현용)
-async function downloadFromExternalAPI(fileId: string, service: string): Promise<ArrayBuffer> {
-  switch (service) {
-    case 'microsoft':
-      // Microsoft Graph API에서 파일 다운로드
-      // const response = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/content`, {
-      //   headers: { 'Authorization': `Bearer ${process.env.MICROSOFT_ACCESS_TOKEN}` }
-      // });
-      // return await response.arrayBuffer();
-      break;
-      
-    case 'google':
-      // Google Slides API에서 파일 다운로드
-      // const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-      //   headers: { 'Authorization': `Bearer ${process.env.GOOGLE_ACCESS_TOKEN}` }
-      // });
-      // return await response.arrayBuffer();
-      break;
-      
-    case 'canva':
-      // Canva API에서 파일 다운로드
-      // const response = await fetch(`https://api.canva.com/v1/designs/${fileId}/export`, {
-      //   headers: { 'Authorization': `Bearer ${process.env.CANVA_ACCESS_TOKEN}` }
-      // });
-      // return await response.arrayBuffer();
-      break;
-  }
-  
-  throw new Error('지원되지 않는 서비스입니다.');
 } 

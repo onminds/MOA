@@ -178,8 +178,6 @@ ${objectives ? `발표 목적: ${objectives}` : ''}
 
 // 기본 PPT 초안 (API 실패 시 백업용)
 function getDefaultPPTDraft(topic: string, presentationType: string, duration: number) {
-  const slideCount = Math.max(3, Math.min(15, Math.ceil(duration * 1.2)));
-  
   return {
     title: topic,
     subtitle: "AI가 생성한 프레젠테이션 초안",

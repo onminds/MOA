@@ -122,7 +122,14 @@ ${keywords ? `- 키워드: ${keywords}` : ''}
 
 // 다중 플랫폼 생성 함수
 async function generateMultiplePlatforms(platforms: string[], requestData: SNSRequest) {
-  const results: any = {};
+  const results: Record<string, {
+    post?: string;
+    title?: string;
+    description?: string;
+    platform: string;
+    charCount: number | { title: number; description: number };
+    charLimit?: number | null;
+  }> = {};
   
   for (const platform of platforms) {
     const platformInfo = platformInstructions[platform as keyof typeof platformInstructions];
@@ -144,8 +151,7 @@ async function generateSinglePlatform(platform: string, requestData: SNSRequest)
     targetAudience,
     tone,
     includeHashtags,
-    includeEmoji,
-    charLimit
+    includeEmoji
   } = requestData;
 
   const platformInfo = platformInstructions[platform as keyof typeof platformInstructions];
@@ -172,8 +178,8 @@ async function generateSinglePlatform(platform: string, requestData: SNSRequest)
 }
 
 // 유튜브 설명 생성 함수
-async function generateYouTubeDescription(topic: string, keywords: string, targetAudience: string, tone: string, contentInfo: string, includeHashtags: boolean, includeEmoji: boolean, platformInfo: any) {
-  let prompt = `유튜브 영상 설명을 작성해주세요.
+async function generateYouTubeDescription(topic: string, keywords: string, targetAudience: string, tone: string, contentInfo: string, includeHashtags: boolean, includeEmoji: boolean, platformInfo: PlatformInfo) {
+  const prompt = `유튜브 영상 설명을 작성해주세요.
 
 **영상 정보:**
 - 주제: ${topic}
@@ -227,7 +233,7 @@ async function generateRegularPost(platform: string, requestData: SNSRequest) {
   const platformInfo = platformInstructions[platform as keyof typeof platformInstructions];
   const contentInfo = contentTypeInstructions[contentType as keyof typeof contentTypeInstructions];
 
-  let prompt = `당신은 각 SNS 플랫폼의 특성을 정확히 이해하는 전문 콘텐츠 크리에이터입니다. 다음 조건에 맞는 ${platformInfo.name} 게시물을 한국어로 작성해주세요.
+  const prompt = `당신은 각 SNS 플랫폼의 특성을 정확히 이해하는 전문 콘텐츠 크리에이터입니다. 다음 조건에 맞는 ${platformInfo.name} 게시물을 한국어로 작성해주세요.
 
 **플랫폼 분석:**
 - 플랫폼: ${platformInfo.name}

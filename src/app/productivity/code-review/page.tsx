@@ -3,8 +3,8 @@ import { useState } from "react";
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
-  ArrowLeft, Code, Copy, Loader2, CheckCircle, AlertCircle, FileCode, Star,
-  Zap, Brain, Shield, Bug, TrendingUp, Eye, Target, Lightbulb
+  ArrowLeft, Copy, Loader2, CheckCircle, AlertCircle, FileCode, Star,
+  Zap, Brain, Bug, TrendingUp, Eye, Target, Lightbulb
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

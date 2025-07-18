@@ -6,7 +6,6 @@ import {
   Code, Copy, Download, Loader2, CheckCircle, AlertCircle, Play, FileCode,
   Zap, Brain, Lightbulb, Terminal, GitBranch, Database, Globe, Smartphone
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 const sideMenus = [
   { name: '홈', icon: <HomeIcon className="w-5 h-5 mr-2" />, href: '/' },
@@ -60,8 +59,6 @@ interface GeneratedCode {
 }
 
 export default function CodeGenerate() {
-  const router = useRouter();
-  
   // 입력 상태
   const [request, setRequest] = useState('');
   const [language, setLanguage] = useState('javascript');

@@ -1,13 +1,33 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
   ArrowLeft, Briefcase, Building2, User, Clock, Lightbulb, CheckCircle, 
-  Play, Pause, RotateCcw, Download, Copy, FileText, Loader2, AlertCircle, Star,
+  Play, Pause, RotateCcw, Download, Copy, Loader2, AlertCircle, Star,
   Mic, MicOff, Volume2, TrendingUp, BarChart3, Globe
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+interface VoiceAnalysisResult {
+  confidence: number;
+  pace: number;
+  volume: number;
+  tone: 'calm' | 'nervous' | 'confident' | 'excited';
+  clarity: number;
+}
+
+interface VoiceEvaluationResult {
+  overallScore: number;
+  tone: string;
+  pace: string;
+  volume: string;
+  clarity: string;
+  confidence: string;
+  strengths: string[];
+  improvements: string[];
+  recommendations: string[];
+}
 
 const sideMenus = [
   { name: '홈', icon: <HomeIcon className="w-5 h-5 mr-2" />, href: '/' },
@@ -78,33 +98,16 @@ export default function InterviewPrep() {
   // 면접 질문 및 답변
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [practiceMode, setPracticeMode] = useState(false);
   const [answerTime, setAnswerTime] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   
   // 음성 분석 상태
   const [isRecording, setIsRecording] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [voiceAnalysis, setVoiceAnalysis] = useState<{
-    confidence: number;
-    pace: number;
-    volume: number;
-    tone: 'calm' | 'nervous' | 'confident' | 'excited';
-    clarity: number;
-  } | null>(null);
+  const [voiceAnalysis, setVoiceAnalysis] = useState<VoiceAnalysisResult | null>(null);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const [isEvaluatingVoice, setIsEvaluatingVoice] = useState(false);
-  const [voiceEvaluation, setVoiceEvaluation] = useState<{
-    overallScore: number;
-    tone: string;
-    pace: string;
-    volume: string;
-    clarity: string;
-    confidence: string;
-    strengths: string[];
-    improvements: string[];
-    recommendations: string[];
-  } | null>(null);
+  const [voiceEvaluation, setVoiceEvaluation] = useState<VoiceEvaluationResult | null>(null);
   
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -296,8 +299,6 @@ export default function InterviewPrep() {
 
   // 연습 모드 시작
   const startPractice = () => {
-    setPracticeMode(true);
-    setCurrentQuestionIndex(0);
     setCurrentStep('practice');
   };
 
@@ -320,7 +321,6 @@ export default function InterviewPrep() {
     } else {
       // 모든 질문 완료
       setCurrentStep('feedback');
-      setPracticeMode(false);
     }
   };
 
@@ -337,8 +337,7 @@ export default function InterviewPrep() {
     setCurrentStep('input');
     setQuestions([]);
     setCurrentQuestionIndex(0);
-    setPracticeMode(false);
-    resetTimer();
+    setAnswerTime(0);
     setCompanyName('');
     setJobTitle('');
     setJobDescription('');
@@ -367,7 +366,7 @@ export default function InterviewPrep() {
       streamRef.current = stream;
       
       // AudioContext 설정
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
       
@@ -407,7 +406,7 @@ export default function InterviewPrep() {
   };
 
   // 음성 녹음 정지
-  const stopVoiceRecording = () => {
+  const stopVoiceRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
     }
@@ -422,7 +421,7 @@ export default function InterviewPrep() {
     
     setIsRecording(false);
     setAudioLevel(0);
-  };
+  }, [isRecording]);
 
   // 실시간 음성 레벨 모니터링
   const startAudioLevelMonitoring = () => {
@@ -540,7 +539,7 @@ export default function InterviewPrep() {
     return () => {
       stopVoiceRecording();
     };
-  }, []);
+  }, [stopVoiceRecording]);
 
   // 답변 다운로드
   const downloadAnswers = () => {

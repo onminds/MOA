@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
   ArrowLeft, Code, Copy, Download, Loader2, CheckCircle, AlertCircle, Play, FileCode,
-  Zap, Brain, Lightbulb, Terminal, GitBranch, Database, Globe, Smartphone
+  Zap, Brain, Lightbulb, Terminal, GitBranch, Database, Globe, Smartphone, Box
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -35,20 +35,14 @@ const programmingLanguages = [
 ];
 
 const codeTypes = [
-  { value: 'function', label: '함수/메소드', icon: <Code className="w-4 h-4" /> },
-  { value: 'class', label: '클래스', icon: <FileCode className="w-4 h-4" /> },
+  { value: 'function', label: '함수', icon: <Zap className="w-4 h-4" /> },
+  { value: 'class', label: '클래스', icon: <Box className="w-4 h-4" /> },
   { value: 'api', label: 'API 엔드포인트', icon: <Globe className="w-4 h-4" /> },
   { value: 'component', label: 'UI 컴포넌트', icon: <Smartphone className="w-4 h-4" /> },
   { value: 'algorithm', label: '알고리즘', icon: <Brain className="w-4 h-4" /> },
   { value: 'database', label: 'DB 쿼리', icon: <Database className="w-4 h-4" /> },
   { value: 'script', label: '스크립트', icon: <Terminal className="w-4 h-4" /> },
   { value: 'test', label: '테스트 코드', icon: <CheckCircle className="w-4 h-4" /> }
-];
-
-const complexityLevels = [
-  { value: 'simple', label: '🟢 쉬운 버전', description: '기본 기능만 간단하게' },
-  { value: 'intermediate', label: '🟡 일반 버전', description: '실무에서 사용할 수 있는 수준' },
-  { value: 'advanced', label: '🔴 고급 버전', description: '전문가 수준의 완성도' }
 ];
 
 const quickTemplates = [
@@ -220,11 +214,16 @@ export default function ProductivityCodeGenerate() {
   };
 
   // 템플릿 사용하기
-  const useTemplate = (template: typeof quickTemplates[0]) => {
+  const applyTemplate = useCallback((template: typeof quickTemplates[0]) => {
     setRequest(template.example);
     setLanguage(template.language);
     setCodeType(template.type);
     setComplexity('simple');
+  }, []);
+
+  // 템플릿 클릭 핸들러
+  const handleTemplateClick = (template: typeof quickTemplates[0]) => {
+    applyTemplate(template);
   };
 
   // 전문가 모드 전환 시 복잡도 조정
@@ -346,7 +345,7 @@ export default function ProductivityCodeGenerate() {
                         {quickTemplates.map((template, index) => (
                           <div
                             key={index}
-                            onClick={() => useTemplate(template)}
+                            onClick={() => handleTemplateClick(template)}
                             className="p-4 border border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 cursor-pointer transition-all"
                           >
                             <h4 className="font-medium text-gray-900 mb-2">{template.title}</h4>
