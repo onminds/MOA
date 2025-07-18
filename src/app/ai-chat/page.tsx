@@ -18,6 +18,9 @@ type Message = {
 type Conversation = { id: number; title: string; messages: Message[] };
 
 export default function AIChat() {
+  // Hydration 문제 해결을 위한 mounted 상태
+  const [mounted, setMounted] = useState(false);
+  
   // 대화 목록 (샘플)
   const [conversations, setConversations] = useState<Conversation[]>([
     { id: 1, title: "새 대화", messages: [] },
@@ -38,8 +41,14 @@ export default function AIChat() {
   const messages = conversations[currentConv].messages;
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, mounted]);
 
   // 새 대화 추가
   const handleNewChat = () => {
@@ -139,7 +148,7 @@ export default function AIChat() {
   const InputBox = (
     <div className="w-full max-w-xl mx-auto">
       {/* 티어 정보 표시 */}
-      {currentTier && (
+      {mounted && currentTier && (
         <div className="mb-3 flex justify-center">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${getTierColor(currentTier.name)}`}>
             {getTierIcon(currentTier.name)}
@@ -175,6 +184,23 @@ export default function AIChat() {
       </form>
     </div>
   );
+
+  // 컴포넌트가 마운트되기 전까지는 로딩 표시
+  if (!mounted) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen flex bg-white">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+              <p className="text-gray-600">로딩 중...</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

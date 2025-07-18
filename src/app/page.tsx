@@ -15,9 +15,16 @@ type Message = { role: 'user' | 'assistant'; content: string };
 type Conversation = { id: number; title: string; messages: Message[] };
 
 export default function Home() {
+  // Hydration 문제 해결을 위한 mounted 상태
+  const [mounted, setMounted] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,12 +82,15 @@ export default function Home() {
   const [chatStarted, setChatStarted] = useState(false);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (mounted) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, mounted]);
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim()) return;
+    
     const userMsg: Message = { role: "user", content: input };
     const newConvs = [...conversations];
     newConvs[currentConv].messages = [...newConvs[currentConv].messages, userMsg];
@@ -94,11 +104,14 @@ export default function Home() {
         body: JSON.stringify({ message: userMsg.content }),
       });
       const data = await res.json();
+      
+      // 항상 응답을 표시 (사용량 제한 제거)
       const assistantMsg: Message = { role: "assistant", content: data.response };
       newConvs[currentConv].messages = [
         ...newConvs[currentConv].messages,
         assistantMsg,
       ];
+      
       setConversations([...newConvs]);
     } catch {
       const assistantMsg: Message = { role: "assistant", content: "오류가 발생했습니다. 다시 시도해 주세요." };
@@ -111,6 +124,23 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // 컴포넌트가 마운트되기 전까지는 로딩 표시
+  if (!mounted) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen flex bg-white">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+              <p className="text-gray-600">로딩 중...</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -133,7 +163,7 @@ export default function Home() {
               ))}
             </nav>
             <div className="mt-8">
-              {status === "loading" ? (
+              {status === 'loading' ? (
                 <div className="w-full bg-gray-200 text-center py-3 rounded-lg">
                   로딩...
                 </div>
@@ -176,6 +206,7 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center min-h-[80vh] w-full">
                 <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-4 text-center">MOA</h1>
                 <p className="text-lg md:text-xl text-gray-500 mb-10 text-center">당신에게 맞는 AI를 찾아보세요</p>
+                
                 <form
                   onSubmit={handleSearch}
                   className="w-full max-w-2xl transition-all duration-500"
@@ -191,7 +222,7 @@ export default function Home() {
                       onChange={handleSearchInput}
                       placeholder="무엇이든 물어보세요"
                       className="flex-1 bg-transparent outline-none text-lg text-gray-900 placeholder-gray-400"
-                      disabled={loading || false}
+                      disabled={loading}
                     />
                     <button type="button" className="ml-4 p-2 rounded-full hover:bg-gray-100 transition-colors" tabIndex={-1}>
                       <Keyboard className="w-5 h-5 text-gray-700" />
@@ -260,7 +291,7 @@ export default function Home() {
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="메시지를 입력하세요"
                       className="flex-1 bg-transparent outline-none text-lg text-gray-900 placeholder-gray-400"
-                      disabled={loading || false}
+                      disabled={loading}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) handleSend(e);
                       }}

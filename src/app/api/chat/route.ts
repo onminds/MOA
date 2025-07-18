@@ -102,15 +102,6 @@ export async function POST(request: NextRequest) {
       response = addLoginPromptMessage(response);
     }
 
-    // 사용량 증가 (로그인 사용자만)
-    if (userId) {
-      try {
-        await incrementUsage(userId, 'ai-chat');
-      } catch (error) {
-        console.error('사용량 증가 오류:', error);
-      }
-    }
-
     return NextResponse.json({
       response,
       tier: {
@@ -173,60 +164,14 @@ function getTemperature(tier: AITier): number {
 // 비로그인 사용자용 로그인 유도 메시지 추가
 function addLoginPromptMessage(response: string): string {
   const loginPrompts = [
-    "\n\n💡 **더 정확하고 상세한 답변을 원하시나요?** 로그인하시면 향상된 AI 모델로 더 나은 답변을 받을 수 있어요!",
+    "\n\n💡 **더 정확하고 상세한 답변을 원하시나요?** 로그인하시면 향상된 GPT-4o-mini 모델로 더 나은 답변을 받을 수 있어요!",
     "\n\n🎯 **로그인하면 더 스마트한 AI와 대화할 수 있어요!** 지금보다 훨씬 정확하고 창의적인 답변을 경험해보세요.",
     "\n\n✨ **프리미엄 AI 경험을 원하신다면?** 로그인 후 결제하시면 최고급 GPT-4o 모델을 사용하실 수 있습니다!",
-    "\n\n🚀 **이것은 기본 AI의 답변이에요.** 로그인하면 더 똑똑한 AI와 대화하실 수 있어요!"
+    "\n\n🚀 **이건 기본 AI의 답변이에요.** 로그인하면 더 똑똑한 AI와 대화하실 수 있어요!",
+    "\n\n📈 **더 나은 AI 경험을 원하시나요?** 로그인 시 GPT-4o-mini, 결제 시 GPT-4o로 업그레이드됩니다!",
+    "\n\n🎨 **현재는 기본 버전입니다.** 로그인하면 더 창의적이고 정확한 AI 답변을 받아보세요!"
   ];
   
   const randomPrompt = loginPrompts[Math.floor(Math.random() * loginPrompts.length)];
   return response + randomPrompt;
-}
-
-// 사용량 증가 함수
-async function incrementUsage(userId: string, serviceType: string) {
-  try {
-    // 오늘 날짜 확인
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // 사용량 레코드 찾기 또는 생성
-    const usage = await prisma.usage.upsert({
-      where: {
-        userId_serviceType: {
-          userId,
-          serviceType
-        }
-      },
-      update: {
-        usageCount: {
-          increment: 1
-        }
-      },
-      create: {
-        userId,
-        serviceType,
-        usageCount: 1,
-        limitCount: 20, // AI 채팅 기본 제한
-        resetDate: today
-      }
-    });
-
-    // 일일 리셋 체크
-    const usageDate = new Date(usage.resetDate);
-    usageDate.setHours(0, 0, 0, 0);
-    
-    if (today.getTime() !== usageDate.getTime()) {
-      await prisma.usage.update({
-        where: { id: usage.id },
-        data: {
-          usageCount: 1,
-          resetDate: today
-        }
-      });
-    }
-  } catch (error) {
-    console.error('사용량 증가 실패:', error);
-    throw error;
-  }
 } 
