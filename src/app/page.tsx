@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Header from './components/Header';
+import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 type Conversation = { id: number; title: string; messages: Message[] };
@@ -15,6 +17,7 @@ type Conversation = { id: number; title: string; messages: Message[] };
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,12 +44,23 @@ export default function Home() {
     { name: '설정', icon: <Settings className="w-5 h-5 mr-2" />, href: '#' },
   ];
 
+  // 기능 버튼 클릭 핸들러
+  const handleFeatureClick = (path: string) => {
+    if (!session) {
+      // 로그인이 필요하다는 알림
+      alert('이 기능을 사용하려면 로그인이 필요합니다.');
+      router.push('/auth/signin');
+      return;
+    }
+    router.push(path);
+  };
+
   // 기능 버튼 목록
   const featureButtons = [
-    { label: 'AI 검색', icon: <Search className="w-6 h-6 text-blue-600" />, onClick: () => router.push('/ai-chat') },
-    { label: '이미지 생성', icon: <ImageIcon className="w-6 h-6 text-yellow-500" />, onClick: () => router.push('/image-create') },
-    { label: '영상 생성', icon: <Video className="w-6 h-6 text-purple-500" />, onClick: () => router.push('/video-create') },
-    { label: '생산성 도구', icon: <Wand2 className="w-6 h-6 text-blue-500" />, onClick: () => router.push('/productivity') },
+    { label: 'AI 검색', icon: <Search className="w-6 h-6 text-blue-600" />, path: '/ai-chat' },
+    { label: '이미지 생성', icon: <ImageIcon className="w-6 h-6 text-yellow-500" />, path: '/image-create' },
+    { label: '영상 생성', icon: <Video className="w-6 h-6 text-purple-500" />, path: '/video-create' },
+    { label: '생산성 도구', icon: <Wand2 className="w-6 h-6 text-blue-500" />, path: '/productivity' },
   ];
 
   // 챗봇 상태 및 로직 추가
@@ -119,9 +133,39 @@ export default function Home() {
               ))}
             </nav>
             <div className="mt-8">
-              <button className="w-full flex items-center justify-center gap-2 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold">
-                <LogIn className="w-5 h-5" /> 로그인
-              </button>
+              {status === "loading" ? (
+                <div className="w-full bg-gray-200 text-center py-3 rounded-lg">
+                  로딩...
+                </div>
+              ) : session ? (
+                <div className="space-y-2">
+                  <div className="text-sm text-gray-600 text-center">
+                    안녕하세요!
+                  </div>
+                  <div className="text-sm font-semibold text-center">
+                    {session.user?.name || session.user?.email}
+                  </div>
+                  <button 
+                    onClick={() => signOut()}
+                    className="w-full bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors font-semibold"
+                  >
+                    로그아웃
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Link href="/auth/signin">
+                    <button className="w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition-colors font-semibold text-sm">
+                      로그인
+                    </button>
+                  </Link>
+                  <Link href="/auth/signup">
+                    <button className="w-full flex items-center justify-center gap-2 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold">
+                      <LogIn className="w-5 h-5" /> 회원가입
+                    </button>
+                  </Link>
+                </div>
+              )}
             </div>
           </aside>
 
@@ -166,7 +210,7 @@ export default function Home() {
                       key={btn.label}
                       className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm hover:bg-gray-100 transition-colors min-w-[90px]"
                       type="button"
-                      onClick={btn.onClick}
+                      onClick={() => handleFeatureClick(btn.path)}
                     >
                       {btn.icon}
                       <span className="mt-2 text-xs text-gray-800 font-medium">{btn.label}</span>

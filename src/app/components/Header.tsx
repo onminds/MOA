@@ -2,11 +2,19 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Header() {
   const router = useRouter();
   const [, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,10 +42,46 @@ export default function Header() {
             <Link href="#" className="text-gray-700 hover:text-gray-900">커뮤니티</Link>
           </nav>
           <div className="flex items-center space-x-4">
-            <button className="text-gray-700 hover:text-gray-900">로그인</button>
-            <button className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800">
-              회원가입
-            </button>
+            {!mounted ? (
+              <div className="text-gray-700">로딩...</div>
+            ) : status === "loading" ? (
+              <div className="text-gray-700">로딩...</div>
+            ) : session ? (
+              <>
+                {session.user?.role === "ADMIN" && (
+                  <Link 
+                    href="/admin"
+                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                  >
+                    관리자
+                  </Link>
+                )}
+                <span className="text-gray-700">
+                  안녕하세요, {session.user?.name || session.user?.email}님!
+                </span>
+                <button 
+                  onClick={() => signOut()}
+                  className="text-gray-700 hover:text-gray-900"
+                >
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/auth/signin"
+                  className="text-gray-700 hover:text-gray-900"
+                >
+                  로그인
+                </Link>
+                <Link 
+                  href="/auth/signup"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  회원가입
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

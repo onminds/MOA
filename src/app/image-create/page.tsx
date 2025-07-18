@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from '../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn, Download, X
@@ -32,6 +32,32 @@ export default function ImageCreate() {
   const [error, setError] = useState<string | null>(null);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
+  const [usageInfo, setUsageInfo] = useState<{
+    remaining: number;
+    limit: number;
+    resetDate: Date;
+  } | null>(null);
+
+  // 사용량 정보 가져오기
+  useEffect(() => {
+    const fetchUsageInfo = async () => {
+      try {
+        const response = await fetch('/api/usage/check?serviceType=image-generate');
+        if (response.ok) {
+          const data = await response.json();
+          setUsageInfo({
+            remaining: data.remaining,
+            limit: data.limit,
+            resetDate: new Date(data.resetDate)
+          });
+        }
+      } catch (error) {
+        console.error('사용량 정보 조회 실패:', error);
+      }
+    };
+
+    fetchUsageInfo();
+  }, []);
 
   const handleReferenceImageUpload = (file: File) => {
     const reader = new FileReader();
@@ -66,6 +92,16 @@ export default function ImageCreate() {
             body: formData,
           });
           const data = await res.json();
+          
+          // 첫 번째 요청에서 사용량 정보 업데이트
+          if (style === STYLES[0] && data.usage) {
+            setUsageInfo({
+              remaining: data.usage.remaining,
+              limit: data.usage.limit,
+              resetDate: new Date(data.usage.resetDate)
+            });
+          }
+          
           return data.url || null;
         })
       );
@@ -104,7 +140,35 @@ export default function ImageCreate() {
         {/* 입력 영역 */}
         <section className="flex flex-col justify-center items-center w-2/5 min-h-[calc(100vh-64px)] px-12">
           <div className="w-full max-w-md rounded-2xl bg-[#f9f9fb] p-8" style={{ boxShadow: 'none', border: '1.5px solid #f3f4f6', minHeight: '950px' }}>
-            <h2 className="text-2xl font-bold mb-8">이미지 제작</h2>
+            <h2 className="text-2xl font-bold mb-4">이미지 제작</h2>
+            
+            {/* 사용량 정보 표시 */}
+            {usageInfo && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-800">
+                    남은 횟수: {usageInfo.remaining}/{usageInfo.limit}회
+                  </span>
+                  {usageInfo.remaining === 0 && (
+                    <span className="text-xs text-red-600 font-medium">
+                      사용량 초과
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2">
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all" 
+                      style={{ width: `${(usageInfo.remaining / usageInfo.limit) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  매일 자정에 초기화됩니다.
+                </p>
+              </div>
+            )}
+            
             <label className="font-semibold mb-1">이미지 설명 <span className="text-blue-500">*</span></label>
             <textarea
               className="w-full h-24 p-4 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-900 mb-2"

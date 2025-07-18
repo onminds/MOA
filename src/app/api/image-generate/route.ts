@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import sharp from 'sharp';
+import { requireAuth, checkUsageLimit, incrementUsage } from '@/lib/auth';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -8,6 +9,23 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
+
+    // 사용량 제한 체크
+    const usageCheck = await checkUsageLimit(user.id, 'image-generate');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: '일일 사용량 제한에 도달했습니다. 내일 다시 시도해주세요.',
+        usage: usageCheck
+      }, { status: 429 });
+    }
+
     const formData = await request.formData();
     const prompt = formData.get('prompt') as string;
     const ratio = formData.get('ratio') as string;
@@ -17,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '프롬프트가 필요합니다.' }, { status: 400 });
     }
 
-    console.log('이미지 생성 요청:', { prompt, ratio, hasReferenceImage: !!referenceImage });
+    console.log('이미지 생성 요청:', { prompt, ratio, hasReferenceImage: !!referenceImage, userId: user.id });
 
     // 비율에 따른 크기 설정
     const size = ratio === "1:1" ? "1024x1024" : "1792x1024";
@@ -90,7 +108,17 @@ export async function POST(request: NextRequest) {
 
     if (response.data && response.data[0] && response.data[0].url) {
       console.log('이미지 생성 성공:', response.data[0].url);
-      return NextResponse.json({ url: response.data[0].url });
+      
+      // 사용량 증가
+      await incrementUsage(user.id, 'image-generate');
+      
+      // 업데이트된 사용량 정보 반환
+      const updatedUsage = await checkUsageLimit(user.id, 'image-generate');
+      
+      return NextResponse.json({ 
+        url: response.data[0].url,
+        usage: updatedUsage
+      });
     } else {
       console.error('이미지 생성 응답 오류:', response);
       return NextResponse.json({ error: '이미지 생성에 실패했습니다.' }, { status: 500 });

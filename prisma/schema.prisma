@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 모델
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String?  // 소셜 로그인 사용자는 비밀번호가 없을 수 있음
+  name      String?
+  image     String?  // 프로필 이미지
+  role      String   @default("USER") // "USER", "ADMIN"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계
+  usage     Usage[]
+  payments  Payment[]
+  sessions  Session[]
+  accounts  Account[]
+
+  @@map("users")
+}
+
+// 사용량 모델
+model Usage {
+  id          String   @id @default(cuid())
+  userId      String
+  serviceType String   // "image-generate", "ai-chat", "code-generate" 등
+  usageCount  Int      @default(0)
+  limitCount  Int      @default(10) // 기본 10회
+  resetDate   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceType])
+  @@map("usage")
+}
+
+// 결제 모델
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Int      // 결제 금액 (원)
+  creditsAdded  Int      // 추가된 크레딧
+  paymentMethod String   // "card", "bank_transfer" 등
+  status        String   @default("pending") // "pending", "completed", "failed"
+  transactionId String?  // 외부 결제 시스템의 트랜잭션 ID
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// 세션 모델 (NextAuth.js 사용 시)
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// 계정 모델 (NextAuth.js 사용 시)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// 인증 토큰 모델 (NextAuth.js 사용 시)
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
