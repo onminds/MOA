@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && next build"
+    "vercel-build": "prisma generate && next build",
+    "dev-setup": "node scripts/dev-setup.js",
+    "deploy": "node scripts/prod-deploy.js",
+    "local": "npm run dev-setup && npm run dev",
+    "studio": "npx prisma studio"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
