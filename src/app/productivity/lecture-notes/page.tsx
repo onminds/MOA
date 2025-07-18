@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
-  ArrowLeft, Mic, Square, Pause, Play, Clock, Volume2, Download, Copy, FileText, 
+  ArrowLeft, Mic, Square, Pause, Play, Clock, Download, Copy, FileText, 
   Loader2, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -36,7 +36,6 @@ export default function LectureNotes() {
   const [finalTranscript, setFinalTranscript] = useState('');
   
   // UI 상태
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<'ready' | 'recording' | 'processing' | 'complete'>('ready');
   
@@ -170,7 +169,7 @@ export default function LectureNotes() {
       setCurrentStep('ready');
       setRecordingState('idle');
     } finally {
-      setLoading(false);
+      // setLoading(false); // Removed loading state
     }
   };
 
@@ -285,7 +284,7 @@ export default function LectureNotes() {
 
     setRecordingState('completed');
     setCurrentStep('processing');
-    setLoading(true);
+    // setLoading(true); // Removed loading state
     
     // 애니메이션 프레임 정지
     if (animationFrameRef.current) {

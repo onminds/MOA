@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
+import Image from 'next/image';
 import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
   ArrowLeft, Presentation, Copy, Loader2, CheckCircle, AlertCircle, FileText, Download,
-  Lightbulb, Target, Users, Clock, Zap, Brain, Eye, Play, Upload, Image, Edit3, 
-  Save, Plus, Minus, BookOpen, Camera, Palette, Type, AlignLeft, Move3D
+  Lightbulb, Target, Brain, Eye, Upload, Image as ImageIcon, Edit3, 
+  Plus, Minus, BookOpen, Camera
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -26,18 +27,6 @@ const presentationTypes = [
   { value: 'educational', label: '교육용 자료', description: '강의, 세미나, 교육 프로그램' },
   { value: 'sales', label: '영업/마케팅', description: '제품 소개, 영업 제안, 마케팅 전략' },
   { value: 'project', label: '프로젝트 발표', description: '프로젝트 계획, 진행 상황, 결과 보고' }
-];
-
-const slideTemplates = [
-  { id: 1, name: '제목 슬라이드', description: '프레젠테이션 제목과 부제목' },
-  { id: 2, name: '목차', description: '발표 내용의 전체 구성' },
-  { id: 3, name: '문제 정의', description: '해결하고자 하는 문제 설명' },
-  { id: 4, name: '배경/현황', description: '현재 상황과 배경 설명' },
-  { id: 5, name: '목표/목적', description: '달성하고자 하는 목표' },
-  { id: 6, name: '방법론/접근법', description: '문제 해결 방법' },
-  { id: 7, name: '결과/성과', description: '얻어진 결과와 성과' },
-  { id: 8, name: '결론/요약', description: '핵심 내용 정리' },
-  { id: 9, name: 'Q&A', description: '질문과 답변 세션' }
 ];
 
 interface PPTSlide {
@@ -660,7 +649,7 @@ export default function PPTDraft() {
                           onClick={() => setShowImageUpload(true)}
                           className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-600 transition-colors flex items-center gap-2"
                         >
-                          <Image className="w-4 h-4" />
+                          <ImageIcon className="w-4 h-4" />
                           이미지
                         </button>
                         <button
@@ -953,9 +942,11 @@ export default function PPTDraft() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                   {slide.images.map((imageUrl, imgIdx) => (
                                     <div key={imgIdx} className="relative group">
-                                      <img 
-                                        src={imageUrl} 
+                                      <Image
+                                        src={imageUrl}
                                         alt={`슬라이드 ${idx + 1} 이미지 ${imgIdx + 1}`}
+                                        width={100}
+                                        height={50}
                                         className="w-full h-20 object-cover rounded border"
                                       />
                                       {editMode && (
@@ -990,9 +981,11 @@ export default function PPTDraft() {
                                       }}
                                       className="relative group"
                                     >
-                                      <img 
-                                        src={imageUrl} 
+                                      <Image
+                                        src={imageUrl}
                                         alt={`업로드된 이미지 ${imgIdx + 1}`}
+                                        width={100}
+                                        height={50}
                                         className="w-full h-16 object-cover rounded border hover:border-blue-500 transition-colors"
                                       />
                                       <div className="absolute inset-0 bg-blue-500 bg-opacity-0 hover:bg-opacity-20 rounded transition-all flex items-center justify-center">
@@ -1190,7 +1183,7 @@ export default function PPTDraft() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Image className="w-5 h-5 text-purple-500" />
+              <ImageIcon className="w-5 h-5 text-purple-500" />
               이미지 관리
             </h3>
             
@@ -1220,9 +1213,11 @@ export default function PPTDraft() {
                   <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto">
                     {uploadedImages.map((imageUrl, idx) => (
                       <div key={idx} className="relative group">
-                        <img 
-                          src={imageUrl} 
+                        <Image
+                          src={imageUrl}
                           alt={`업로드된 이미지 ${idx + 1}`}
+                          width={100}
+                          height={50}
                           className="w-full h-20 object-cover rounded border"
                         />
                         <button

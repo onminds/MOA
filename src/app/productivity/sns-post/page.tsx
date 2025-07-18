@@ -1172,7 +1172,7 @@ export default function SNSPost() {
                                 onClick={() => {
                                   const textToCopy = result.title 
                                     ? `제목: ${result.title}\n\n설명:\n${result.description}`
-                                    : result.post;
+                                    : result.post || '';
                                   navigator.clipboard.writeText(textToCopy);
                                 }}
                                 className="ml-auto px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm flex items-center gap-1"
@@ -1203,7 +1203,7 @@ export default function SNSPost() {
                             ) : (
                               <div>
                                 <div className="text-sm font-medium text-gray-700 mb-2">
-                                  게시물 ({result.charCount || result.post?.length || 0}자)
+                                  게시물 ({(typeof result.charCount === 'number' ? result.charCount : result.post?.length) || 0}자)
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-3">
                                   <pre className="whitespace-pre-wrap text-black font-medium leading-relaxed">
