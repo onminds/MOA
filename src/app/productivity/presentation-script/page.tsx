@@ -238,10 +238,29 @@ export default function PresentationScript() {
     try {
       console.log('문서 처리 시작:', file.name, file.size, 'bytes');
       
+      // 파일 크기 및 형식 재확인
+      if (file.size === 0) {
+        throw new Error('빈 파일입니다.');
+      }
+      
+      if (file.size > 50 * 1024 * 1024) {
+        throw new Error('파일 크기가 너무 큽니다. (최대 50MB)');
+      }
+      
+      const fileName = file.name.toLowerCase();
+      const isPDF = fileName.endsWith('.pdf');
+      const isPPT = fileName.endsWith('.ppt') || fileName.endsWith('.pptx');
+      
+      if (!isPDF && !isPPT) {
+        throw new Error('지원하지 않는 파일 형식입니다.');
+      }
+      
+      console.log('문서 형식 확인:', { isPDF, isPPT, fileName });
+      
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('API 호출 중...');
+      console.log('문서 OCR API 호출 중...');
       const response = await fetch('/api/document-ocr', {
         method: 'POST',
         body: formData,
@@ -262,7 +281,8 @@ export default function PresentationScript() {
         success: data.success,
         totalPages: data.totalPages,
         resultsCount: data.results?.length || 0,
-        results: data.results
+        successCount: data.successCount,
+        errorCount: data.errorCount
       });
 
       if (!data.success) {
@@ -290,19 +310,20 @@ export default function PresentationScript() {
             success: result.success,
             textLength: result.text?.length || 0,
             error: result.error,
+            extractionMethod: result.extractionMethod,
             textPreview: result.text?.substring(0, 100) + '...'
           });
           
-          if (result.success) {
+          if (result.success && result.text && result.text.trim().length > 0) {
             const newImage = {
               id: `doc_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
               data: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`, // 빈 이미지 플레이스홀더
-              text: result.text,
+              text: result.text.trim(),
               status: 'success' as const
             };
             
             setUploadedImages(prev => [...prev, newImage]);
-            console.log(`페이지 ${index + 1} 추가 완료`);
+            console.log(`페이지 ${index + 1} 추가 완료 (${result.extractionMethod})`);
           } else {
             console.warn(`페이지 ${index + 1} 처리 실패:`, result.error);
             // 실패한 페이지도 추가하되 오류 상태로
@@ -322,37 +343,43 @@ export default function PresentationScript() {
         const totalCount = data.results.length;
         
         if (successCount === 0) {
-          setError(`PDF에서 텍스트를 추출할 수 없습니다. 이미지 기반 PDF이거나 텍스트가 없는 PDF일 수 있습니다. 
+          setError(`PDF에서 텍스트를 추출할 수 없습니다. 
           
 💡 해결 방법:
 • 텍스트 기반 PDF 파일을 사용해주세요
 • PDF 내용을 복사해서 텍스트로 붙여넣기 해주세요
-• 이미지로 변환 후 업로드해주세요`);
+• 이미지로 변환 후 업로드해주세요
+• 다른 PDF 파일을 시도해보세요
+• 처리 시간이 오래 걸릴 수 있으니 잠시 기다려주세요`);
         } else if (successCount < totalCount) {
-          setError(`PDF 처리 완료: ${successCount}/${totalCount} 페이지 성공. 일부 페이지에서 텍스트 추출에 실패했습니다.`);
+          console.log(`PDF 처리 완료: ${successCount}/${totalCount} 페이지 성공. 일부 페이지에서 텍스트 추출에 실패했습니다.`);
+          
+          // 성공한 페이지들의 처리 방법 표시
+          const successfulResults = data.results.filter((r: any) => r.success);
+          const methods = [...new Set(successfulResults.map((r: any) => r.extractionMethod))];
+          
+          if (methods.length > 0) {
+            console.log('사용된 처리 방법:', methods);
+          }
         } else {
           console.log(`PDF 처리 완료: ${successCount}/${totalCount} 페이지 모두 성공`);
+          
+          // 성공한 페이지들의 처리 방법 표시
+          const methods = [...new Set(data.results.map((r: any) => r.extractionMethod))];
+          if (methods.length > 0) {
+            console.log('사용된 처리 방법:', methods);
+          }
         }
       } else {
-        // 결과가 없는 경우
-        const noResultImage = {
-          id: `doc_${Date.now()}_0_${Math.random().toString(36).substr(2, 9)}`,
-          data: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`,
-          text: '문서에서 텍스트를 추출할 수 없습니다.',
-          status: 'error' as const,
-          errorMessage: '텍스트 추출 실패'
-        };
-        setUploadedImages(prev => [...prev, noResultImage]);
+        throw new Error('문서에서 텍스트를 추출할 수 없습니다.');
       }
-
-      console.log('문서 처리 완료');
-      return true;
-    } catch (err) {
-      console.error('문서 처리 중 오류:', err);
-      const errorMessage = err instanceof Error ? err.message : '문서 처리 중 오류가 발생했습니다.';
-      setError(errorMessage);
       
-      // 오류 상태의 이미지 추가
+      return true;
+    } catch (error) {
+      console.error('문서 처리 중 오류:', error);
+      const errorMessage = error instanceof Error ? error.message : '문서 처리 중 오류가 발생했습니다.';
+      
+      // 오류 이미지 추가
       const errorImage = {
         id: `doc_${Date.now()}_error_${Math.random().toString(36).substr(2, 9)}`,
         data: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`,
@@ -701,75 +728,15 @@ export default function PresentationScript() {
                         <div className="text-sm text-yellow-800">
                           <p className="font-medium mb-1">⚠️ PDF 처리 안내</p>
                           <ul className="space-y-1 text-xs">
-                            <li>• <strong>텍스트 기반 PDF</strong>: 정상 처리</li>
-                            <li>• <strong>이미지 기반 PDF</strong>: 텍스트 추출 불가</li>
-                            <li>• <strong>스캔된 PDF</strong>: OCR 처리 필요</li>
-                            <li>• <strong>암호화된 PDF</strong>: 처리 불가</li>
+                            <li>• <strong>호스트 서버</strong>: pdf-parse 라이브러리로 정확한 텍스트 추출</li>
+                            <li>• <strong>Vercel 서버</strong>: pdf-parse 우선, 실패 시 Vision API 사용</li>
+                            <li>• <strong>텍스트 기반 PDF</strong>: 정확한 텍스트 추출</li>
+                            <li>• <strong>이미지 기반 PDF</strong>: Vision API로 OCR 처리</li>
+                            <li>• <strong>처리 시간</strong>: 5-15초 소요 (서버 환경에 따라 다름)</li>
                           </ul>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {/* 파일 선택 영역 */}
-                    <div 
-                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
-                        isFileMode 
-                          ? 'border-green-300 bg-green-50 hover:bg-green-100' 
-                          : 'border-blue-300 bg-blue-50 hover:bg-blue-100'
-                      }`}
-                      onClick={() => document.getElementById('imageInput')?.click()}
-                      tabIndex={0}
-                    >
-                      <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                        <Upload className={`w-6 h-6 mb-1 ${isFileMode ? 'text-green-500' : 'text-blue-500'}`} />
-                        <p className={`text-sm ${isFileMode ? 'text-green-700' : 'text-blue-700'}`}>
-                          <span className="font-semibold">파일 선택</span>
-                        </p>
-                        <p className={`text-xs ${isFileMode ? 'text-green-600' : 'text-blue-600'}`}>
-                          클릭하여 파일 선택 (이미지, PDF, PPT)
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* 붙여넣기 영역 */}
-                    <div 
-                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-colors ${
-                        isFileMode 
-                          ? 'border-green-300 bg-green-50' 
-                          : 'border-blue-300 bg-blue-50'
-                      }`}
-                      onPaste={handleImagePaste}
-                      tabIndex={0}
-                    >
-                      <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                        <Plus className={`w-6 h-6 mb-1 ${isFileMode ? 'text-green-500' : 'text-blue-500'}`} />
-                        <p className={`text-sm ${isFileMode ? 'text-green-700' : 'text-blue-700'}`}>
-                          <span className="font-semibold">붙여넣기</span>
-                        </p>
-                        <p className={`text-xs ${isFileMode ? 'text-green-600' : 'text-blue-600'}`}>
-                          Ctrl+V로 이미지 붙여넣기 (PDF/PPT는 파일 선택만 가능)
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* 숨겨진 파일 입력 */}
-                    <input
-                      id="imageInput"
-                      type="file"
-                      multiple
-                      accept="image/*,.pdf,.ppt,.pptx"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                    
-                    {isProcessingImage && (
-                      <div className="flex items-center justify-center py-2">
-                        <RefreshCw className={`w-4 h-4 mr-2 animate-spin ${isFileMode ? 'text-green-600' : 'text-blue-600'}`} />
-                        <span className={isFileMode ? 'text-green-600' : 'text-blue-600'}>파일 처리 중...</span>
-                      </div>
-                    )}
                   </div>
                   
                   {/* 업로드된 이미지 목록 */}

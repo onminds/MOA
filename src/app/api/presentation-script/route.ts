@@ -113,16 +113,33 @@ export async function POST(request: NextRequest) {
       console.log('📄 참고 자료 미리보기:', rawContent.substring(0, 200) + (rawContent.length > 200 ? '...' : ''));
       console.log('📄 참고 자료 전체 내용:', rawContent);
       
-      if (rawContent.length > 3000) {
-        console.log('📝 참고 자료 요약 중...');
-        referenceContent = await summarizeText(rawContent, 3000);
-        console.log('📝 요약된 참고 자료 길이:', referenceContent.length);
-        console.log('📝 요약된 참고 자료 미리보기:', referenceContent.substring(0, 200) + (referenceContent.length > 200 ? '...' : ''));
-        console.log('📝 요약된 참고 자료 전체 내용:', referenceContent);
+      // 참고 자료 품질 검사
+      const hasKoreanText = /[가-힣]/.test(rawContent);
+      const hasEnglishText = /[a-zA-Z]/.test(rawContent);
+      const hasMeaningfulContent = rawContent.length > 50 && (hasKoreanText || hasEnglishText);
+      
+      console.log('📊 참고 자료 품질 검사:', {
+        length: rawContent.length,
+        hasKorean: hasKoreanText,
+        hasEnglish: hasEnglishText,
+        hasMeaningfulContent: hasMeaningfulContent
+      });
+      
+      if (!hasMeaningfulContent) {
+        console.warn('⚠️ 참고 자료에 의미 있는 텍스트가 없습니다.');
+        console.log('ℹ️ 참고 자료 없음 - 기본 정보만으로 대본 생성');
       } else {
-        referenceContent = rawContent;
-        console.log('✅ 참고 자료 그대로 사용 (요약 불필요)');
-        console.log('✅ 사용될 참고 자료 전체 내용:', referenceContent);
+        if (rawContent.length > 3000) {
+          console.log('📝 참고 자료 요약 중...');
+          referenceContent = await summarizeText(rawContent, 3000);
+          console.log('📝 요약된 참고 자료 길이:', referenceContent.length);
+          console.log('📝 요약된 참고 자료 미리보기:', referenceContent.substring(0, 200) + (referenceContent.length > 200 ? '...' : ''));
+          console.log('📝 요약된 참고 자료 전체 내용:', referenceContent);
+        } else {
+          referenceContent = rawContent;
+          console.log('✅ 참고 자료 그대로 사용 (요약 불필요)');
+          console.log('✅ 사용될 참고 자료 전체 내용:', referenceContent);
+        }
       }
     } else {
       console.log('❌ 참고 자료 없음 - imageText와 fileContent 모두 비어있음');
