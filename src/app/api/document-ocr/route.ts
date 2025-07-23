@@ -16,6 +16,10 @@ export async function POST(request: NextRequest) {
 
     console.log('문서 OCR API 호출됨');
     console.log('파일명:', file.name, '크기:', file.size, 'bytes');
+    
+    // Vercel 환경 감지
+    const isVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+    console.log('🌐 환경:', isVercel ? 'Vercel' : '로컬/호스트');
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileName = file.name.toLowerCase();
@@ -51,8 +55,22 @@ export async function POST(request: NextRequest) {
         // pdf-parse 라이브러리를 동적 import로 사용하여 빌드 시 오류 방지
         console.log('📄 pdf-parse 라이브러리로 PDF 처리 시도...');
         
-        const pdfParse = (await import('pdf-parse')).default;
-        const data = await pdfParse(buffer);
+        // Vercel 환경에서도 안정적으로 작동하도록 최적화
+        const pdfParseModule = await import('pdf-parse');
+        const pdfParse = pdfParseModule.default || pdfParseModule;
+        
+        // Vercel 환경에 맞는 옵션 설정
+        const pdfOptions = isVercel ? {
+          max: 0, // 페이지 제한 없음
+          // Vercel에서 안정성을 위한 추가 옵션
+          normalizeWhitespace: true,
+          disableCombineTextItems: false
+        } : {
+          max: 0
+        };
+        
+        // PDF 버퍼를 직접 전달 (파일 시스템 접근 없이)
+        const data = await pdfParse(buffer, pdfOptions);
         
         if (data.text && data.text.trim().length > 0) {
           console.log('✅ pdf-parse로 텍스트 추출 성공!');
@@ -60,7 +78,8 @@ export async function POST(request: NextRequest) {
           console.log('📝 텍스트 미리보기:', data.text.substring(0, 200) + '...');
           console.log('📊 PDF 정보:', {
             페이지수: data.numpages,
-            메타데이터: data.info
+            메타데이터: data.info,
+            환경: isVercel ? 'Vercel' : '로컬/호스트'
           });
           
           // 텍스트 품질 검사
@@ -87,8 +106,9 @@ export async function POST(request: NextRequest) {
               text: data.text.trim(),
               success: true,
               error: undefined,
-              extractionMethod: 'pdf-parse 라이브러리',
-              numPages: data.numpages
+              extractionMethod: `pdf-parse 라이브러리 (${isVercel ? 'Vercel' : '호스트'} 최적화)`,
+              numPages: data.numpages,
+              environment: isVercel ? 'Vercel' : '호스트'
             });
           } else {
             throw new Error('의미 있는 텍스트를 찾을 수 없습니다.');
@@ -100,6 +120,7 @@ export async function POST(request: NextRequest) {
         
       } catch (pdfParseError) {
         console.log('❌ pdf-parse 실패:', pdfParseError);
+        console.log('📄 실패 원인:', pdfParseError instanceof Error ? pdfParseError.message : '알 수 없는 오류');
         
         // pdf-parse가 실패한 경우 OpenAI Vision API를 대안으로 사용
         try {
