@@ -147,7 +147,17 @@ export async function POST(request: NextRequest) {
               // 실제 문서 제목 패턴
               /Chapter\s+\d+\.\s*([^\n]+)/gi,
               // 실제 문서 내용 패턴
-              /([A-Za-z가-힣][A-Za-z가-힣0-9\s\.\,\!\?]{50,}[A-Za-z가-힣0-9])/g
+              /([A-Za-z가-힣][A-Za-z가-힣0-9\s\.\,\!\?]{50,}[A-Za-z가-힣0-9])/g,
+              // 새로운 패턴: 실제 문서 구조
+              /(Abstract|Introduction|Conclusion|Summary|Chapter|Section)\s*[:\.]?\s*([^\n]+)/gi,
+              // 새로운 패턴: 문단 시작
+              /([A-Z][a-z\s]{20,}[.!?])/g,
+              // 새로운 패턴: 한국어 문단
+              /([가-힣][가-힣\s]{15,}[.!?])/g,
+              // 새로운 패턴: 숫자로 시작하는 제목
+              /\d+\.\s*([A-Za-z가-힣\s]{10,})/g,
+              // 새로운 패턴: 대문자로 시작하는 제목
+              /([A-Z][A-Z\s]{5,})/g
             ];
             
             let bestText = '';

@@ -1042,10 +1042,18 @@ export default function PresentationScript() {
                   <textarea
                     value={formData.additionalInfo}
                     onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
-                    placeholder="발표에 포함하고 싶은 추가 정보나 특별한 요구사항을 입력하세요"
+                    placeholder="발표에 포함하고 싶은 추가 정보나 특별한 요구사항을 입력하세요. PDF 처리에 실패한 경우, PDF 내용을 여기에 복사해서 붙여넣기 해주세요."
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500"
                   />
+                  {uploadedImages.length > 0 && uploadedImages.every(img => img.status === 'error') && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                      <p className="font-medium mb-1">💡 PDF 처리 실패 시 대안:</p>
+                      <p>1. PDF 파일을 열어서 텍스트를 선택하고 복사 (Ctrl+A, Ctrl+C)</p>
+                      <p>2. 위의 "추가 정보"란에 붙여넣기 (Ctrl+V)</p>
+                      <p>3. 발표 대본 생성하기 버튼을 클릭</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* 오류 메시지 */}
@@ -1154,7 +1162,15 @@ export default function PresentationScript() {
                             <li>• <strong>파일 크기</strong>: 50MB 이하인지 확인</li>
                             <li>• <strong>파일 형식</strong>: 텍스트 기반 PDF인지 확인</li>
                             <li>• <strong>대안</strong>: PDF 내용을 텍스트로 복사해서 붙여넣기</li>
+                            <li>• <strong>PDF 변환</strong>: Adobe Acrobat, PDF24 등으로 텍스트 추출</li>
+                            <li>• <strong>온라인 도구</strong>: SmallPDF, ILovePDF 등 OCR 서비스 이용</li>
                           </ul>
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                            <p className="font-medium mb-1">💡 빠른 해결 방법:</p>
+                            <p>1. PDF 파일을 열어서 텍스트를 복사</p>
+                            <p>2. 복사한 텍스트를 "추가 정보"에 붙여넣기</p>
+                            <p>3. 발표 대본 생성하기</p>
+                          </div>
                         </div>
                       </div>
                     </div>

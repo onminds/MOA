@@ -42,7 +42,27 @@ export async function POST(request: NextRequest) {
     console.log('=== 발표 대본 생성 API 호출됨 ===');
     console.log('🕐 호출 시간:', new Date().toISOString());
     console.log('🌐 환경:', process.env.VERCEL === '1' ? 'Vercel' : '로컬/호스트');
-    console.log('🔑 OpenAI API 키 상태:', process.env.OPENAI_API_KEY ? '설정됨' : '❌ 설정되지 않음');
+    
+    // OpenAI API 키 검증 강화
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('❌ OpenAI API 키가 설정되지 않음');
+      return NextResponse.json(
+        { error: 'OpenAI API 키가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.' },
+        { status: 500 }
+      );
+    }
+    
+    // API 키 형식 검증
+    if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
+      console.error('❌ OpenAI API 키 형식이 잘못됨');
+      return NextResponse.json(
+        { error: 'OpenAI API 키 형식이 잘못되었습니다. 올바른 API 키를 설정해주세요.' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('🔑 OpenAI API 키 상태: 설정됨');
+    console.log('🔑 OpenAI API 키 미리보기:', process.env.OPENAI_API_KEY.substring(0, 20) + '...');
     
     body = await request.json();
     const { topic, duration, audience, purpose, keyPoints, tone, additionalInfo, fileContent, imageText } = body;
@@ -127,7 +147,8 @@ export async function POST(request: NextRequest) {
         isPDFMetadata,
         hasObjectRefs,
         hasRealContent,
-        metadataPatterns: rawContent.match(/StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+/g)?.length || 0
+        metadataPatterns: rawContent.match(/StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+/g)?.length || 0,
+        contentPreview: rawContent.substring(0, 200)
       });
       
       if (isPDFMetadata || hasObjectRefs) {
@@ -138,7 +159,11 @@ export async function POST(request: NextRequest) {
         const realContentPatterns = [
           /Chapter\s+\d+\.\s*([^\n]+)/gi,
           /([A-Za-z가-힣][A-Za-z가-힣0-9\s\.\,\!\?]{30,}[A-Za-z가-힣0-9])/g,
-          /\(([A-Za-z가-힣0-9\s\.\,\!\?\-\(\)]{30,})\)/g
+          /\(([A-Za-z가-힣0-9\s\.\,\!\?\-\(\)]{30,})\)/g,
+          // 더 구체적인 실제 텍스트 패턴
+          /([A-Z][a-z\s]{20,}[.!?])/g,
+          /([가-힣][가-힣\s]{15,}[.!?])/g,
+          /(Abstract|Introduction|Conclusion|Summary|Chapter|Section)\s*[:\.]?\s*([^\n]+)/gi
         ];
         
         let extractedRealContent = '';
@@ -146,14 +171,24 @@ export async function POST(request: NextRequest) {
           const matches = rawContent.match(pattern);
           if (matches && matches.length > 0) {
             const potentialContent = matches
-              .map((match: string) => pattern.source.includes('\\(') ? match.replace(/\(([^)]+)\)/, '$1') : match)
+              .map((match: string) => {
+                if (pattern.source.includes('\\(')) {
+                  return match.replace(/\(([^)]+)\)/, '$1');
+                } else if (pattern.source.includes('Abstract|Introduction|Conclusion|Summary|Chapter|Section')) {
+                  return match.replace(/(Abstract|Introduction|Conclusion|Summary|Chapter|Section)\s*[:\.]?\s*/, '$1: ');
+                }
+                return match;
+              })
               .filter((text: string) => {
                 const hasRealWords = /[A-Za-z가-힣]{8,}/.test(text);
-                const notMetadata = !text.match(/^(obj|endobj|R|PDF|Creator|Producer|CreationDate|ModDate|StructTreeRoot)/);
+                const notMetadata = !text.match(/^(obj|endobj|R|PDF|Creator|Producer|CreationDate|ModDate|StructTreeRoot|Type|Subtype|Length|Filter|DecodeParms|Width|Height|ColorSpace|BitsPerComponent|Intent|MediaBox|CropBox|BleedBox|TrimBox|ArtBox|Rotate|UserUnit|Contents|Resources|Parent|Kids|Count|First|Last|Prev|Next|Root|Info|ID|Encrypt|Metadata|PieceInfo|LastModified|Private|Perms|Legal|Collection|NeedsRendering|AcroForm|XFA|DSS|Extensions|AP|AS|OC|OU|JS|AA|OpenAction|Dest|Names|Threads|RichMedia|AF|Dests)/);
                 const hasMeaningfulLength = text.trim().length > 20;
                 const hasPunctuation = /[.!?,]/.test(text);
+                const hasSpaces = /\s/.test(text);
+                const notOnlyNumbers = !/^\d+$/.test(text.trim());
+                const notBinary = !/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/.test(text);
                 
-                return hasRealWords && notMetadata && hasMeaningfulLength && hasPunctuation;
+                return hasRealWords && notMetadata && hasMeaningfulLength && hasPunctuation && hasSpaces && notOnlyNumbers && notBinary;
               })
               .join(' ');
             
@@ -165,10 +200,36 @@ export async function POST(request: NextRequest) {
         
         if (extractedRealContent.length > 50) {
           console.log('✅ 메타데이터에서 실제 내용 추출 성공:', extractedRealContent.length, '자');
+          console.log('📄 추출된 실제 내용:', extractedRealContent.substring(0, 200) + '...');
           referenceContent = extractedRealContent;
         } else {
           console.error('❌ PDF에서 실제 문서 내용을 추출할 수 없습니다.');
-          throw new Error('PDF에서 실제 문서 내용을 추출할 수 없습니다. PDF 파일이 텍스트 기반이 아니거나 이미지로 변환된 PDF일 수 있습니다. 다른 PDF 파일을 시도해주세요.');
+          console.error('📄 추출된 원본 내용:', rawContent);
+          
+          // 더 구체적인 오류 메시지 제공
+          const errorDetails = {
+            totalLength: rawContent.length,
+            hasMetadata: isPDFMetadata,
+            hasObjectRefs: hasObjectRefs,
+            metadataCount: rawContent.match(/StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+/g)?.length || 0,
+            contentPreview: rawContent.substring(0, 300)
+          };
+          
+          console.error('📊 PDF 분석 상세:', errorDetails);
+          
+          throw new Error(`PDF에서 실제 문서 내용을 추출할 수 없습니다. 
+
+🔍 문제 분석:
+• 추출된 텍스트 길이: ${rawContent.length}자
+• 메타데이터 패턴: ${errorDetails.metadataCount}개 발견
+• 실제 텍스트: ${hasRealContent ? '일부 발견' : '발견되지 않음'}
+
+💡 해결 방법:
+1. 텍스트 기반 PDF 파일을 사용해주세요
+2. 이미지로 변환된 PDF는 OCR 기능이 있는 도구로 변환해주세요
+3. PDF 내용을 텍스트로 복사해서 붙여넣기 해주세요
+4. 다른 PDF 파일을 시도해보세요
+5. 스캔된 PDF의 경우 텍스트 인식 도구를 사용해주세요`);
         }
       } else {
         // 기존 품질 검사
@@ -328,7 +389,12 @@ ${referenceContent}
     
     const startTime = Date.now();
     
-    const completion = await openai.chat.completions.create({
+    // 타임아웃 설정 (25초)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('OpenAI API 호출 시간이 초과되었습니다.')), 25000);
+    });
+    
+    const completionPromise = openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
@@ -343,6 +409,9 @@ ${referenceContent}
       max_tokens: 3000,
       temperature: 0.7,
     });
+    
+    // 타임아웃과 API 호출을 경쟁시킴
+    const completion = await Promise.race([completionPromise, timeoutPromise]) as any;
 
     const endTime = Date.now();
     console.log('✅ OpenAI API 응답 받음');
@@ -416,10 +485,10 @@ ${referenceContent}
           { error: '참고 자료가 너무 깁니다. 더 짧은 내용으로 다시 시도해주세요.' },
           { status: 500 }
         );
-      } else if (errorMessage.includes('timeout') || errorMessage.includes('request timeout')) {
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('request timeout') || errorMessage.includes('호출 시간이 초과')) {
         console.error('⏱️ 요청 타임아웃');
         return NextResponse.json(
-          { error: '요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.' },
+          { error: '요청 시간이 초과되었습니다. Vercel의 타임아웃 제한으로 인해 발생할 수 있습니다. 더 짧은 내용으로 다시 시도해주세요.' },
           { status: 500 }
         );
       } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
@@ -432,6 +501,12 @@ ${referenceContent}
         console.error('🤖 모델 오류');
         return NextResponse.json(
           { error: 'AI 모델에 문제가 있습니다. 잠시 후 다시 시도해주세요.' },
+          { status: 500 }
+        );
+      } else if (errorMessage.includes('vercel') || errorMessage.includes('function timeout')) {
+        console.error('🚀 Vercel 함수 타임아웃');
+        return NextResponse.json(
+          { error: 'Vercel 함수 실행 시간이 초과되었습니다. 더 짧은 내용으로 다시 시도해주세요.' },
           { status: 500 }
         );
       }

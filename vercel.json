@@ -1,21 +1,13 @@
 {
-  "buildCommand": "npm run vercel-build",
   "functions": {
-    "src/app/api/document-ocr/route.ts": {
+    "src/app/api/presentation-script/route.ts": {
       "maxDuration": 30
     },
-    "src/app/api/presentation-script/route.ts": {
-      "maxDuration": 60
-    },
-    "src/app/api/presentation-script/improve/route.ts": {
-      "maxDuration": 60
+    "src/app/api/document-ocr/route.ts": {
+      "maxDuration": 30
     }
   },
-  "build": {
-    "env": {
-      "NODE_OPTIONS": "--max-old-space-size=4096"
-    }
-  },
-  "installCommand": "npm install --ignore-scripts",
-  "framework": "nextjs"
+  "env": {
+    "OPENAI_API_KEY": "@openai_api_key"
+  }
 } 
