@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import pdfParse from 'pdf-parse';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -49,9 +48,10 @@ export async function POST(request: NextRequest) {
       console.log('✅ 유효한 PDF 파일입니다.');
 
       try {
-        // pdf-parse 라이브러리를 사용하여 PDF 텍스트 추출 (호스트 서버와 동일한 방식)
+        // pdf-parse 라이브러리를 동적 import로 사용하여 빌드 시 오류 방지
         console.log('📄 pdf-parse 라이브러리로 PDF 처리 시도...');
         
+        const pdfParse = (await import('pdf-parse')).default;
         const data = await pdfParse(buffer);
         
         if (data.text && data.text.trim().length > 0) {
