@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     console.log('=== 발표 대본 생성 API 호출됨 ===');
     console.log('🕐 호출 시간:', new Date().toISOString());
     console.log('🌐 환경:', process.env.VERCEL === '1' ? 'Vercel' : '로컬/호스트');
+    console.log('📝 버전: PDF 처리 개선 v2.0 - 2024-07-23');
     
     // OpenAI API 키 검증 강화
     if (!process.env.OPENAI_API_KEY) {
@@ -229,7 +230,12 @@ export async function POST(request: NextRequest) {
 2. 이미지로 변환된 PDF는 OCR 기능이 있는 도구로 변환해주세요
 3. PDF 내용을 텍스트로 복사해서 붙여넣기 해주세요
 4. 다른 PDF 파일을 시도해보세요
-5. 스캔된 PDF의 경우 텍스트 인식 도구를 사용해주세요`);
+5. 스캔된 PDF의 경우 텍스트 인식 도구를 사용해주세요
+
+📋 대안 방법:
+• "추가 정보"란에 PDF 내용을 직접 복사해서 붙여넣기
+• 온라인 PDF 텍스트 추출 도구 사용 (SmallPDF, ILovePDF 등)
+• Adobe Acrobat으로 텍스트 추출 후 복사`);
         }
       } else {
         // 기존 품질 검사
