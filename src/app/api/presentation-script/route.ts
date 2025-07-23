@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     console.log('🕐 호출 시간:', new Date().toISOString());
     console.log('🌐 환경:', process.env.VERCEL === '1' ? 'Vercel' : '로컬/호스트');
     console.log('📝 버전: PDF 처리 개선 v2.0 - 2024-07-23');
+    console.log('🔧 업데이트: 즉시 적용 버전 - PDF 메타데이터 감지 강화');
     
     // OpenAI API 키 검증 강화
     if (!process.env.OPENAI_API_KEY) {
