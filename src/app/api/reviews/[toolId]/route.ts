@@ -61,11 +61,12 @@ let reviews = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { toolId: string } }
+  { params }: { params: Promise<{ toolId: string }> }
 ) {
   try {
-    const toolId = parseInt(params.toolId);
-    const toolReviews = reviews.filter(review => review.toolId === toolId);
+    const { toolId } = await params;
+    const toolIdNum = parseInt(toolId);
+    const toolReviews = reviews.filter(review => review.toolId === toolIdNum);
     
     return NextResponse.json({ reviews: toolReviews });
   } catch (error) {
@@ -78,15 +79,16 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { toolId: string } }
+  { params }: { params: Promise<{ toolId: string }> }
 ) {
   try {
-    const toolId = parseInt(params.toolId);
+    const { toolId } = await params;
+    const toolIdNum = parseInt(toolId);
     const body = await request.json();
     
     const newReview = {
       id: Date.now().toString(),
-      toolId,
+      toolId: toolIdNum,
       userId: body.userId || 'anonymous',
       userName: body.userName || '사용자',
       rating: body.rating,

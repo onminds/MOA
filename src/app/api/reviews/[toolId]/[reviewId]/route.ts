@@ -61,10 +61,10 @@ let reviews = [
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { toolId: string; reviewId: string } }
+  { params }: { params: Promise<{ toolId: string; reviewId: string }> }
 ) {
   try {
-    const { reviewId } = params;
+    const { reviewId } = await params;
     const body = await request.json();
     const { isHelpful } = body;
     
