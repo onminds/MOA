@@ -720,23 +720,67 @@ export default function PresentationScript() {
                         </div>
                       </div>
                     </div>
-                    
-                    {/* PDF 처리 안내 */}
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
-                      <div className="flex items-start">
-                        <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
-                        <div className="text-sm text-yellow-800">
-                          <p className="font-medium mb-1">⚠️ PDF 처리 안내</p>
-                          <ul className="space-y-1 text-xs">
-                            <li>• <strong>호스트 서버</strong>: pdf-parse 라이브러리로 정확한 텍스트 추출</li>
-                            <li>• <strong>Vercel 서버</strong>: pdf-parse 우선, 실패 시 Vision API 사용</li>
-                            <li>• <strong>텍스트 기반 PDF</strong>: 정확한 텍스트 추출</li>
-                            <li>• <strong>이미지 기반 PDF</strong>: Vision API로 OCR 처리</li>
-                            <li>• <strong>처리 시간</strong>: 5-15초 소요 (서버 환경에 따라 다름)</li>
-                          </ul>
-                        </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* 파일 선택 영역 */}
+                    <div 
+                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
+                        isFileMode 
+                          ? 'border-green-300 bg-green-50 hover:bg-green-100' 
+                          : 'border-blue-300 bg-blue-50 hover:bg-blue-100'
+                      }`}
+                      onClick={() => document.getElementById('imageInput')?.click()}
+                      tabIndex={0}
+                    >
+                      <div className="flex flex-col items-center justify-center pt-3 pb-4">
+                        <Upload className={`w-6 h-6 mb-1 ${isFileMode ? 'text-green-500' : 'text-blue-500'}`} />
+                        <p className={`text-sm ${isFileMode ? 'text-green-700' : 'text-blue-700'}`}>
+                          <span className="font-semibold">파일 선택</span>
+                        </p>
+                        <p className={`text-xs ${isFileMode ? 'text-green-600' : 'text-blue-600'}`}>
+                          클릭하여 파일 선택 (이미지, PDF, PPT)
+                        </p>
                       </div>
                     </div>
+                    
+                    {/* 붙여넣기 영역 */}
+                    <div 
+                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-colors ${
+                        isFileMode 
+                          ? 'border-green-300 bg-green-50' 
+                          : 'border-blue-300 bg-blue-50'
+                      }`}
+                      onPaste={handleImagePaste}
+                      tabIndex={0}
+                    >
+                      <div className="flex flex-col items-center justify-center pt-3 pb-4">
+                        <Plus className={`w-6 h-6 mb-1 ${isFileMode ? 'text-green-500' : 'text-blue-500'}`} />
+                        <p className={`text-sm ${isFileMode ? 'text-green-700' : 'text-blue-700'}`}>
+                          <span className="font-semibold">붙여넣기</span>
+                        </p>
+                        <p className={`text-xs ${isFileMode ? 'text-green-600' : 'text-blue-600'}`}>
+                          Ctrl+V로 이미지 붙여넣기 (PDF/PPT는 파일 선택만 가능)
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* 숨겨진 파일 입력 */}
+                    <input
+                      id="imageInput"
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.ppt,.pptx"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    
+                    {isProcessingImage && (
+                      <div className="flex items-center justify-center py-2">
+                        <RefreshCw className={`w-4 h-4 mr-2 animate-spin ${isFileMode ? 'text-green-600' : 'text-blue-600'}`} />
+                        <span className={isFileMode ? 'text-green-600' : 'text-blue-600'}>파일 처리 중...</span>
+                      </div>
+                    )}
                   </div>
                   
                   {/* 업로드된 이미지 목록 */}
