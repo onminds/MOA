@@ -18,14 +18,44 @@ try {
   
   // 3. Git에 커밋
   console.log('📝 변경사항 커밋...');
-  execSync('git add .', { stdio: 'inherit' });
   
-  const commitMessage = `🚀 배포: ${new Date().toISOString().split('T')[0]}`;
-  execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' });
+  // 변경사항이 있는지 확인
+  try {
+    const gitStatus = execSync('git status --porcelain', { encoding: 'utf8' });
+    
+    if (gitStatus.trim() === '') {
+      console.log('ℹ️ 변경사항이 없습니다. 커밋을 건너뜁니다.');
+    } else {
+      console.log('📦 변경사항을 스테이징...');
+      execSync('git add .', { stdio: 'inherit' });
+      
+      const commitMessage = `🚀 배포: ${new Date().toISOString().split('T')[0]}`;
+      console.log('💬 커밋 메시지:', commitMessage);
+      execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' });
+    }
+  } catch (gitError) {
+    console.log('⚠️ Git 상태 확인 중 오류:', gitError.message);
+    console.log('ℹ️ Git 커밋을 건너뛰고 배포를 진행합니다.');
+  }
   
   // 4. Vercel 배포
   console.log('🌐 Vercel에 배포...');
-  execSync('git push', { stdio: 'inherit' });
+  
+  // 변경사항이 있거나 원격 저장소와 다른 경우에만 push
+  try {
+    const gitStatus = execSync('git status --porcelain', { encoding: 'utf8' });
+    const gitLog = execSync('git log --oneline origin/master..HEAD', { encoding: 'utf8' });
+    
+    if (gitStatus.trim() !== '' || gitLog.trim() !== '') {
+      console.log('📤 변경사항을 원격 저장소에 푸시...');
+      execSync('git push', { stdio: 'inherit' });
+    } else {
+      console.log('ℹ️ 푸시할 변경사항이 없습니다.');
+    }
+  } catch (pushError) {
+    console.log('⚠️ Git push 중 오류:', pushError.message);
+    console.log('ℹ️ Vercel이 자동으로 배포를 감지할 것입니다.');
+  }
   
   console.log('✅ Vercel 배포 완료!');
   console.log('🔗 사이트: https://moa-kappa.vercel.app');
