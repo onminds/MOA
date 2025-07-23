@@ -32,6 +32,56 @@ export default function PresentationScript() {
   // 파일 내용 사용 여부 추적
   const [usedFileContent, setUsedFileContent] = useState<string>('');
 
+  // PDF 내용 분석하여 주제 자동 설정
+  const analyzePDFContent = (text: string) => {
+    console.log('🔍 PDF 내용 분석 시작:', text.substring(0, 200));
+    
+    // 제목 패턴 찾기
+    const titlePatterns = [
+      /Chapter\s+\d+\.\s*([^\n]+)/i,
+      /^([A-Z][A-Za-z\s]+)\n/i,
+      /^([가-힣\s]+)\n/i
+    ];
+    
+    let detectedTitle = '';
+    for (const pattern of titlePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        detectedTitle = match[1].trim();
+        console.log('📝 감지된 제목:', detectedTitle);
+        break;
+      }
+    }
+    
+    // 저자 정보 찾기
+    const authorPattern = /([가-힣\s]+),\s*(Ph\.D\.|박사|교수)/;
+    const authorMatch = text.match(authorPattern);
+    const author = authorMatch ? authorMatch[1].trim() : '';
+    
+    // 목표/목적 찾기
+    const objectivesPattern = /Objectives?\s*\n([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i;
+    const objectivesMatch = text.match(objectivesPattern);
+    const objectives = objectivesMatch ? objectivesMatch[1].trim() : '';
+    
+    console.log('📊 PDF 분석 결과:', {
+      detectedTitle,
+      author,
+      objectivesLength: objectives.length
+    });
+    
+    // 주제 자동 설정
+    if (detectedTitle) {
+      const newTopic = detectedTitle.includes('Chapter') ? detectedTitle : `Chapter: ${detectedTitle}`;
+      setFormData(prev => ({
+        ...prev,
+        topic: newTopic
+      }));
+      console.log('✅ 주제 자동 설정:', newTopic);
+    }
+    
+    return { detectedTitle, author, objectives };
+  };
+
   const durationOptions = [
     { value: '5', label: '5분' },
     { value: '10', label: '10분' },
@@ -298,6 +348,11 @@ export default function PresentationScript() {
         const allText = data.results.map((result: any) => result.text).join('\n\n');
         console.log('추출된 전체 텍스트 길이:', allText.length);
         console.log('추출된 텍스트 미리보기:', allText.substring(0, 500) + '...');
+        
+        // PDF 내용 분석하여 주제 자동 설정
+        console.log('🔍 PDF 내용 분석 시작...');
+        const analysis = analyzePDFContent(allText);
+        console.log('📊 PDF 분석 완료:', analysis);
         
         const lengthInfo = checkFileLength(allText);
         
@@ -996,7 +1051,39 @@ export default function PresentationScript() {
                 {/* 오류 메시지 */}
                 {error && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-red-600 text-sm">{error}</p>
+                    <div className="flex items-start">
+                      <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
+                      <div className="text-red-600 text-sm">
+                        <p className="font-medium mb-1">❌ 발표 대본 생성 실패</p>
+                        <p className="mb-2">{error}</p>
+                        <div className="text-xs text-red-500">
+                          <p className="font-medium mb-1">💡 해결 방법:</p>
+                          <ul className="space-y-1">
+                            {error.includes('할당량') && (
+                              <li>• OpenAI API 할당량이 부족합니다. 잠시 후 다시 시도해주세요.</li>
+                            )}
+                            {error.includes('속도 제한') && (
+                              <li>• API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.</li>
+                            )}
+                            {error.includes('인증') && (
+                              <li>• OpenAI API 키 설정을 확인해주세요.</li>
+                            )}
+                            {error.includes('토큰') || error.includes('참고 자료가 너무 깁니다') && (
+                              <li>• 더 짧은 참고 자료로 다시 시도해주세요.</li>
+                            )}
+                            {error.includes('타임아웃') && (
+                              <li>• 요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.</li>
+                            )}
+                            {error.includes('네트워크') && (
+                              <li>• 인터넷 연결을 확인해주세요.</li>
+                            )}
+                            {!error.includes('할당량') && !error.includes('속도 제한') && !error.includes('인증') && !error.includes('토큰') && !error.includes('타임아웃') && !error.includes('네트워크') && (
+                              <li>• 잠시 후 다시 시도해주세요.</li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1061,10 +1148,12 @@ export default function PresentationScript() {
                             PDF 파일을 인식하지 못했습니다. 다음을 확인해주세요:
                           </p>
                           <ul className="text-xs text-red-600 space-y-1">
-                            <li>• 텍스트 기반 PDF 파일인지 확인</li>
-                            <li>• 파일 크기가 50MB 이하인지 확인</li>
-                            <li>• 다른 PDF 파일로 시도</li>
-                            <li>• PDF 내용을 텍스트로 복사해서 붙여넣기</li>
+                            <li>• <strong>암호화된 PDF</strong>: 비밀번호를 제거한 후 다시 시도</li>
+                            <li>• <strong>이미지 기반 PDF</strong>: 텍스트 기반 PDF 파일 사용</li>
+                            <li>• <strong>스캔된 PDF</strong>: OCR 기능이 있는 PDF 변환 도구 사용</li>
+                            <li>• <strong>파일 크기</strong>: 50MB 이하인지 확인</li>
+                            <li>• <strong>파일 형식</strong>: 텍스트 기반 PDF인지 확인</li>
+                            <li>• <strong>대안</strong>: PDF 내용을 텍스트로 복사해서 붙여넣기</li>
                           </ul>
                         </div>
                       </div>

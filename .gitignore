@@ -44,3 +44,6 @@ next-env.d.ts
 
 # temp files for OCR processing
 /temp
+
+# test files for pdf-parse
+/test/data/

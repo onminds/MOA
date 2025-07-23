@@ -36,13 +36,18 @@ async function summarizeText(text: string, maxLength: number = 2000): Promise<st
 }
 
 export async function POST(request: NextRequest) {
+  let body: any = {};
+  
   try {
     console.log('=== 발표 대본 생성 API 호출됨 ===');
+    console.log('🕐 호출 시간:', new Date().toISOString());
+    console.log('🌐 환경:', process.env.VERCEL === '1' ? 'Vercel' : '로컬/호스트');
+    console.log('🔑 OpenAI API 키 상태:', process.env.OPENAI_API_KEY ? '설정됨' : '❌ 설정되지 않음');
     
-    const body = await request.json();
+    body = await request.json();
     const { topic, duration, audience, purpose, keyPoints, tone, additionalInfo, fileContent, imageText } = body;
 
-    console.log('요청 데이터:', {
+    console.log('📥 요청 데이터:', {
       topic: topic || '없음',
       duration: duration || '없음',
       audience: audience || '없음',
@@ -113,40 +118,94 @@ export async function POST(request: NextRequest) {
       console.log('📄 참고 자료 미리보기:', rawContent.substring(0, 200) + (rawContent.length > 200 ? '...' : ''));
       console.log('📄 참고 자료 전체 내용:', rawContent);
       
-      // 참고 자료 품질 검사 (더 관대한 기준)
-      const hasKoreanText = /[가-힣]/.test(rawContent);
-      const hasEnglishText = /[a-zA-Z]/.test(rawContent);
-      const hasNumbers = /[0-9]/.test(rawContent);
-      const hasPunctuation = /[.!?]/.test(rawContent);
+      // PDF 메타데이터 감지
+      const isPDFMetadata = /StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+|PDF|Creator|Producer|CreationDate|ModDate/.test(rawContent);
+      const hasObjectRefs = /\d+\s+\d+\s+R/g.test(rawContent);
+      const hasRealContent = /[A-Za-z가-힣]{10,}/.test(rawContent);
       
-      // 더 관대한 품질 검사: 텍스트 길이가 20자 이상이고, 한글/영어/숫자 중 하나라도 있으면 유효
-      const hasMeaningfulContent = rawContent.length >= 20 && (hasKoreanText || hasEnglishText || hasNumbers);
-      
-      console.log('📊 참고 자료 품질 검사:', {
-        length: rawContent.length,
-        hasKorean: hasKoreanText,
-        hasEnglish: hasEnglishText,
-        hasNumbers: hasNumbers,
-        hasPunctuation: hasPunctuation,
-        hasMeaningfulContent: hasMeaningfulContent
+      console.log('🔍 PDF 내용 분석:', {
+        isPDFMetadata,
+        hasObjectRefs,
+        hasRealContent,
+        metadataPatterns: rawContent.match(/StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+/g)?.length || 0
       });
       
-      if (!hasMeaningfulContent) {
-        console.warn('⚠️ 참고 자료에 의미 있는 텍스트가 없습니다.');
-        console.log('ℹ️ 참고 자료 없음 - 기본 정보만으로 대본 생성');
-        console.log('🔍 문제 분석: PDF 인식은 되었지만 텍스트 품질이 낮음');
-      } else {
-        console.log('✅ PDF 인식 성공 - 텍스트 품질 양호');
-        if (rawContent.length > 3000) {
-          console.log('📝 참고 자료 요약 중...');
-          referenceContent = await summarizeText(rawContent, 3000);
-          console.log('📝 요약된 참고 자료 길이:', referenceContent.length);
-          console.log('📝 요약된 참고 자료 미리보기:', referenceContent.substring(0, 200) + (referenceContent.length > 200 ? '...' : ''));
-          console.log('📝 요약된 참고 자료 전체 내용:', referenceContent);
+      if (isPDFMetadata || hasObjectRefs) {
+        console.warn('⚠️ PDF 메타데이터가 감지되었습니다.');
+        console.warn('📄 실제 문서 내용이 아닌 PDF 내부 구조 정보입니다.');
+        
+        // 메타데이터에서 실제 내용 추출 시도
+        const realContentPatterns = [
+          /Chapter\s+\d+\.\s*([^\n]+)/gi,
+          /([A-Za-z가-힣][A-Za-z가-힣0-9\s\.\,\!\?]{30,}[A-Za-z가-힣0-9])/g,
+          /\(([A-Za-z가-힣0-9\s\.\,\!\?\-\(\)]{30,})\)/g
+        ];
+        
+        let extractedRealContent = '';
+        for (const pattern of realContentPatterns) {
+          const matches = rawContent.match(pattern);
+          if (matches && matches.length > 0) {
+            const potentialContent = matches
+              .map((match: string) => pattern.source.includes('\\(') ? match.replace(/\(([^)]+)\)/, '$1') : match)
+              .filter((text: string) => {
+                const hasRealWords = /[A-Za-z가-힣]{8,}/.test(text);
+                const notMetadata = !text.match(/^(obj|endobj|R|PDF|Creator|Producer|CreationDate|ModDate|StructTreeRoot)/);
+                const hasMeaningfulLength = text.trim().length > 20;
+                const hasPunctuation = /[.!?,]/.test(text);
+                
+                return hasRealWords && notMetadata && hasMeaningfulLength && hasPunctuation;
+              })
+              .join(' ');
+            
+            if (potentialContent.length > extractedRealContent.length) {
+              extractedRealContent = potentialContent;
+            }
+          }
+        }
+        
+        if (extractedRealContent.length > 50) {
+          console.log('✅ 메타데이터에서 실제 내용 추출 성공:', extractedRealContent.length, '자');
+          referenceContent = extractedRealContent;
         } else {
-          referenceContent = rawContent;
-          console.log('✅ 참고 자료 그대로 사용 (요약 불필요)');
-          console.log('✅ 사용될 참고 자료 전체 내용:', referenceContent);
+          console.error('❌ PDF에서 실제 문서 내용을 추출할 수 없습니다.');
+          throw new Error('PDF에서 실제 문서 내용을 추출할 수 없습니다. PDF 파일이 텍스트 기반이 아니거나 이미지로 변환된 PDF일 수 있습니다. 다른 PDF 파일을 시도해주세요.');
+        }
+      } else {
+        // 기존 품질 검사
+        const hasKoreanText = /[가-힣]/.test(rawContent);
+        const hasEnglishText = /[a-zA-Z]/.test(rawContent);
+        const hasNumbers = /[0-9]/.test(rawContent);
+        const hasPunctuation = /[.!?]/.test(rawContent);
+        
+        // 더 관대한 품질 검사: 텍스트 길이가 20자 이상이고, 한글/영어/숫자 중 하나라도 있으면 유효
+        const hasMeaningfulContent = rawContent.length >= 20 && (hasKoreanText || hasEnglishText || hasNumbers);
+        
+        console.log('📊 참고 자료 품질 검사:', {
+          length: rawContent.length,
+          hasKorean: hasKoreanText,
+          hasEnglish: hasEnglishText,
+          hasNumbers: hasNumbers,
+          hasPunctuation: hasPunctuation,
+          hasMeaningfulContent: hasMeaningfulContent
+        });
+        
+        if (!hasMeaningfulContent) {
+          console.warn('⚠️ 참고 자료에 의미 있는 텍스트가 없습니다.');
+          console.log('ℹ️ 참고 자료 없음 - 기본 정보만으로 대본 생성');
+          console.log('🔍 문제 분석: PDF 인식은 되었지만 텍스트 품질이 낮음');
+        } else {
+          console.log('✅ PDF 인식 성공 - 텍스트 품질 양호');
+          if (rawContent.length > 3000) {
+            console.log('📝 참고 자료 요약 중...');
+            referenceContent = await summarizeText(rawContent, 3000);
+            console.log('📝 요약된 참고 자료 길이:', referenceContent.length);
+            console.log('📝 요약된 참고 자료 미리보기:', referenceContent.substring(0, 200) + (referenceContent.length > 200 ? '...' : ''));
+            console.log('📝 요약된 참고 자료 전체 내용:', referenceContent);
+          } else {
+            referenceContent = rawContent;
+            console.log('✅ 참고 자료 그대로 사용 (요약 불필요)');
+            console.log('✅ 사용될 참고 자료 전체 내용:', referenceContent);
+          }
         }
       }
     } else {
@@ -171,10 +230,17 @@ export async function POST(request: NextRequest) {
       console.log('✅ 참고 자료가 대본 생성에 사용됩니다');
       prompt += `
 
-**참고 자료:**
+**📄 참고 자료 (PDF 내용):**
 ${referenceContent}
 
-위의 참고 자료를 바탕으로 발표 대본을 작성해주세요. 참고 자료의 핵심 내용을 발표에 포함하고, 자료의 구조와 정보를 활용하여 체계적인 발표 대본을 작성해주세요.`;
+**📋 발표 대본 작성 지침:**
+위의 PDF 내용을 바탕으로 발표 대본을 작성해주세요. PDF에 나온 내용을 그대로 발표 주제로 사용하고, PDF의 구조와 정보를 그대로 활용하여 체계적인 발표 대본을 작성해주세요.
+
+**중요한 점:**
+1. PDF의 제목과 주제를 그대로 발표 주제로 사용
+2. PDF에 나온 저자, 소속, 목표 등을 발표에 포함
+3. PDF의 핵심 내용을 발표의 주요 포인트로 구성
+4. PDF의 구조를 따라 발표 대본을 구성`;
     } else {
       console.log('ℹ️ 참고 자료 없음 - 기본 정보만으로 대본 생성');
     }
@@ -243,6 +309,7 @@ ${referenceContent}
 
     console.log('📝 프롬프트 생성 완료, 길이:', prompt.length);
     console.log('🔑 OpenAI API 키 확인:', process.env.OPENAI_API_KEY ? '설정됨' : '❌ 설정되지 않음');
+    console.log('🔑 OpenAI API 키 미리보기:', process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 20) + '...' : '없음');
 
     // 프롬프트 길이 확인
     if (prompt.length > 6000) {
@@ -255,13 +322,18 @@ ${referenceContent}
     }
 
     console.log('🚀 OpenAI API 호출 시작...');
+    console.log('🤖 사용 모델: gpt-4');
+    console.log('📏 최대 토큰: 3000');
+    console.log('🌡️ 온도: 0.7');
+    
+    const startTime = Date.now();
     
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "당신은 전문적인 발표 코치이자 스피치 라이터입니다. 다양한 상황과 청중에 맞는 효과적인 발표 대본을 작성하는 전문가입니다. 참고 자료가 제공된 경우, 해당 자료의 핵심 내용을 발표에 포함하고 자료의 구조와 정보를 활용하여 체계적인 발표 대본을 작성해주세요. 실용적이고 자연스러우며 청중의 관심을 끌 수 있는 대본을 작성해주세요."
+          content: "당신은 전문적인 발표 코치이자 스피치 라이터입니다. PDF 자료가 제공된 경우, PDF의 내용을 그대로 발표 주제로 사용하고, PDF에 나온 제목, 저자, 목표, 내용을 발표 대본에 정확히 반영해주세요. PDF의 구조와 정보를 그대로 활용하여 체계적인 발표 대본을 작성해주세요. PDF 내용을 바탕으로 한 실용적이고 자연스러운 발표 대본을 작성해주세요."
         },
         {
           role: "user",
@@ -272,17 +344,26 @@ ${referenceContent}
       temperature: 0.7,
     });
 
+    const endTime = Date.now();
     console.log('✅ OpenAI API 응답 받음');
+    console.log('⏱️ API 호출 시간:', endTime - startTime, 'ms');
+    console.log('📊 응답 정보:', {
+      model: completion.model,
+      usage: completion.usage,
+      finishReason: completion.choices[0]?.finish_reason
+    });
 
     const script = completion.choices[0]?.message?.content;
 
     if (!script) {
       console.error('❌ OpenAI에서 대본을 생성하지 못함');
+      console.error('❌ 응답 내용:', completion);
       throw new Error('발표 대본 생성에 실패했습니다.');
     }
 
     console.log('🎉 대본 생성 성공, 길이:', script.length);
     console.log('📄 대본 미리보기:', script.substring(0, 200) + '...');
+    console.log('📄 대본 전체 내용:', script);
     
     return NextResponse.json({ script });
 
@@ -292,37 +373,74 @@ ${referenceContent}
     console.error('오류 메시지:', error instanceof Error ? error.message : '알 수 없는 오류');
     console.error('오류 스택:', error instanceof Error ? error.stack : '스택 없음');
     
+    // 환경 정보 추가
+    const isVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+    console.error('🌐 환경:', isVercel ? 'Vercel' : '호스트');
+    console.error('🔑 OpenAI API 키 상태:', process.env.OPENAI_API_KEY ? '설정됨' : '❌ 설정되지 않음');
+    console.error('🔑 OpenAI API 키 미리보기:', process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 20) + '...' : '없음');
+    
+    // 요청 정보 로깅
+    console.error('📤 요청 정보:', {
+      topic: body?.topic || '없음',
+      audience: body?.audience || '없음',
+      purpose: body?.purpose || '없음',
+      fileContentLength: body?.fileContent?.length || 0,
+      imageTextLength: body?.imageText?.length || 0
+    });
+    
     // OpenAI API 오류인지 확인
     if (error instanceof Error) {
-      if (error.message.includes('insufficient_quota')) {
+      const errorMessage = error.message.toLowerCase();
+      
+      if (errorMessage.includes('insufficient_quota')) {
         console.error('💰 OpenAI API 할당량 부족');
         return NextResponse.json(
           { error: 'OpenAI API 할당량이 부족합니다. 잠시 후 다시 시도해주세요.' },
           { status: 500 }
         );
-      } else if (error.message.includes('rate_limit')) {
+      } else if (errorMessage.includes('rate_limit')) {
         console.error('⏰ OpenAI API 속도 제한');
         return NextResponse.json(
           { error: 'API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.' },
           { status: 500 }
         );
-      } else if (error.message.includes('authentication')) {
+      } else if (errorMessage.includes('authentication') || errorMessage.includes('invalid api key')) {
         console.error('🔑 OpenAI API 인증 오류');
         return NextResponse.json(
           { error: 'OpenAI API 인증에 실패했습니다. API 키를 확인해주세요.' },
           { status: 500 }
         );
-      } else if (error.message.includes('maximum context length') || error.message.includes('8192 tokens')) {
+      } else if (errorMessage.includes('maximum context length') || errorMessage.includes('8192 tokens') || errorMessage.includes('context length')) {
         console.error('📏 토큰 제한 초과');
         return NextResponse.json(
           { error: '참고 자료가 너무 깁니다. 더 짧은 내용으로 다시 시도해주세요.' },
           { status: 500 }
         );
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('request timeout')) {
+        console.error('⏱️ 요청 타임아웃');
+        return NextResponse.json(
+          { error: '요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.' },
+          { status: 500 }
+        );
+      } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+        console.error('🌐 네트워크 오류');
+        return NextResponse.json(
+          { error: '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.' },
+          { status: 500 }
+        );
+      } else if (errorMessage.includes('model') || errorMessage.includes('gpt-4')) {
+        console.error('🤖 모델 오류');
+        return NextResponse.json(
+          { error: 'AI 모델에 문제가 있습니다. 잠시 후 다시 시도해주세요.' },
+          { status: 500 }
+        );
       }
     }
     
+    // 일반적인 오류 메시지
+    console.error('❓ 알 수 없는 오류 유형');
     return NextResponse.json(
-      { error: '발표 대본 생성 중 오류가 발생했습니다.' },
+      { error: '발표 대본 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' },
       { status: 500 }
     );
   }
