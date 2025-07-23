@@ -134,7 +134,9 @@ export async function POST(request: NextRequest) {
       if (!hasMeaningfulContent) {
         console.warn('⚠️ 참고 자료에 의미 있는 텍스트가 없습니다.');
         console.log('ℹ️ 참고 자료 없음 - 기본 정보만으로 대본 생성');
+        console.log('🔍 문제 분석: PDF 인식은 되었지만 텍스트 품질이 낮음');
       } else {
+        console.log('✅ PDF 인식 성공 - 텍스트 품질 양호');
         if (rawContent.length > 3000) {
           console.log('📝 참고 자료 요약 중...');
           referenceContent = await summarizeText(rawContent, 3000);
@@ -151,6 +153,7 @@ export async function POST(request: NextRequest) {
       console.log('❌ 참고 자료 없음 - imageText와 fileContent 모두 비어있음');
       console.log('imageText 길이:', imageText?.length || 0);
       console.log('fileContent 길이:', fileContent?.length || 0);
+      console.log('🔍 문제 분석: PDF 자체를 인식하지 못함');
     }
 
     // 프롬프트 생성

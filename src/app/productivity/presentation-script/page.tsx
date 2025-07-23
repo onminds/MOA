@@ -1050,6 +1050,46 @@ export default function PresentationScript() {
                     </div>
                   )}
                   
+                  {/* PDF 처리 실패 시 상세 정보 */}
+                  {uploadedImages.length > 0 && uploadedImages.every(img => img.status === 'error') && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-start">
+                        <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <div className="text-sm text-red-800">
+                          <p className="font-medium mb-1">⚠️ PDF 처리 실패</p>
+                          <p className="text-xs text-red-600 mb-2">
+                            PDF 파일을 인식하지 못했습니다. 다음을 확인해주세요:
+                          </p>
+                          <ul className="text-xs text-red-600 space-y-1">
+                            <li>• 텍스트 기반 PDF 파일인지 확인</li>
+                            <li>• 파일 크기가 50MB 이하인지 확인</li>
+                            <li>• 다른 PDF 파일로 시도</li>
+                            <li>• PDF 내용을 텍스트로 복사해서 붙여넣기</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* PDF 인식은 되었지만 품질이 낮은 경우 */}
+                  {uploadedImages.length > 0 && uploadedImages.some(img => img.status === 'success') && 
+                   uploadedImages.some(img => img.status === 'error') && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-start">
+                        <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <div className="text-sm text-yellow-800">
+                          <p className="font-medium mb-1">⚠️ PDF 일부 처리 실패</p>
+                          <p className="text-xs text-yellow-600 mb-2">
+                            PDF는 인식되었지만 일부 페이지에서 텍스트 추출에 실패했습니다.
+                          </p>
+                          <p className="text-xs text-yellow-600">
+                            성공한 페이지의 내용으로 대본을 생성합니다.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                     <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
                       {generatedScript}

@@ -15,5 +15,7 @@
     "env": {
       "NODE_OPTIONS": "--max-old-space-size=4096"
     }
-  }
+  },
+  "installCommand": "npm install --ignore-scripts",
+  "framework": "nextjs"
 } 

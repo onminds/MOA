@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
     // Vercel 환경 감지
     const isVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
     console.log('🌐 환경:', isVercel ? 'Vercel' : '로컬/호스트');
+    console.log('📦 사용 가능한 라이브러리:', {
+      pdfParse: '✅ 사용 가능',
+      canvas: isVercel ? '❌ Vercel에서 제한' : '✅ 사용 가능',
+      puppeteer: isVercel ? '❌ Vercel에서 제한' : '✅ 사용 가능'
+    });
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileName = file.name.toLowerCase();
@@ -69,6 +74,8 @@ export async function POST(request: NextRequest) {
           max: 0
         };
         
+        console.log('📦 pdf-parse 옵션:', pdfOptions);
+        
         // PDF 버퍼를 직접 전달 (파일 시스템 접근 없이)
         const data = await pdfParse(buffer, pdfOptions);
         
@@ -79,7 +86,7 @@ export async function POST(request: NextRequest) {
           console.log('📊 PDF 정보:', {
             페이지수: data.numpages,
             메타데이터: data.info,
-            환경: isVercel ? 'Vercel' : '로컬/호스트'
+            환경: isVercel ? 'Vercel' : '호스트'
           });
           
           // 텍스트 품질 검사
@@ -285,12 +292,32 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length;
     const totalPages = results.length;
     
+    console.log('📊 최종 처리 결과:', {
+      총페이지: totalPages,
+      성공페이지: successCount,
+      실패페이지: totalPages - successCount,
+      성공률: `${((successCount / totalPages) * 100).toFixed(1)}%`,
+      환경: isVercel ? 'Vercel' : '호스트'
+    });
+    
+    if (successCount === 0) {
+      console.log('❌ 모든 페이지에서 텍스트 추출 실패');
+      console.log('🔍 문제 분석: PDF 자체를 인식하지 못함');
+    } else if (successCount < totalPages) {
+      console.log('⚠️ 일부 페이지에서만 텍스트 추출 성공');
+      console.log('🔍 문제 분석: PDF 인식은 되었지만 일부 품질이 낮음');
+    } else {
+      console.log('✅ 모든 페이지에서 텍스트 추출 성공');
+      console.log('🔍 문제 분석: PDF 인식 및 품질 모두 양호');
+    }
+    
     return NextResponse.json({
       success: successCount > 0,
       totalPages: totalPages,
       results: results,
       successCount: successCount,
-      errorCount: totalPages - successCount
+      errorCount: totalPages - successCount,
+      environment: isVercel ? 'Vercel' : '호스트'
     });
 
   } catch (error) {
