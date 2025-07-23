@@ -45,35 +45,43 @@ export async function POST(request: NextRequest) {
 
     // GPT로 음성 특성 분석
     const analysisPrompt = `
-면접 질문에 대한 음성 답변을 분석해주세요.
+면접 질문에 대한 음성 답변을 매우 세밀하고 정확하게 분석해주세요.
 
 **질문 카테고리**: ${category}
 **면접 질문**: ${question}
 **답변 내용**: ${transcribedText}
 
-다음 기준으로 음성 특성을 평가하고 JSON 형태로 응답해주세요:
+다음 기준으로 음성 특성을 상세히 평가하고 JSON 형태로 응답해주세요:
 
-1. 전체적인 음성 점수 (1-10점)
-2. 음성 톤 평가 (차분함/자신감/긴장/흥분 등의 상태)
-3. 말하기 속도 평가 (너무 빠름/적절함/너무 느림)
-4. 음량 평가 (너무 작음/적절함/너무 큼)
-5. 명료도 평가 (발음이 명확한지, 듣기 쉬운지)
-6. 자신감 평가 (확신에 찬 말투인지, 주저하는지)
-7. 강점 3가지
-8. 개선점 3가지
-9. 추천사항 3가지
+**평가 항목**:
+1. 전체적인 음성 점수 (1-10점, 소수점 포함 가능)
+2. 음성 톤 평가 (차분함/자신감/긴장/흥분/단조로움/자연스러움 등)
+3. 말하기 속도 평가 (너무 빠름/적절함/너무 느림/일정함/변화있음)
+4. 음량 평가 (너무 작음/적절함/너무 큼/일정함/변화있음)
+5. 명료도 평가 (발음이 명확한지, 듣기 쉬운지, 말끝 처리는 어떤지)
+6. 자신감 평가 (확신에 찬 말투인지, 주저하는지, 자연스러운지)
+7. 표현력 평가 (감정 표현, 강약 조절, 자연스러운 말투)
+8. 구조화 평가 (논리적 흐름, 핵심 포인트 강조)
+
+**세부 분석 요구사항**:
+- 강점: 구체적인 예시와 함께 설명
+- 개선점: 정확한 문제점 지적 (예: "국어책 읽듯이 단조롭게 말함", "끝말이 흐려짐", "너무 빠르게 말해서 핵심이 안들림" 등)
+- 추천사항: 실용적이고 구체적인 개선 방법
 
 응답 형식:
 {
   "overallScore": 숫자,
-  "tone": "음성 톤에 대한 평가",
-  "pace": "말하기 속도에 대한 평가", 
-  "volume": "음량에 대한 평가",
-  "clarity": "명료도에 대한 평가",
-  "confidence": "자신감에 대한 평가",
-  "strengths": ["강점1", "강점2", "강점3"],
-  "improvements": ["개선점1", "개선점2", "개선점3"],
-  "recommendations": ["추천사항1", "추천사항2", "추천사항3"]
+  "tone": "음성 톤에 대한 상세 평가",
+  "pace": "말하기 속도에 대한 상세 평가", 
+  "volume": "음량에 대한 상세 평가",
+  "clarity": "명료도에 대한 상세 평가",
+  "confidence": "자신감에 대한 상세 평가",
+  "expressiveness": "표현력에 대한 상세 평가",
+  "structure": "구조화에 대한 상세 평가",
+  "strengths": ["구체적인 강점1", "구체적인 강점2", "구체적인 강점3"],
+  "improvements": ["정확한 문제점1", "정확한 문제점2", "정확한 문제점3"],
+  "recommendations": ["구체적인 개선방법1", "구체적인 개선방법2", "구체적인 개선방법3"],
+  "detailedAnalysis": "전체적인 음성 특성에 대한 종합적이고 세밀한 분석"
 }
     `;
 
@@ -82,7 +90,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: '당신은 면접 음성 평가 전문가입니다. 음성의 톤, 속도, 명료도, 자신감 등을 종합적으로 분석하여 구체적이고 실용적인 피드백을 제공해주세요.'
+          content: '당신은 면접 음성 평가 전문가입니다. 음성의 톤, 속도, 명료도, 자신감, 표현력, 구조화 등을 매우 세밀하고 정확하게 분석하여 구체적이고 실용적인 피드백을 제공해주세요. 특히 문제점과 개선점을 정확하게 지적하고, "국어책 읽듯이 단조롭게 말함", "끝말이 흐려짐", "너무 빠르게 말해서 핵심이 안들림" 등과 같이 구체적인 문제점을 명확히 지적해주세요. 강점도 구체적인 예시와 함께 설명해주세요.'
         },
         {
           role: 'user',
@@ -105,12 +113,19 @@ export async function POST(request: NextRequest) {
       evaluation = JSON.parse(analysisResult);
     } catch (parseError) {
       console.error('JSON 파싱 오류:', parseError);
-      throw new Error('분석 결과 형식이 올바르지 않습니다.');
+      console.error('원본 응답:', analysisResult);
+      
+      // 의미없는 내용이나 오류가 발생한 경우
+      if (analysisResult.includes('제가') || analysisResult.includes('직접') || analysisResult.includes('들어보지')) {
+        throw new Error('음성 내용이 부적절하거나 의미없는 내용입니다. 다시 녹음해주세요.');
+      }
+      
+      throw new Error('분석 결과 형식이 올바르지 않습니다. 다시 녹음해주세요.');
     }
 
     // 응답 검증
-    if (!evaluation.overallScore || !evaluation.tone || !evaluation.strengths || !evaluation.improvements || !evaluation.recommendations) {
-      throw new Error('불완전한 분석 결과입니다.');
+    if (!evaluation.overallScore || !evaluation.tone || !evaluation.strengths || !evaluation.improvements || !evaluation.recommendations || !evaluation.detailedAnalysis) {
+      throw new Error('불완전한 분석 결과입니다. 다시 녹음해주세요.');
     }
 
     return NextResponse.json({

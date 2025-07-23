@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     const { user } = authResult;
 
-    // 새로운 사용량 제한 체크
+    // 사용량 제한 체크
     const usageCheck = await checkImageGenerationLimit(user.id);
     if (!usageCheck.allowed) {
       return NextResponse.json({ 

@@ -115,6 +115,22 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Chat API Error:', error);
+    
+    // OpenAI API 할당량 초과 에러 처리
+    if (error instanceof Error) {
+      if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('insufficient_quota')) {
+        return NextResponse.json(
+          { error: 'OpenAI API 사용량 한도에 도달했습니다. 잠시 후 다시 시도해주세요.' },
+          { status: 429 }
+        );
+      } else if (error.message.includes('billing') || error.message.includes('limit')) {
+        return NextResponse.json(
+          { error: 'OpenAI API 결제 한도에 도달했습니다. 잠시 후 다시 시도해주세요.' },
+          { status: 402 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

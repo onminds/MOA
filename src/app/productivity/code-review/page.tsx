@@ -4,7 +4,7 @@ import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
   ArrowLeft, Copy, Loader2, CheckCircle, AlertCircle, FileCode, Star,
-  Zap, Brain, Bug, TrendingUp, Eye, Target, Lightbulb
+  Zap, Brain, Bug, TrendingUp, Eye, Target, Lightbulb, Package
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -214,9 +214,18 @@ export default function CodeReview() {
                 <div className="bg-blue-500 p-2 rounded-xl">
                   <Eye className="w-6 h-6 text-white" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h1 className="text-2xl font-bold text-gray-900">AI 코드 리뷰</h1>
                   <p className="text-gray-700 mt-1">AI가 코드를 분석하여 개선점과 문제점을 찾아드립니다</p>
+                </div>
+                <div>
+                  <button
+                    onClick={() => router.push('/code-review/project')}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-medium shadow-lg flex items-center gap-2"
+                  >
+                    <Package className="w-4 h-4" />
+                    🚀 프로젝트 분석
+                  </button>
                 </div>
               </div>
             </div>

@@ -22,13 +22,6 @@ interface QuestionRequest {
   };
 }
 
-interface InterviewQuestion {
-  category: string;
-  question: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tips: string[];
-}
-
 export async function POST(request: NextRequest) {
   try {
     const {
@@ -160,10 +153,10 @@ JSON 배열만 응답하고 다른 텍스트는 포함하지 마세요.`;
 
   try {
     // JSON 파싱
-    const questions = JSON.parse(response) as InterviewQuestion[];
+    const questions = JSON.parse(response);
     
     // ID 추가하여 반환
-    return questions.map((q: InterviewQuestion, index: number) => ({
+    return questions.map((q: any, index: number) => ({
       id: index + 1,
       ...q
     }));
@@ -172,12 +165,12 @@ JSON 배열만 응답하고 다른 텍스트는 포함하지 마세요.`;
     console.error('응답 내용:', response);
     
     // 파싱 실패 시 기본 질문 반환
-    return getDefaultQuestions(companyName, jobTitle);
+    return getDefaultQuestions(companyName, jobTitle, careerLevel);
   }
 }
 
 // 기본 질문 (API 실패 시 백업용)
-function getDefaultQuestions(companyName: string, jobTitle: string) {
+function getDefaultQuestions(companyName: string, jobTitle: string, careerLevel: string) {
   return [
     {
       id: 1,

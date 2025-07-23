@@ -1,22 +1,11 @@
 "use client";
 import { useState } from "react";
 import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 import {
-  Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings, LogIn,
-  FileText, Presentation, Code, Star, Briefcase, FileVideo, MessageSquare
+  FileText, Presentation, Code, Star, Briefcase, FileVideo, MessageSquare, Newspaper
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-const sideMenus = [
-  { name: '홈', icon: <HomeIcon className="w-5 h-5 mr-2" />, href: '/' },
-  { name: '검색', icon: <Search className="w-5 h-5 mr-2" />, href: '#' },
-  { name: 'AI 목록', icon: <List className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '순위', icon: <BarChart className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '광고', icon: <Megaphone className="w-5 h-5 mr-2" />, href: '#' },
-  { name: 'AI 뉴스', icon: <Newspaper className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '문의하기', icon: <MessageCircle className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '설정', icon: <Settings className="w-5 h-5 mr-2" />, href: '#' },
-];
 
 const categories = [
   {
@@ -203,25 +192,9 @@ export default function Productivity() {
     else if (toolId === 4) {
       router.push('/productivity/blog-writer');
     }
-    // 자기소개서 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 5) {
-      router.push('/productivity/cover-letter');
-    }
-    // 이메일보조 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 2) {
-      router.push('/productivity/email-assistant');
-    }
     // SNS 게시물 도구 클릭 시 해당 페이지로 이동
     else if (toolId === 6) {
       router.push('/productivity/sns-post');
-    }
-    // 강의 녹음 노트 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 7) {
-      router.push('/productivity/lecture-notes');
-    }
-    // 면접 준비 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 8) {
-      router.push('/productivity/interview-prep');
     }
     // 코드 생성 도구 클릭 시 해당 페이지로 이동
     else if (toolId === 11) {
@@ -231,6 +204,10 @@ export default function Productivity() {
     else if (toolId === 12) {
       router.push('/productivity/code-review');
     }
+    // 이메일 보조 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 2) {
+      router.push('/productivity/email-assistant');
+    }
     // PPT 초안 도구 클릭 시 해당 페이지로 이동
     else if (toolId === 9) {
       router.push('/productivity/ppt-draft');
@@ -239,96 +216,79 @@ export default function Productivity() {
     else if (toolId === 10) {
       router.push('/productivity/presentation-script');
     }
-    // 다른 도구들도 필요에 따라 추가
+    // 강의 녹음 노트 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 7) {
+      router.push('/productivity/lecture-notes');
+    }
+    // 면접 준비 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 8) {
+      router.push('/productivity/interview-prep');
+    }
+    // 자기소개서 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 5) {
+      router.push('/productivity/cover-letter');
+    }
   };
 
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white flex flex-row w-full">
-        {/* 왼쪽 사이드바 */}
-        <aside className="w-64 bg-gray-50 min-h-screen p-6 flex-col justify-between hidden md:flex">
-          <nav className="space-y-2">
-            {sideMenus.map((menu) => (
-              <a
-                key={menu.name}
-                href={menu.href}
-                className="flex items-center px-4 py-3 rounded-lg text-gray-800 hover:bg-gray-200 transition-colors font-medium"
-              >
-                {menu.icon}
-                {menu.name}
-              </a>
-            ))}
-          </nav>
-          <div className="mt-8">
-            <button className="w-full flex items-center justify-center gap-2 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold">
-              <LogIn className="w-5 h-5" /> 로그인
-            </button>
-          </div>
-        </aside>
-
-        {/* 메인 콘텐츠 */}
-        <div className="flex-1 p-8">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">생산성 도구</h1>
-            
-            {/* 카테고리 박스 그리드 */}
-            {!selectedCategory && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {categories.map((category) => (
-                  <div
-                    key={category.id}
-                    onClick={() => handleCategoryClick(category.id)}
-                    className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`${category.iconBg} text-white p-3 rounded-lg`}>
-                        {category.icon}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {category.toolCount}개 도구
-                      </div>
-                    </div>
-                    
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                      {category.name}
-                    </h3>
-                    
-                    <p className="text-gray-600 text-sm leading-relaxed">
-                      {category.description}
-                    </p>
-                  </div>
-                ))}
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex">
+          {/* 공통 사이드바 */}
+          <Sidebar currentPath="/productivity" />
+          
+          {/* 메인 콘텐츠 */}
+          <div className="flex-1 p-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">생산성 도구</h1>
+                <p className="text-gray-600">AI를 활용한 다양한 생산성 도구들을 활용해보세요</p>
               </div>
-            )}
 
-            {/* 선택된 카테고리의 도구들 */}
-            {selectedCategory && (
-              <>
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-4">
+              {/* 카테고리 선택 */}
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">카테고리</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {categories.map((category) => (
                     <button
-                      onClick={() => setSelectedCategory(null)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                      key={category.id}
+                      onClick={() => handleCategoryClick(category.id)}
+                      className={`p-6 rounded-xl border-2 transition-all duration-200 ${
+                        selectedCategory === category.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
                     >
-                      ← 뒤로가기
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-3 rounded-lg ${category.iconBg} text-white`}>
+                          {category.icon}
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                          <p className="text-sm text-gray-500">{category.description}</p>
+                          <p className="text-xs text-gray-400 mt-1">{category.toolCount}개 도구</p>
+                        </div>
+                      </div>
                     </button>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {categories.find(cat => cat.id === selectedCategory)?.name}
-                    </h2>
-                  </div>
+                  ))}
                 </div>
+              </div>
 
-                {/* 도구 카드 그리드 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredTools.map((tool) => (
+              {/* 도구 목록 */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  {selectedCategory ? `${categories.find(c => c.id === selectedCategory)?.name} 도구` : '모든 도구'}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {(selectedCategory ? filteredTools : tools).map((tool) => (
                     <div
                       key={tool.id}
+                      className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
                       onClick={() => handleToolClick(tool.id)}
-                      className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group"
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className={`${tool.iconBg} text-white p-3 rounded-lg`}>
+                        <div className={`p-3 rounded-lg ${tool.iconBg} text-white`}>
                           {tool.icon}
                         </div>
                         <button
@@ -338,30 +298,16 @@ export default function Productivity() {
                           }}
                           className="text-gray-400 hover:text-yellow-500 transition-colors"
                         >
-                          <Star className={`w-5 h-5 ${tool.favorite ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                          <Star className={`w-5 h-5 ${tool.favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                         </button>
                       </div>
-                      
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                        {tool.title}
-                      </h3>
-                      
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        {tool.description}
-                      </p>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{tool.title}</h3>
+                      <p className="text-gray-600 text-sm">{tool.description}</p>
                     </div>
                   ))}
                 </div>
-
-                {/* 결과가 없을 때 */}
-                {filteredTools.length === 0 && (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 text-lg mb-2">해당 카테고리의 도구가 없습니다</div>
-                    <div className="text-gray-500 text-sm">다른 카테고리를 선택해보세요</div>
-                  </div>
-                )}
-              </>
-            )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

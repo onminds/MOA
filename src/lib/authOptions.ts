@@ -45,7 +45,8 @@ export const authOptions = {
             email: true,
             name: true,
             password: true,
-            role: true
+            role: true,
+            image: true
           }
         });
 
@@ -67,6 +68,7 @@ export const authOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          image: user.image,
         };
       }
     })
@@ -80,13 +82,39 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.image = user.image;
       }
       return token;
     },
     async session({ session, token }: any) {
       if (token && session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
+        // 데이터베이스에서 최신 사용자 정보 가져오기
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: token.id },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true
+            }
+          });
+
+          if (user) {
+            session.user.id = user.id;
+            session.user.name = user.name;
+            session.user.email = user.email;
+            session.user.image = user.image;
+            session.user.role = user.role;
+          }
+        } catch (error) {
+          console.error('세션에서 사용자 정보 가져오기 실패:', error);
+          // 실패 시 토큰 정보 사용
+          session.user.id = token.id;
+          session.user.role = token.role;
+          session.user.image = token.image;
+        }
       }
       return session;
     },
@@ -121,6 +149,7 @@ export const authOptions = {
             // 기존 사용자의 정보 업데이트
             user.id = existingUser.id;
             user.role = existingUser.role;
+            user.image = existingUser.image;
           }
 
           return true;

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 import { useRouter } from 'next/navigation';
 import { 
   ImageIcon, 
@@ -171,97 +172,90 @@ export default function UsagePage() {
     <>
       <Header />
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">사용량 확인</h1>
-            <p className="text-gray-600">현재 플랜의 서비스별 사용량을 확인하세요</p>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-              <p className="text-gray-600">사용량 정보를 불러오는 중...</p>
+        <div className="flex">
+          {/* 공통 사이드바 */}
+          <Sidebar currentPath="/usage" />
+          
+          {/* 메인 콘텐츠 */}
+          <div className="flex-1 p-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">사용량 확인</h1>
+              <p className="text-gray-600">현재 플랜의 서비스별 사용량을 확인하세요</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(usageData).map(([serviceType, usage]) => {
-                if (!usage) return null;
-                
-                const serviceInfo = getServiceInfo(serviceType);
-                const percentage = (usage.usageCount / usage.limitCount) * 100;
-                
-                return (
-                  <div
-                    key={serviceType}
-                    className={`bg-white rounded-xl shadow-lg border-2 ${serviceInfo.borderColor} p-6 hover:shadow-xl transition-shadow`}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-3 rounded-xl ${serviceInfo.bgColor}`}>
-                          <div className={serviceInfo.color}>
-                            {serviceInfo.icon}
+
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                <p className="text-gray-600">사용량 정보를 불러오는 중...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(usageData).map(([serviceType, usage]) => {
+                  if (!usage) return null;
+                  
+                  const serviceInfo = getServiceInfo(serviceType);
+                  const percentage = (usage.usageCount / usage.limitCount) * 100;
+                  
+                  return (
+                    <div
+                      key={serviceType}
+                      className={`bg-white rounded-xl shadow-lg border-2 ${serviceInfo.borderColor} p-6 hover:shadow-xl transition-shadow`}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-3 rounded-xl ${serviceInfo.bgColor}`}>
+                            <div className={serviceInfo.color}>
+                              {serviceInfo.icon}
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{serviceInfo.name}</h3>
+                            <div className="flex items-center space-x-2">
+                              {getPlanIcon(usage.planType || 'basic')}
+                              <span className="text-sm text-gray-600">{getPlanName(usage.planType || 'basic')}</span>
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {serviceInfo.name}
-                          </h3>
-                          {usage.planType && (
-                            <div className="flex items-center space-x-1 mt-1">
-                              {getPlanIcon(usage.planType)}
-                              <span className="text-sm text-gray-600">
-                                {getPlanName(usage.planType)}
-                              </span>
-                            </div>
-                          )}
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-gray-900">{usage.usageCount}</div>
+                          <div className="text-sm text-gray-500">사용 횟수</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-gray-900">
-                          {usage.remainingCount === 9999 ? "무제한" : usage.remainingCount}
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">사용량</span>
+                          <span className="font-medium">{usage.usageCount} / {usage.limitCount}</span>
                         </div>
-                        <div className="text-sm text-gray-500">남은 횟수</div>
+                        
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              percentage > 80 ? 'bg-red-500' : 
+                              percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(percentage, 100)}%` }}
+                          ></div>
+                        </div>
+
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">남은 횟수</span>
+                          <span className="font-medium text-green-600">{usage.remainingCount}회</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <Clock className="w-4 h-4" />
+                            <span>다음 초기화</span>
+                          </div>
+                          <span>{usage.resetDate}</span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>사용량</span>
-                        <span>{usage.usageCount} / {usage.limitCount === 9999 ? "무제한" : usage.limitCount}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            percentage >= 80 ? 'bg-red-500' : 
-                            percentage >= 60 ? 'bg-yellow-500' : 'bg-green-500'
-                          }`}
-                          style={{ width: `${Math.min(percentage, 100)}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
-                        <span className="flex items-center">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          {percentage.toFixed(1)}% 사용
-                        </span>
-                        <span className="flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          플랜별 총 제한
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="mt-12 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              더 많은 기능이 필요하신가요?
-            </h3>
-            <p className="text-gray-600 mb-4">
-              플랜을 업그레이드하여 더 많은 사용량을 얻으세요
-            </p>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

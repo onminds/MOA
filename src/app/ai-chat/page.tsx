@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Plus, MessageSquare, Settings, Crown, Star, Zap } from "lucide-react";
 import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 
 type Message = { 
   role: 'user' | 'assistant'; 
@@ -205,107 +206,78 @@ export default function AIChat() {
   return (
     <>
       <Header />
-      <div className="min-h-screen flex bg-white">
-        {/* 왼쪽 네비게이션 */}
-        <aside className="w-64 bg-white border-r flex flex-col h-screen p-4 hidden md:flex">
-          <button
-            className="flex items-center gap-2 px-4 py-2 mb-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold"
-            onClick={handleNewChat}
-          >
-            <Plus className="w-5 h-5" /> 새 대화
-          </button>
+      <div className="min-h-screen bg-white">
+        <div className="flex">
+          {/* 공통 사이드바 */}
+          <Sidebar currentPath="/ai-chat" />
           
-          {/* 현재 AI 티어 표시 */}
-          {currentTier && (
-            <div className={`mb-4 p-3 rounded-lg border ${getTierColor(currentTier.name)}`}>
-              <div className="flex items-center gap-2 mb-1">
-                {getTierIcon(currentTier.name)}
-                <span className="font-semibold text-sm">{currentTier.name}</span>
+          {/* 메인 콘텐츠 */}
+          <div className="flex-1 flex flex-col">
+            {/* 상단 헤더 */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleNewChat}
+                  className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>새 대화</span>
+                </button>
+                <h1 className="text-xl font-semibold text-gray-900">AI 채팅</h1>
               </div>
-              <p className="text-xs opacity-80">{currentTier.description}</p>
-              <p className="text-xs opacity-60 mt-1">모델: {currentTier.model}</p>
+              <div className="flex items-center space-x-2">
+                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Settings className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
             </div>
-          )}
-          
-          <div className="flex-1 overflow-y-auto space-y-2">
-            {conversations.map((conv, idx) => (
-              <button
-                key={conv.id}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-gray-100 transition-colors ${idx === currentConv ? 'bg-gray-200 font-bold' : ''}`}
-                onClick={() => setCurrentConv(idx)}
-              >
-                <MessageSquare className="w-4 h-4 text-gray-500" />
-                <span className="truncate">{conv.title}</span>
-              </button>
-            ))}
-          </div>
-          
-          <button className="flex items-center gap-2 px-4 py-2 mt-4 text-gray-600 hover:bg-gray-100 rounded-lg">
-            <Settings className="w-5 h-5" /> 설정
-          </button>
-        </aside>
-        
-        {/* 모바일 네비게이션(간단) */}
-        <aside className="w-full flex md:hidden items-center justify-between px-4 py-2 bg-white border-b sticky top-0 z-10">
-          <button onClick={handleNewChat} className="flex items-center gap-1 text-black font-semibold bg-black/0 hover:bg-gray-100 px-2 py-1 rounded">
-            <Plus className="w-5 h-5" />새 대화
-          </button>
-          <span className="font-bold text-lg">MOA 챗</span>
-          <button className="text-gray-600"><Settings className="w-5 h-5" /></button>
-        </aside>
-        
-        {/* 오른쪽 대화창 */}
-        <main className="flex-1 flex">
-          {/* 1. 메시지 없을 때: 중앙에 입력창만 */}
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center w-full h-full">
-              <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-8 text-center">무슨 작업을 하고 계세요?</h2>
-              {!isAuthenticated && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg max-w-md text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Zap className="w-5 h-5 text-blue-500" />
-                    <span className="font-semibold text-blue-700">기본 AI 모드</span>
-                  </div>
-                  <p className="text-sm text-blue-600">로그인하면 더 스마트한 AI를 이용할 수 있어요!</p>
-                </div>
-              )}
-              {InputBox}
-            </div>
-          ) : (
-            // 2. 메시지 있을 때: 상단 메시지 리스트, 하단 입력창
-            <div className="flex flex-col w-full h-full max-w-2xl mx-auto">
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {messages.map((msg, idx) => (
-                  <div key={idx}>
-                    <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`px-4 py-2 rounded-xl max-w-[70%] whitespace-pre-line text-sm md:text-base ${
-                          msg.role === "user"
-                            ? "bg-black text-white hover:bg-gray-800 transition-colors"
-                            : "bg-gray-200 text-gray-900"
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
+
+            {/* 채팅 영역 */}
+            <div className="flex-1 flex flex-col">
+              {/* 메시지 영역 */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full space-y-6">
+                    <div className="text-center">
+                      <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">AI와 대화를 시작하세요</h2>
+                      <p className="text-gray-600 mb-6">무엇이든 물어보세요. AI가 도와드릴게요.</p>
                     </div>
-                    
-                    {/* AI 응답에 티어 정보 표시 */}
-                    {msg.role === "assistant" && msg.tier && (
-                      <div className="flex justify-start mt-1">
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${getTierColor(msg.tier.name)}`}>
-                          {getTierIcon(msg.tier.name)}
-                          <span>{msg.tier.name}</span>
+                    {InputBox}
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-w-4xl mx-auto">
+                    {messages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`px-4 py-2 rounded-xl max-w-[70%] whitespace-pre-line text-sm md:text-base ${
+                            msg.role === "user"
+                              ? "bg-black text-white hover:bg-gray-800 transition-colors"
+                              : "bg-gray-200 text-gray-900"
+                          }`}
+                          style={{ wordBreak: 'break-word' }}
+                        >
+                          {msg.content}
                         </div>
                       </div>
-                    )}
+                    ))}
+                    <div ref={chatEndRef} />
                   </div>
-                ))}
-                <div ref={chatEndRef} />
+                )}
               </div>
-              <div className="w-full pb-6 px-2 md:px-0">{InputBox}</div>
+
+              {/* 입력 영역 (메시지가 있을 때만 하단에 표시) */}
+              {messages.length > 0 && (
+                <div className="p-6 border-t border-gray-200">
+                  {InputBox}
+                </div>
+              )}
             </div>
-          )}
-        </main>
+          </div>
+        </div>
       </div>
     </>
   );

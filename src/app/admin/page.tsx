@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
 
 interface User {
   id: string;
@@ -171,133 +172,139 @@ export default function AdminPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">관리자 대시보드</h1>
-            <p className="mt-2 text-gray-600">사용자 관리 및 사용량 제어</p>
-          </div>
-
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">사용자 목록</h2>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex">
+          {/* 공통 사이드바 */}
+          <Sidebar currentPath="/admin" />
+          
+          {/* 메인 콘텐츠 */}
+          <div className="flex-1 p-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">관리자 대시보드</h1>
+              <p className="mt-2 text-gray-600">사용자 관리 및 사용량 제어</p>
             </div>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      사용자
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      역할
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      플랜 설정
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      사용량
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      가입일
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      관리
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.name || "이름 없음"}
+
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-900">사용자 목록</h2>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        사용자
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        역할
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        플랜 설정
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        사용량
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        액션
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{user.name || '이름 없음'}</div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <select
-                          value={user.role}
-                          onChange={(e) => updateUserRole(user.id, e.target.value)}
-                          disabled={actionLoading === `role-${user.id}`}
-                          className="text-sm border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="USER">일반 사용자</option>
-                          <option value="ADMIN">관리자</option>
-                        </select>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="space-y-2">
-                          <button
-                            onClick={() => setUserPlan(user.id, "basic")}
-                            disabled={actionLoading === `plan-${user.id}`}
-                            className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 disabled:bg-gray-400 mr-1"
-                          >
-                            Basic
-                          </button>
-                          <button
-                            onClick={() => setUserPlan(user.id, "standard")}
-                            disabled={actionLoading === `plan-${user.id}`}
-                            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:bg-gray-400 mr-1"
-                          >
-                            Standard
-                          </button>
-                          <button
-                            onClick={() => setUserPlan(user.id, "pro")}
-                            disabled={actionLoading === `plan-${user.id}`}
-                            className="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600 disabled:bg-gray-400"
-                          >
-                            Pro
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          {filterUsageByService(user.usage || []).map((usage) => (
-                            <div key={usage.id} className="flex items-center space-x-2">
-                              <span className="text-xs text-gray-600 w-20">
-                                {getServiceTypeName(usage.serviceType)}:
-                              </span>
-                              <span className="text-xs">
-                                {usage.usageCount}/{usage.limitCount === 9999 ? "무제한" : usage.limitCount}
-                              </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                            user.role === 'USER' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-2">
+                            <div className="flex space-x-2">
                               <button
-                                onClick={() => updateUsage(user.id, "reset", usage.serviceType)}
-                                disabled={actionLoading === `usage-${user.id}-${usage.serviceType}`}
-                                className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:bg-gray-400"
+                                onClick={() => setUserPlan(user.id, 'basic')}
+                                disabled={actionLoading === `plan-${user.id}`}
+                                className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
                               >
-                                리셋
+                                Basic
                               </button>
                               <button
-                                onClick={() => updateUsage(user.id, "unlimited", usage.serviceType)}
-                                disabled={actionLoading === `usage-${user.id}-${usage.serviceType}`}
-                                className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 disabled:bg-gray-400"
+                                onClick={() => setUserPlan(user.id, 'standard')}
+                                disabled={actionLoading === `plan-${user.id}`}
+                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
                               >
-                                무제한
+                                Standard
+                              </button>
+                              <button
+                                onClick={() => setUserPlan(user.id, 'pro')}
+                                disabled={actionLoading === `plan-${user.id}`}
+                                className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 disabled:opacity-50"
+                              >
+                                Pro
                               </button>
                             </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => updateUsage(user.id, "reset")}
-                          disabled={actionLoading === `usage-${user.id}-all`}
-                          className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:bg-gray-400"
-                        >
-                          전체 리셋
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-2">
+                            {filterUsageByService(user.usage).map((usage) => (
+                              <div key={usage.id} className="text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">{getServiceTypeName(usage.serviceType)}</span>
+                                  <span className="font-medium">{usage.usageCount} / {usage.limitCount}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+                                  <div 
+                                    className="bg-blue-500 h-1 rounded-full"
+                                    style={{ width: `${(usage.usageCount / usage.limitCount) * 100}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="space-y-2">
+                            <button
+                              onClick={() => updateUserRole(user.id, user.role === 'ADMIN' ? 'USER' : 'ADMIN')}
+                              disabled={actionLoading === `role-${user.id}`}
+                              className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 disabled:opacity-50"
+                            >
+                              {user.role === 'ADMIN' ? '일반 사용자로' : '관리자로'}
+                            </button>
+                            <button
+                              onClick={() => updateUsage(user.id, 'reset')}
+                              disabled={actionLoading === `usage-${user.id}-all`}
+                              className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50"
+                            >
+                              사용량 초기화
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
