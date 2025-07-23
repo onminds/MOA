@@ -7,6 +7,7 @@ import {
   Zap, Brain, Bug, TrendingUp, Eye, Target, Lightbulb, Package
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { safeFetchJson } from '@/lib/client-utils';
 
 const sideMenus = [
   { name: '홈', icon: <HomeIcon className="w-5 h-5 mr-2" />, href: '/' },
@@ -114,11 +115,11 @@ export default function CodeReview() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: '코드 리뷰에 실패했습니다.' }));
         throw new Error(errorData.error || '코드 리뷰에 실패했습니다.');
       }
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({ success: false, result: null }));
       
       if (data.success && data.result) {
         setReviewResult(data.result);

@@ -1,0 +1,4700 @@
+[
+  {
+    "id": "1",
+    "name": "ChatGPT",
+    "url": "https://chat.openai.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "2",
+    "name": "Bard",
+    "url": "https://bard.google.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "3",
+    "name": "Claude AI",
+    "url": "https://claude.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "4",
+    "name": "Llama",
+    "url": "https://ai.meta.com/llama/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "5",
+    "name": "Microsoft Copilot",
+    "url": "https://copilot.microsoft.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "6",
+    "name": "Perplexity",
+    "url": "https://perplexity.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "7",
+    "name": "Chatbot UI",
+    "url": "https://www.chatbotui.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "8",
+    "name": "Gemini",
+    "url": "https://deepmind.google/technologies/gemini/#introduction",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "9",
+    "name": "Tock",
+    "url": "https://doc.tock.ai/en/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "10",
+    "name": "NVIDIA ChatRTX",
+    "url": "https://www.nvidia.com/en-us/ai-on-rtx/chatrtx/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "11",
+    "name": "LobeHub",
+    "url": "https://chat-preview.lobehub.com/welcome",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "12",
+    "name": "Claude",
+    "url": "https://claude.ai/login?returnTo=%2F%3F",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "13",
+    "name": "Google PaLM2",
+    "url": "https://ai.google/discover/palm2/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "14",
+    "name": "Quickchat AI",
+    "url": "https://www.quickchat.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "15",
+    "name": "InstructLab",
+    "url": "https://instructlab.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "17",
+    "name": "You.com",
+    "url": "https://you.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "18",
+    "name": "PopAi",
+    "url": "https://www.popai.pro/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "19",
+    "name": "Magical AI",
+    "url": "https://www.getmagical.com/ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "20",
+    "name": "Writer",
+    "url": "https://writer.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "21",
+    "name": "Broadcast",
+    "url": "https://www.withbroadcast.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "22",
+    "name": "Dart",
+    "url": "https://www.itsdart.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "23",
+    "name": "Modelize.ai",
+    "url": "https://www.modelize.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "24",
+    "name": "botpress",
+    "url": "https://botpress.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "25",
+    "name": "Worldtune",
+    "url": "https://www.wordtune.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "26",
+    "name": "Motion",
+    "url": "https://www.usemotion.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "27",
+    "name": "Audionotes",
+    "url": "https://www.audionotes.app/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "28",
+    "name": "NoteGPT",
+    "url": "https://notegpt.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "29",
+    "name": "TurboSeek",
+    "url": "https://www.turboseek.io",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "30",
+    "name": "LeptonAI",
+    "url": "https://www.lepton.ai/playground/openvoice",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "31",
+    "name": "MyShell",
+    "url": "https://app.myshell.ai/chat",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "32",
+    "name": "Play.ht",
+    "url": "https://play.ht/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "33",
+    "name": "SoundHound AI",
+    "url": "https://www.soundhound.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "37",
+    "name": "Fish Speech",
+    "url": "https://speech.fish.audio/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "43",
+    "name": "Artist Voice Over",
+    "url": "https://artlist.io/voice-over",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "44",
+    "name": "ElevenLabs",
+    "url": "https://elevenlabs.io",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "45",
+    "name": "vidby",
+    "url": "https://vidby.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "46",
+    "name": "runway",
+    "url": "https://runwayml.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "47",
+    "name": "stability.ai",
+    "url": "https://stability.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "48",
+    "name": "Graphic.so",
+    "url": "https://graphic.so",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "49",
+    "name": "Midjourney",
+    "url": "https://www.midjourney.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "50",
+    "name": "DALL-E",
+    "url": "https://openai.com/dall-e-2",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "51",
+    "name": "Microsoft Designer",
+    "url": "https://designer.microsoft.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "52",
+    "name": "Stockimg AI",
+    "url": "https://stockimg.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "53",
+    "name": "getimg.ai",
+    "url": "https://getimg.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "54",
+    "name": "Ilus AI",
+    "url": "https://ilus.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "57",
+    "name": "Looka",
+    "url": "https://looka.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "59",
+    "name": "Krea",
+    "url": "https://www.krea.ai/home",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "60",
+    "name": "LetsEnhance",
+    "url": "https://letsenhance.io",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "61",
+    "name": "AI Emoji",
+    "url": "https://emojis.sh",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "62",
+    "name": "Headshots AI",
+    "url": "https://www.getheadshots.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "63",
+    "name": "Diagram",
+    "url": "https://diagram.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "64",
+    "name": "Studio Design",
+    "url": "https://studio.design/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "65",
+    "name": "uizard",
+    "url": "https://uizard.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "66",
+    "name": "Galileo AI",
+    "url": "https://www.usegalileo.ai/explore",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "67",
+    "name": "QoQo",
+    "url": "https://qoqo.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "69",
+    "name": "THUMB ZONE",
+    "url": "https://www.thumb.zone/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "70",
+    "name": "userevaluation",
+    "url": "https://www.userevaluation.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "71",
+    "name": "Userology",
+    "url": "https://www.userology.co/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "72",
+    "name": "Thumb Zone",
+    "url": "https://www.thumbzone.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "73",
+    "name": "Runway",
+    "url": "https://runwayml.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "74",
+    "name": "WOWBO",
+    "url": "https://www.w.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "75",
+    "name": "invideo AI",
+    "url": "https://invideo.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "76",
+    "name": "Synthesia",
+    "url": "https://www.synthesia.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "77",
+    "name": "FRAMEDROP",
+    "url": "https://www.framedrop.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "78",
+    "name": "Sora",
+    "url": "https://openai.com/sora",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "79",
+    "name": "Remini",
+    "url": "https://remini.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "80",
+    "name": "Novita",
+    "url": "https://novita.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "86",
+    "name": "rapport",
+    "url": "https://www.rapport.cloud/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "89",
+    "name": "invideoAI",
+    "url": "https://invideo.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "90",
+    "name": "Typeframes",
+    "url": "https://www.typeframes.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "92",
+    "name": "Spotter Studio",
+    "url": "https://www.spotterstudio.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "93",
+    "name": "HeyGen",
+    "url": "https://www.heygen.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "94",
+    "name": "Runway",
+    "url": "https://runwayml.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "95",
+    "name": "Kling AI",
+    "url": "https://www.klingai.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "96",
+    "name": "Genie",
+    "url": "https://lumalabs.ai/genie",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "97",
+    "name": "Cap3D",
+    "url": "https://cap3d-um.github.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "100",
+    "name": "3D AI Studio",
+    "url": "https://www.3daistudio.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "101",
+    "name": "Magician",
+    "url": "https://magician.design/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "102",
+    "name": "Iconify AI",
+    "url": "https://www.iconifyai.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "103",
+    "name": "IconMage",
+    "url": "https://www.iconmage.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "104",
+    "name": "SVG.IO",
+    "url": "https://svg.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "105",
+    "name": "Arcade AI",
+    "url": "https://www.tryarcade.co",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "106",
+    "name": "Colormind",
+    "url": "http://colormind.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "107",
+    "name": "Khroma",
+    "url": "https://www.khroma.co/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "108",
+    "name": "udio",
+    "url": "https://www.udio.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "109",
+    "name": "Suno",
+    "url": "https://suno.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "110",
+    "name": "Leo",
+    "url": "https://www.getleo.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "111",
+    "name": "Globe",
+    "url": "https://globe.engineer/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "112",
+    "name": "aino",
+    "url": "https://aino.world/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "113",
+    "name": "SnapMagic",
+    "url": "https://www.snapmagic.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "115",
+    "name": "Deepnote AI",
+    "url": "https://deepnote.com/ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "116",
+    "name": "Codeium",
+    "url": "https://codeium.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "117",
+    "name": "Plandex",
+    "url": "https://plandex.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "118",
+    "name": "Replit AI",
+    "url": "https://replit.com/ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "120",
+    "name": "Mistral AI",
+    "url": "https://mistral.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "121",
+    "name": "kapa",
+    "url": "https://www.kapa.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "122",
+    "name": "Git",
+    "url": "https://gitstart.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "123",
+    "name": "CodeStory",
+    "url": "https://codestory.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "124",
+    "name": "Tempo Labs",
+    "url": "https://www.tempolabs.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "125",
+    "name": "Codium",
+    "url": "https://www.codium.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "127",
+    "name": "amplication",
+    "url": "https://amplication.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "128",
+    "name": "Tabine",
+    "url": "https://www.tabnine.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "130",
+    "name": "Continue",
+    "url": "https://docs.continue.dev/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "132",
+    "name": "V0.dev",
+    "url": "https://v0.dev/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "133",
+    "name": "Stunning",
+    "url": "https://stunning.so/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "134",
+    "name": "Essai",
+    "url": "https://ess.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "135",
+    "name": "Glide",
+    "url": "https://www.glideapps.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "136",
+    "name": "MakeLanding",
+    "url": "https://makelanding.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "137",
+    "name": "BuildAI",
+    "url": "https://www.buildai.space/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "138",
+    "name": "Locofy",
+    "url": "https://www.locofy.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "139",
+    "name": "Lazy",
+    "url": "https://www.getlazy.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "141",
+    "name": "Builder.ai",
+    "url": "https://www.builder.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "142",
+    "name": "Widgera",
+    "url": "https://widgera.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "143",
+    "name": "Wegic AI",
+    "url": "https://wegic.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "144",
+    "name": "UCRAFT",
+    "url": "https://www.ucraft.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "145",
+    "name": "bolt",
+    "url": "https://bolt.new",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "147",
+    "name": "Amplication",
+    "url": "https://amplication.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "148",
+    "name": "CodeRabbit",
+    "url": "https://coderabbit.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "150",
+    "name": "Sourcegraph",
+    "url": "https://sourcegraph.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "152",
+    "name": "Curser",
+    "url": "https://www.cursor.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "153",
+    "name": "AIApply",
+    "url": "https://aiapply.co/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "154",
+    "name": "Interview Warmup",
+    "url": "https://grow.google/certificates/interview-warmup/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "155",
+    "name": "Final Round AI",
+    "url": "https://www.finalroundai.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "156",
+    "name": "Interview with AI",
+    "url": "https://interviewwith.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "157",
+    "name": "Huntr",
+    "url": "https://huntr.co/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "158",
+    "name": "bugfree.ai",
+    "url": "https://bugfree.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "159",
+    "name": "Browse AI",
+    "url": "https://www.browse.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "160",
+    "name": "Picarta",
+    "url": "https://picarta.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "161",
+    "name": "Bardeen",
+    "url": "https://www.bardeen.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "162",
+    "name": "HEX",
+    "url": "https://hex.tech/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "163",
+    "name": "VortexAI",
+    "url": "https://www.vortexai.dev/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "164",
+    "name": "Deepnote",
+    "url": "https://deepnote.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "165",
+    "name": "BrightData",
+    "url": "https://brightdata.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "166",
+    "name": "Fluent",
+    "url": "https://www.fluenthq.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "167",
+    "name": "Sigma AI",
+    "url": "https://sigma.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "168",
+    "name": "Heron AI",
+    "url": "https://heron-ai.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "169",
+    "name": "Ara",
+    "url": "https://www.quantcast.com/platform/technology/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "170",
+    "name": "Sentione",
+    "url": "https://sentione.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "171",
+    "name": "NOAN",
+    "url": "https://www.getnoan.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "172",
+    "name": "Nexus",
+    "url": "https://gpt.nexus/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "173",
+    "name": "pipefy",
+    "url": "https://www.pipefy.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "174",
+    "name": "Black Cow AI",
+    "url": "https://www.blackcrow.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "175",
+    "name": "Midday",
+    "url": "https://midday.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "176",
+    "name": "AdCreative",
+    "url": "https://www.adcreative.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "177",
+    "name": "Pecan",
+    "url": "https://www.pecan.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "178",
+    "name": "lang.ai",
+    "url": "https://www.lang.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "179",
+    "name": "Wordsmith",
+    "url": "https://www.wordsmith.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "180",
+    "name": "Yuma",
+    "url": "https://yuma.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "181",
+    "name": "Workflow86",
+    "url": "https://www.workflow86.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "182",
+    "name": "FIELDGUIDE",
+    "url": "https://www.fieldguide.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "183",
+    "name": "Flagright",
+    "url": "https://www.flagright.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "184",
+    "name": "Typewise",
+    "url": "https://www.typewise.app/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "185",
+    "name": "Khoros",
+    "url": "https://khoros.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "186",
+    "name": "WiseWorld",
+    "url": "https://www.wiseworld.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "187",
+    "name": "Mendable",
+    "url": "https://www.mendable.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "188",
+    "name": "YourGPT",
+    "url": "https://yourgpt.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "189",
+    "name": "Nory",
+    "url": "https://nory.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "190",
+    "name": "Beamup",
+    "url": "https://www.beamup.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "191",
+    "name": "ariglad",
+    "url": "https://www.ariglad.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "192",
+    "name": "Snorkel",
+    "url": "https://snorkel.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "193",
+    "name": "windsor.ai",
+    "url": "https://windsor.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "194",
+    "name": "Forecase",
+    "url": "https://www.forecast.app/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "195",
+    "name": "AdCreative",
+    "url": "https://www.adcreative.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "196",
+    "name": "Spot AI",
+    "url": "https://www.spot.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "197",
+    "name": "Placer.ai",
+    "url": "https://www.placer.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "198",
+    "name": "neocom",
+    "url": "https://www.neocom.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "199",
+    "name": "ChatBase",
+    "url": "https://www.chatbase.co",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "200",
+    "name": "Postiz",
+    "url": "https://postiz.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "201",
+    "name": "wisdomise",
+    "url": "https://wisdomise.com/en",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "202",
+    "name": "Taggun",
+    "url": "https://www.taggun.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "204",
+    "name": "DataLab",
+    "url": "https://www.datalab.to",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "205",
+    "name": "Brex AI",
+    "url": "https://www.brex.com/platform/brex-ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "206",
+    "name": "FLYFIN",
+    "url": "https://flyfin.tax/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "209",
+    "name": "OpenBB",
+    "url": "https://openbb.co/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "210",
+    "name": "Google Colab",
+    "url": "https://colab.google/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "211",
+    "name": "Explainpaper",
+    "url": "https://www.explainpaper.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "212",
+    "name": "Corti",
+    "url": "https://www.corti.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "216",
+    "name": "Speak",
+    "url": "https://www.speak.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "220",
+    "name": "Burn",
+    "url": "https://burn.dev/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "229",
+    "name": "Mini-Gemini",
+    "url": "https://mini-gemini.github.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "236",
+    "name": "Tensor Flow",
+    "url": "https://www.tensorflow.org/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "277",
+    "name": "Goose AI",
+    "url": "https://goose.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "278",
+    "name": "vLLM",
+    "url": "https://docs.vllm.ai/en/latest/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "279",
+    "name": "IREE",
+    "url": "https://iree.dev",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "289",
+    "name": "Granite",
+    "url": "https://www.ibm.com/granite",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "290",
+    "name": "Watsonx",
+    "url": "https://www.ibm.com/watsonx",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "295",
+    "name": "Dify",
+    "url": "https://dify.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "296",
+    "name": "AnythingLLM",
+    "url": "https://anythingllm.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "297",
+    "name": "All Hands",
+    "url": "https://www.all-hands.dev/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "301",
+    "name": "RAGFlow",
+    "url": "https://ragflow.io",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "302",
+    "name": "MindStudio",
+    "url": "https://www.mindstudio.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "303",
+    "name": "gradio",
+    "url": "https://www.gradio.app",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "308",
+    "name": "RunPod",
+    "url": "https://www.runpod.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "309",
+    "name": "Lightning",
+    "url": "https://lightning.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "310",
+    "name": "Tasking AI",
+    "url": "https://www.tasking.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "311",
+    "name": "golem",
+    "url": "https://www.golem.network",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "313",
+    "name": "Campfire",
+    "url": "https://campfire.to/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "314",
+    "name": "DIAMOND",
+    "url": "https://diamond-wm.github.io",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "315",
+    "name": "Langflow",
+    "url": "https://www.langflow.org/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "316",
+    "name": "Google AI Studio",
+    "url": "https://aistudio.google.com/app/prompts/new_chat",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "317",
+    "name": "ENCORD",
+    "url": "https://encord.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "319",
+    "name": "Chatbot",
+    "url": "https://yourgpt.ai/chatbot/studio",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "322",
+    "name": "truefoundry",
+    "url": "https://www.truefoundry.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "324",
+    "name": "Lightning AI",
+    "url": "https://lightning.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "326",
+    "name": "MindsDB",
+    "url": "https://mindsdb.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "327",
+    "name": "Chatpad",
+    "url": "https://chatpad.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "328",
+    "name": "Gumloop",
+    "url": "https://www.gumloop.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "329",
+    "name": "Unstract",
+    "url": "https://unstract.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "330",
+    "name": "Trieve",
+    "url": "https://trieve.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "332",
+    "name": "kotaemon",
+    "url": "https://cinnamon.github.io/kotaemon/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "333",
+    "name": "Taipy",
+    "url": "https://taipy.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "334",
+    "name": "unriddle",
+    "url": "https://www.unriddle.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "335",
+    "name": "Storm",
+    "url": "https://storm.genie.stanford.edu/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "337",
+    "name": "screenpipe",
+    "url": "https://screenpi.pe",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "338",
+    "name": "FlowiseAI",
+    "url": "https://flowiseai.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "339",
+    "name": "FastGPT",
+    "url": "https://tryfastgpt.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "340",
+    "name": "gptme",
+    "url": "https://gptme.org/docs/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "341",
+    "name": "OpenRouter",
+    "url": "https://openrouter.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "342",
+    "name": "ultralytics",
+    "url": "https://docs.ultralytics.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "345",
+    "name": "Hypermode",
+    "url": "https://hypermode.com/home",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "346",
+    "name": "Diflowy",
+    "url": "https://diflowy.greenerai.top",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "347",
+    "name": "Relevance AI",
+    "url": "https://relevanceai.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "348",
+    "name": "OmniAI",
+    "url": "https://getomni.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "349",
+    "name": "CrewAI",
+    "url": "https://www.crewai.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "350",
+    "name": "SKYVERN",
+    "url": "https://www.skyvern.com",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "351",
+    "name": "Dynamiq",
+    "url": "https://www.getdynamiq.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "352",
+    "name": "GPT Researcher",
+    "url": "https://gptr.dev/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "353",
+    "name": "Chatgot",
+    "url": "https://chatgot.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "354",
+    "name": "Future Tools",
+    "url": "https://www.futuretools.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "355",
+    "name": "WizyChat",
+    "url": "https://wizy.chat/#home",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "356",
+    "name": "Paperspace",
+    "url": "https://www.paperspace.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "357",
+    "name": "unify",
+    "url": "https://unify.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "358",
+    "name": "Poe",
+    "url": "https://poe.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "359",
+    "name": "CommandBar",
+    "url": "https://www.commandbar.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "360",
+    "name": "FIXIE",
+    "url": "https://fixie.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "361",
+    "name": "hume",
+    "url": "https://www.hume.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "362",
+    "name": "phidata",
+    "url": "https://docs.phidata.com/introduction",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "363",
+    "name": "MapGPT",
+    "url": "https://www.mapbox.com/mapgpt",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "364",
+    "name": "QuillBot",
+    "url": "https://quillbot.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "365",
+    "name": "wonderchat",
+    "url": "https://wonderchat.io/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "366",
+    "name": "Toko",
+    "url": "https://www.tokotutor.com/en",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "367",
+    "name": "Cove",
+    "url": "https://cove.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "376",
+    "name": "LOOKWISE",
+    "url": "https://www.lookswise.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "377",
+    "name": "Wanderboat",
+    "url": "https://wanderboat.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "384",
+    "name": "Jina",
+    "url": "https://jina.ai/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "385",
+    "name": "Reply Guy",
+    "url": "https://replyguy.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "386",
+    "name": "Composio",
+    "url": "https://docs.composio.dev/introduction/intro/overview",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "387",
+    "name": "Prompt Engineering Guide",
+    "url": "https://www.promptingguide.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "388",
+    "name": "LiveKit",
+    "url": "https://livekit.io",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "389",
+    "name": "PromptMage",
+    "url": "https://promptmage.io",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "390",
+    "name": "Argilla",
+    "url": "https://docs.argilla.io/latest/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "391",
+    "name": "Open Canvas",
+    "url": "https://opencanvas.langchain.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "392",
+    "name": "Weavel",
+    "url": "https://weavel.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "393",
+    "name": "I Design",
+    "url": "https://atcelen.github.io/I-Design/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "394",
+    "name": "THERE'S AN AI FOR THAT",
+    "url": "https://theresanaiforthat.com/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "395",
+    "name": "Hugging Face",
+    "url": "https://huggingface.co/",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "396",
+    "name": "Expify",
+    "url": "https://www.expify.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:00.240081",
+    "source": "AI-Atlas"
+  },
+  {
+    "id": "258",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/huggingface/transformers",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "259",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/civitai/civitai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "260",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/mistralai/mistral-src",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "261",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/anthropics/anthropic-cookbook",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "262",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/groq/groq-api-cookbook",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "263",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/openai/openai-cookbook",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "264",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/OpenRouterTeam/openrouter-runner",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "265",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/GoogleCloudPlatform/generative-ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "266",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/cohere-ai/cohere-python",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "267",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/octoml/octocloud-templates",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "268",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/anyscale/endpoint-cookbook",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "269",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Stability-AI/generative-models",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "270",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/BerriAI/litellm",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "271",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/togethercomputer/together-python",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "272",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/googleapis/python-aiplatform",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "273",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/aws/amazon-sagemaker-examples",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "274",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Azure-Samples/azure-ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "275",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/replicate/cog",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "276",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Paperspace/cli",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "277",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/aws-samples/amazon-bedrock-workshop",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "278",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/cloudflare/cloudflare-docs",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "279",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/scaleway/docs-content",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "280",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/ggerganov/llama.cpp",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566352",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "281",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/mudler/LocalAGI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "282",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/jmorganca/ollama",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "283",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/mudler/LocalAI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "284",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/LostRuins/koboldcpp",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "285",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/nomic-ai/gpt4all",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "286",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/YellowRoseCx/koboldcpp-rocm",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "287",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/oobabooga/text-generation-webui",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "288",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/vllm-project/vllm",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "289",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/turboderp/exllamav2",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "290",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/louisgv/local.ai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "291",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/serge-chat/serge",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "292",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/liltom-eth/llama2-webui",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "293",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/n4ze3m/dialoqbase",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "294",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/SillyTavern/SillyTavern",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "295",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/ItsPi3141/alpaca-electron",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "296",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/lmstudio-ai/model-catalog",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "297",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/lobehub/lobe-chat",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "298",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/danny-avila/LibreChat",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "299",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/danemadsen/Maid",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "300",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/dot-agent/nextpy",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "301",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/TavernAI/TavernAI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "302",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/bionic-gpt/bionic-gpt",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "303",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/anse-app/anse",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "304",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/TheR1D/shell_gpt",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "305",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/janhq/jan",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "306",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/lencx/Noi",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "307",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/open-webui/open-webui",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "308",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/lllyasviel/Fooocus",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "309",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Acly/krita-ai-diffusion",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "310",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/VoltaML/voltaML-fast-stable-diffusion",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "311",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/invoke-ai/InvokeAI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "312",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/nod-ai/SHARK",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "313",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/facefusion/facefusion",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "314",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Stability-AI/StableStudio",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "315",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/vladmandic/automatic",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "316",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/MoonRide303/Fooocus-MRE",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "317",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/LykosAI/StabilityMatrix",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "318",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/AUTOMATIC1111/stable-diffusion-webui",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "319",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/comfyanonymous/ComfyUI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "320",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/brycedrennan/imaginAIry",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "321",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/riffusion/riffusion-app",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "322",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Blizaine/SlingRING",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "323",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/ashawkey/stable-dreamfusion",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "324",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Sanster/lama-cleaner",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "325",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/threestudio-project/threestudio",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "326",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/carson-katri/dream-textures",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "327",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/TencentARC/PhotoMaker",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "328",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/smallcloudai/refact",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "329",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/SawyerHood/draw-a-ui",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "330",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/continuedev/continue",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "331",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/sweepai/sweep",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "332",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/sourcegraph/cody",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "333",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/paul-gauthier/aider",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "334",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/irgolic/AutoPR",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "335",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/BloopAI/bloop",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "336",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/OpenBMB/ChatDev",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "337",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/ajhous44/cody",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "338",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/gpt-engineer-org/gpt-engineer",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "339",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/joshpxyne/gpt-migrate",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "340",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Pythagora-io/gpt-pilot",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "341",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/AbanteAI/mentat",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "342",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/pinokiocomputer/pinokio",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "343",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/reworkd/AgentGPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "344",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/TransformerOptimus/SuperAGI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "345",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/PromtEngineer/localGPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "346",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/agentlabs-inc/agentlabs",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "347",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Significant-Gravitas/AutoGPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "348",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/yoheinakajima/babyagi",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "349",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/joaomdmoura/crewAI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "350",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/HumanSignal/Adala",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "351",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/LehengTHU/Agent4Rec",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "352",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/DataBassGit/AgentForge",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "353",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/aiwaves-cn/agents",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "354",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/OpenBMB/AgentVerse",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "355",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/microsoft/autogen",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "356",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/pgalko/BambooAI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "357",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/AutoPackAI/beebot",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "358",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/krohling/bondai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "359",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/camel-ai/camel",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "360",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/genia-dev/GeniA",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "361",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/assafelovic/gpt-researcher",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "362",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/kreneskyp/ix",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "363",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/microsoft/JARVIS",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "364",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/cpacker/MemGPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "365",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/geekan/MetaGPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "366",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/muellerberndt/mini-agi",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "367",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/xlang-ai/OpenAgents",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "368",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/KillianLucas/open-interpreter",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "369",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/topoteretes/PromethAI-Backend",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "370",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/homanp/superagent",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "371",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/OpenBMB/XAgent",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "372",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/run-llama/llama_index",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "373",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/Mintplex-Labs/anything-llm",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "374",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/arc53/docsgpt",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "375",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/StanGirard/quivr",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "376",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/gmpetrov/databerry",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "377",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/AI-Citizen/SolidGPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "378",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/codeacme17/examor",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "379",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/flepied/second-brain-agent",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "380",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/GerevAI/gerev",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "381",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/imartinez/privateGPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "382",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/neuml/txtai",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "383",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/swirlai/swirl-search",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "384",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/danswer-ai/danswer",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "385",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/tatsu-lab/alpaca_eval",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "386",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/lm-sys/FastChat",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "387",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/bigcode-project/bigcode-evaluation-harness",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "388",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/promptfoo/promptfoo",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "389",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/unslothai/unsloth",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "390",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/pezzolabs/pezzo",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "391",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/lunary-ai/lunary",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "392",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/ludwig-ai/ludwig",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "393",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/langroid/langroid",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "394",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/langchain-ai/langchain",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "395",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/llmware-ai/llmware",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "396",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/pathwaycom/llm-app",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "397",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/langgenius/dify",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "398",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/NeumTry/NeumAI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "399",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/eosphoros-ai/DB-GPT",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "400",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/FlowiseAI/Flowise",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "401",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/hpcaitech/ColossalAI",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "402",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/NVIDIA/Megatron-LM",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "403",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/microsoft/DeepSpeed",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "404",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/mindsdb/mindsdb",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "405",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/weaviate/weaviate",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "406",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/milvus-io/milvus",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "407",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/qdrant/qdrant",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "408",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/activeloopai/deeplake",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "409",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/chroma-core/chroma",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "410",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/microsoft/ailab",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "411",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/dair-ai/ML-Course-Notes",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "412",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/dair-ai/Prompt-Engineering-Guide",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "413",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/microsoft/generative-ai-for-beginners",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "414",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/dair-ai/ML-YouTube-Courses",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "415",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/dair-ai/ML-Papers-Explained",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "416",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/mlabonne/llm-course",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "417",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/huggingface/course",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "418",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/C0untFloyd/bark-gui",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "419",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/crlandsc/tiny-audio-diffusion",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "420",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/gitmylo/audio-webui",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "421",
+    "name": "GitHub Repo stars",
+    "url": "https://img.shields.io/github/stars/ggerganov/whisper.cpp",
+    "category": "AI Tool",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:12:28.566849",
+    "source": "Awesome-AI"
+  },
+  {
+    "id": "422",
+    "name": "네이버 하이퍼클로바X",
+    "url": "https://clova.ai/hyperclova",
+    "category": "Korean Chat AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "423",
+    "name": "카카오 칼로(Karlo)",
+    "url": "https://karlo.ai/",
+    "category": "Korean Image AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "424",
+    "name": "업스테이지 Solar",
+    "url": "https://www.upstage.ai/solar",
+    "category": "Korean LLM",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "425",
+    "name": "뤼튼(Wrtn)",
+    "url": "https://wrtn.ai/",
+    "category": "Korean Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "426",
+    "name": "삼성 가우스",
+    "url": "https://research.samsung.com/artificial-intelligence",
+    "category": "Korean AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "427",
+    "name": "LG AI연구원",
+    "url": "https://www.lgresearch.ai/",
+    "category": "Korean AI Research",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "428",
+    "name": "SK AI",
+    "url": "https://www.sk.com/en/story/sk-square/",
+    "category": "Korean AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "429",
+    "name": "ETRI AI",
+    "url": "https://www.etri.re.kr/",
+    "category": "Korean AI Research",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "430",
+    "name": "KISTI AI",
+    "url": "https://www.kisti.re.kr/",
+    "category": "Korean AI Research",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "431",
+    "name": "42dot AI",
+    "url": "https://42dot.ai/",
+    "category": "Korean Autonomous AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "432",
+    "name": "Runway ML",
+    "url": "https://runwayml.com/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "433",
+    "name": "Synthesia",
+    "url": "https://www.synthesia.io/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "434",
+    "name": "ElevenLabs",
+    "url": "https://elevenlabs.io/",
+    "category": "Voice AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "435",
+    "name": "Leonardo AI",
+    "url": "https://leonardo.ai/",
+    "category": "Image AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "436",
+    "name": "Adobe Firefly",
+    "url": "https://www.adobe.com/products/firefly.html",
+    "category": "Design AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "437",
+    "name": "Canva AI",
+    "url": "https://www.canva.com/ai-image-generator/",
+    "category": "Design AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "438",
+    "name": "Figma AI",
+    "url": "https://www.figma.com/ai/",
+    "category": "Design AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "439",
+    "name": "Notion AI",
+    "url": "https://www.notion.so/product/ai",
+    "category": "Productivity AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "440",
+    "name": "Zapier AI",
+    "url": "https://zapier.com/ai",
+    "category": "Automation AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "441",
+    "name": "Cursor AI",
+    "url": "https://cursor.sh/",
+    "category": "Coding AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "442",
+    "name": "Otter.ai",
+    "url": "https://otter.ai/",
+    "category": "Transcription AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "443",
+    "name": "Descript",
+    "url": "https://www.descript.com/",
+    "category": "Audio AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "444",
+    "name": "Speechify",
+    "url": "https://speechify.com/",
+    "category": "Text-to-Speech",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "445",
+    "name": "Murf AI",
+    "url": "https://murf.ai/",
+    "category": "Voice AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "446",
+    "name": "D-ID",
+    "url": "https://www.d-id.com/",
+    "category": "Avatar AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "447",
+    "name": "Character.AI",
+    "url": "https://character.ai/",
+    "category": "Character AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "448",
+    "name": "Replika",
+    "url": "https://replika.ai/",
+    "category": "Companion AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "449",
+    "name": "Tabnine",
+    "url": "https://www.tabnine.com/",
+    "category": "Coding AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "450",
+    "name": "Codeium",
+    "url": "https://codeium.com/",
+    "category": "Coding AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "451",
+    "name": "Amazon CodeWhisperer",
+    "url": "https://aws.amazon.com/codewhisperer/",
+    "category": "Coding AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "452",
+    "name": "Replit AI",
+    "url": "https://replit.com/ai",
+    "category": "Coding AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "453",
+    "name": "GitLab AI",
+    "url": "https://about.gitlab.com/solutions/artificial-intelligence/",
+    "category": "DevOps AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "454",
+    "name": "Anthropic Claude",
+    "url": "https://www.anthropic.com/",
+    "category": "Advanced AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "455",
+    "name": "Cohere",
+    "url": "https://cohere.ai/",
+    "category": "Enterprise AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "456",
+    "name": "Hugging Face",
+    "url": "https://huggingface.co/",
+    "category": "AI Platform",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "457",
+    "name": "OpenAI GPT-4",
+    "url": "https://openai.com/gpt-4/",
+    "category": "Advanced AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "458",
+    "name": "Google Gemini",
+    "url": "https://gemini.google.com/",
+    "category": "Google AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "459",
+    "name": "Microsoft Azure AI",
+    "url": "https://azure.microsoft.com/en-us/products/ai-services",
+    "category": "Enterprise AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "460",
+    "name": "IBM Watson",
+    "url": "https://www.ibm.com/watson",
+    "category": "Enterprise AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "461",
+    "name": "Salesforce Einstein",
+    "url": "https://www.salesforce.com/products/einstein/",
+    "category": "CRM AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "462",
+    "name": "HubSpot AI",
+    "url": "https://www.hubspot.com/artificial-intelligence",
+    "category": "Marketing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "463",
+    "name": "Slack AI",
+    "url": "https://slack.com/features/ai",
+    "category": "Communication AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "464",
+    "name": "Zoom AI",
+    "url": "https://zoom.us/en/ai-assistant/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "465",
+    "name": "Grammarly AI",
+    "url": "https://www.grammarly.com/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "466",
+    "name": "QuillBot",
+    "url": "https://quillbot.com/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "467",
+    "name": "Copy.ai",
+    "url": "https://www.copy.ai/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "468",
+    "name": "Writesonic",
+    "url": "https://writesonic.com/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "469",
+    "name": "Jasper AI",
+    "url": "https://www.jasper.ai/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "470",
+    "name": "Rytr",
+    "url": "https://rytr.me/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "471",
+    "name": "Lex",
+    "url": "https://lex.page/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "472",
+    "name": "Wordtune",
+    "url": "https://www.wordtune.com/",
+    "category": "Writing AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "473",
+    "name": "Gamma",
+    "url": "https://gamma.app/",
+    "category": "Presentation AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "474",
+    "name": "Beautiful.AI",
+    "url": "https://www.beautiful.ai/",
+    "category": "Presentation AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "475",
+    "name": "Tome",
+    "url": "https://tome.app/",
+    "category": "Presentation AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "476",
+    "name": "SlidesAI",
+    "url": "https://www.slidesai.io/",
+    "category": "Presentation AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "477",
+    "name": "Krisp",
+    "url": "https://krisp.ai/",
+    "category": "Audio AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "478",
+    "name": "Loom AI",
+    "url": "https://www.loom.com/ai",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "479",
+    "name": "Vidyo.ai",
+    "url": "https://vidyo.ai/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "480",
+    "name": "Opus Clip",
+    "url": "https://www.opus.pro/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "481",
+    "name": "InVideo AI",
+    "url": "https://invideo.io/ai/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "482",
+    "name": "Fliki",
+    "url": "https://fliki.ai/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "483",
+    "name": "Steve AI",
+    "url": "https://www.steve.ai/",
+    "category": "Video AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "484",
+    "name": "Luma AI",
+    "url": "https://lumalabs.ai/",
+    "category": "3D AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "485",
+    "name": "Spline AI",
+    "url": "https://spline.design/",
+    "category": "3D AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "486",
+    "name": "Blockade Labs",
+    "url": "https://www.blockadelabs.com/",
+    "category": "3D AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "487",
+    "name": "PolyAI",
+    "url": "https://poly.ai/",
+    "category": "Voice AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "488",
+    "name": "Rephrase.ai",
+    "url": "https://www.rephrase.ai/",
+    "category": "Avatar AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "489",
+    "name": "Hour One",
+    "url": "https://hourone.ai/",
+    "category": "Avatar AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "490",
+    "name": "Colossyan",
+    "url": "https://www.colossyan.com/",
+    "category": "Avatar AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "491",
+    "name": "DeepBrain AI",
+    "url": "https://www.deepbrain.io/",
+    "category": "Avatar AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "492",
+    "name": "Stable Audio",
+    "url": "https://stableaudio.com/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "493",
+    "name": "AIVA",
+    "url": "https://www.aiva.ai/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "494",
+    "name": "Amper Music",
+    "url": "https://www.ampermusic.com/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "495",
+    "name": "Boomy",
+    "url": "https://boomy.com/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "496",
+    "name": "Soundraw",
+    "url": "https://soundraw.io/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "497",
+    "name": "Loudly",
+    "url": "https://www.loudly.com/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "498",
+    "name": "Beatoven.ai",
+    "url": "https://www.beatoven.ai/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "499",
+    "name": "Endel",
+    "url": "https://endel.io/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "500",
+    "name": "Brain.fm",
+    "url": "https://www.brain.fm/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "501",
+    "name": "Jukebox",
+    "url": "https://openai.com/blog/jukebox/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "502",
+    "name": "MuseNet",
+    "url": "https://openai.com/blog/musenet/",
+    "category": "Music AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "503",
+    "name": "Lalal.ai",
+    "url": "https://www.lalal.ai/",
+    "category": "Audio AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "504",
+    "name": "LALAL.AI",
+    "url": "https://www.lalal.ai/",
+    "category": "Audio AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "505",
+    "name": "Vocal Remover",
+    "url": "https://vocalremover.org/",
+    "category": "Audio AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "506",
+    "name": "Spleeter",
+    "url": "https://github.com/deezer/spleeter",
+    "category": "Audio AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "507",
+    "name": "NVIDIA Omniverse",
+    "url": "https://www.nvidia.com/en-us/omniverse/",
+    "category": "AI Platform",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "508",
+    "name": "Unity ML-Agents",
+    "url": "https://unity.com/products/machine-learning-agents",
+    "category": "Game AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "509",
+    "name": "Unreal Engine AI",
+    "url": "https://www.unrealengine.com/en-US/ai",
+    "category": "Game AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "510",
+    "name": "Chess.com AI",
+    "url": "https://www.chess.com/computer-chess",
+    "category": "Game AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "511",
+    "name": "AI Dungeon",
+    "url": "https://play.aidungeon.io/",
+    "category": "Game AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "512",
+    "name": "NovelAI",
+    "url": "https://novelai.net/",
+    "category": "Story AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "513",
+    "name": "Sudowrite",
+    "url": "https://www.sudowrite.com/",
+    "category": "Story AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "514",
+    "name": "Shortly AI",
+    "url": "https://shortlyai.com/",
+    "category": "Story AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "515",
+    "name": "InferKit",
+    "url": "https://inferkit.com/",
+    "category": "Story AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "516",
+    "name": "TalkToBooks",
+    "url": "https://books.google.com/talktobooks/",
+    "category": "Reading AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "517",
+    "name": "Semantic Scholar",
+    "url": "https://www.semanticscholar.org/",
+    "category": "Research AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "518",
+    "name": "Connected Papers",
+    "url": "https://www.connectedpapers.com/",
+    "category": "Research AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "519",
+    "name": "Elicit",
+    "url": "https://elicit.org/",
+    "category": "Research AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "520",
+    "name": "Consensus",
+    "url": "https://consensus.app/",
+    "category": "Research AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "521",
+    "name": "Scite",
+    "url": "https://scite.ai/",
+    "category": "Research AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  },
+  {
+    "id": "522",
+    "name": "Iris.ai",
+    "url": "https://iris.ai/",
+    "category": "Research AI",
+    "pricing": "Unknown",
+    "collected_date": "2025-07-18T18:14:45.848199",
+    "source": "Manual Collection"
+  }
+]

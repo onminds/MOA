@@ -113,15 +113,21 @@ export async function POST(request: NextRequest) {
       console.log('📄 참고 자료 미리보기:', rawContent.substring(0, 200) + (rawContent.length > 200 ? '...' : ''));
       console.log('📄 참고 자료 전체 내용:', rawContent);
       
-      // 참고 자료 품질 검사
+      // 참고 자료 품질 검사 (더 관대한 기준)
       const hasKoreanText = /[가-힣]/.test(rawContent);
       const hasEnglishText = /[a-zA-Z]/.test(rawContent);
-      const hasMeaningfulContent = rawContent.length > 50 && (hasKoreanText || hasEnglishText);
+      const hasNumbers = /[0-9]/.test(rawContent);
+      const hasPunctuation = /[.!?]/.test(rawContent);
+      
+      // 더 관대한 품질 검사: 텍스트 길이가 20자 이상이고, 한글/영어/숫자 중 하나라도 있으면 유효
+      const hasMeaningfulContent = rawContent.length >= 20 && (hasKoreanText || hasEnglishText || hasNumbers);
       
       console.log('📊 참고 자료 품질 검사:', {
         length: rawContent.length,
         hasKorean: hasKoreanText,
         hasEnglish: hasEnglishText,
+        hasNumbers: hasNumbers,
+        hasPunctuation: hasPunctuation,
         hasMeaningfulContent: hasMeaningfulContent
       });
       

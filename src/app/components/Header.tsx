@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Menu, ChevronDown, Settings, User, LogOut } from 'lucide-react';
+import { Menu, ChevronDown, Settings, User, LogOut, Code } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
@@ -63,6 +63,10 @@ export default function Header() {
             <Link href="#" className="text-gray-700 hover:text-gray-900">AI 목록</Link>
             <Link href="#" className="text-gray-700 hover:text-gray-900">추천</Link>
             <Link href="/community" className="text-gray-700 hover:text-gray-900">커뮤니티</Link>
+            <Link href="/code-review/project" className="text-gray-700 hover:text-gray-900 flex items-center">
+              <Code className="w-4 h-4 mr-1" />
+              코드리뷰
+            </Link>
           </nav>
           <div className="flex items-center space-x-4">
             {!mounted ? (

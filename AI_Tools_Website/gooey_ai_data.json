@@ -1,0 +1,302 @@
+[
+  {
+    "name": "Copilot Builder",
+    "url": "https://gooey.ai/copilot/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "speech recognition",
+    "url": "https://gooey.ai/speech/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "text-to-speech",
+    "url": "https://gooey.ai/compare-text-to-speech-engines/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Lipsync",
+    "url": "https://gooey.ai/lipsync-maker/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "AI Animation Maker",
+    "url": "https://gooey.ai/animation-generator/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "AI QR Code Generator",
+    "url": "https://gooey.ai/qr-code/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Examples",
+    "url": "https://gooey.ai/qr-code/examples",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Generate “People Also Ask” SEO Content",
+    "url": "https://gooey.ai/related-qna-maker/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Create a perfect SEO-optimized Title & Paragraph",
+    "url": "https://gooey.ai/seo-paragraph-generator/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "PERFECT SEO HELP GUIDE",
+    "url": "https://gooey.ai/docs/guides/creating-seo-optimized-content-with-gooey.ai",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Browse the web using ChatGPT",
+    "url": "https://gooey.ai/google-gpt/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Profile Lookup + GPT4 for AI-Personalized Emails",
+    "url": "https://gooey.ai/email-writer-with-profile-lookup/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Bulk Runner and Evaluator",
+    "url": "https://gooey.ai/bulk/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Evaluator",
+    "url": "https://gooey.ai/eval/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Synthetic Data Maker for Videos & PDFs",
+    "url": "https://gooey.ai/doc-extract/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Compare LLMs: GPT4.1, o3, Deepseek, Claude3.7, Gemini2.5, LLaMA4 vs Mixtral Large",
+    "url": "https://gooey.ai/compare-large-language-models/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "RAG in the Cloud: Search any document with AI",
+    "url": "https://gooey.ai/doc-search/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "SmartGPT",
+    "url": "https://gooey.ai/SmartGPT/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Summarize Large Files with GPT",
+    "url": "https://gooey.ai/doc-summary/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Functions",
+    "url": "https://gooey.ai/functions/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Gooey.AI copilot",
+    "url": "https://gooey.ai/copilot/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Lipsync AI",
+    "url": "https://gooey.ai/Lipsync/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "copilot workflow",
+    "url": "https://gooey.ai/copilot/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Lipsync with Text-to-Speech",
+    "url": "https://gooey.ai/lipsync-maker/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Compare AI Voice Generators",
+    "url": "https://gooey.ai/compare-text-to-speech-engines/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Speech Recognition and Translation",
+    "url": "https://gooey.ai/speech/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Text to Audio & Music",
+    "url": "https://gooey.ai/text2audio/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Compare AI Translations",
+    "url": "https://gooey.ai/compare-ai-translation/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Eval",
+    "url": "https://gooey.ai/eval",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Edit An Image with AI prompt",
+    "url": "https://gooey.ai/ai-photo-editor/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Compare AI Image Generators",
+    "url": "https://gooey.ai/compare-ai-image-generators/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "HELP GUIDE",
+    "url": "https://gooey.ai/docs/guides/create-an-ai-image-with-text",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Generate Product Photo Backgrounds",
+    "url": "https://gooey.ai/product-photo-background-generator/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "AI Portrait Generator",
+    "url": "https://gooey.ai/face-in-ai-generated-photo/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "AI Generated Photo from Email Profile Lookup",
+    "url": "https://gooey.ai/ai-image-from-email-lookup/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Render Image Search Results with AI",
+    "url": "https://gooey.ai/render-images-with-ai/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "AI Background Changer",
+    "url": "https://gooey.ai/remove-image-background-with-ai/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Compare Upscalers",
+    "url": "https://gooey.ai/compare-ai-upscalers/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Flux Image LORA Trainer",
+    "url": "https://gooey.ai/model-trainer/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Gooey's Compare Image Generators workflow",
+    "url": "https://gooey.ai/compare-ai-image-generators/doralora-w22d4qfewr5k/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Sign In / Your Account",
+    "url": "https://gooey.ai/account/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Pricing",
+    "url": "https://gooey.ai/pricing",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Blog",
+    "url": "https://gooey.ai/blog/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "How to Guides",
+    "url": "https://gooey.ai/docs/",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Get a Gooey.AI Key",
+    "url": "https://gooey.ai/docs/developer-resources/api-reference",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "API Endpoints",
+    "url": "https://api.gooey.ai/docs#operation",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "support@gooey.ai",
+    "url": "mailto:support@gooey.ai",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Book a Demo",
+    "url": "https://www.help.gooey.ai/contact#book-demo",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Team",
+    "url": "https://gooey.ai/team",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  },
+  {
+    "name": "Jobs",
+    "url": "https://gooey.ai/jobs",
+    "category": "AI Workflow",
+    "source": "Gooey.AI"
+  }
+]

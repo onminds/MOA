@@ -1,0 +1,7 @@
+{
+  "automation": {
+    "data_collection": true,
+    "data_cleaning": false,
+    "auto_save": true
+  }
+}

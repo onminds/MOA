@@ -66,12 +66,18 @@ export async function POST(request: NextRequest) {
           // 텍스트 품질 검사
           const hasKoreanText = /[가-힣]/.test(data.text);
           const hasEnglishText = /[a-zA-Z]/.test(data.text);
-          const hasMeaningfulContent = data.text.length > 50 && (hasKoreanText || hasEnglishText);
+          const hasNumbers = /[0-9]/.test(data.text);
+          const hasPunctuation = /[.!?]/.test(data.text);
+          
+          // 더 관대한 품질 검사: 텍스트 길이가 10자 이상이고, 한글/영어/숫자 중 하나라도 있으면 유효
+          const hasMeaningfulContent = data.text.length >= 10 && (hasKoreanText || hasEnglishText || hasNumbers);
           
           console.log('📊 텍스트 품질 검사:', {
             length: data.text.length,
             hasKorean: hasKoreanText,
             hasEnglish: hasEnglishText,
+            hasNumbers: hasNumbers,
+            hasPunctuation: hasPunctuation,
             hasMeaningfulContent: hasMeaningfulContent
           });
           
@@ -134,12 +140,18 @@ export async function POST(request: NextRequest) {
             // 텍스트 품질 검사
             const hasKoreanText = /[가-힣]/.test(extractedText);
             const hasEnglishText = /[a-zA-Z]/.test(extractedText);
-            const hasMeaningfulContent = extractedText.length > 50 && (hasKoreanText || hasEnglishText);
+            const hasNumbers = /[0-9]/.test(extractedText);
+            const hasPunctuation = /[.!?]/.test(extractedText);
+            
+            // 더 관대한 품질 검사: 텍스트 길이가 10자 이상이고, 한글/영어/숫자 중 하나라도 있으면 유효
+            const hasMeaningfulContent = extractedText.length >= 10 && (hasKoreanText || hasEnglishText || hasNumbers);
             
             console.log('📊 텍스트 품질 검사:', {
               length: extractedText.length,
               hasKorean: hasKoreanText,
               hasEnglish: hasEnglishText,
+              hasNumbers: hasNumbers,
+              hasPunctuation: hasPunctuation,
               hasMeaningfulContent: hasMeaningfulContent
             });
             
@@ -213,12 +225,18 @@ export async function POST(request: NextRequest) {
             // 텍스트 품질 검사
             const hasKoreanText = /[가-힣]/.test(bestText);
             const hasEnglishText = /[a-zA-Z]/.test(bestText);
-            const hasMeaningfulContent = bestText.length > 200 && (hasKoreanText || hasEnglishText);
+            const hasNumbers = /[0-9]/.test(bestText);
+            const hasPunctuation = /[.!?]/.test(bestText);
+            
+            // 더 관대한 품질 검사: 텍스트 길이가 50자 이상이고, 한글/영어/숫자 중 하나라도 있으면 유효
+            const hasMeaningfulContent = bestText.length >= 50 && (hasKoreanText || hasEnglishText || hasNumbers);
             
             console.log('📊 텍스트 품질 검사:', {
               length: bestText.length,
               hasKorean: hasKoreanText,
               hasEnglish: hasEnglishText,
+              hasNumbers: hasNumbers,
+              hasPunctuation: hasPunctuation,
               hasMeaningfulContent: hasMeaningfulContent
             });
             

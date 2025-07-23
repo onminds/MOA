@@ -1,0 +1,322 @@
+[
+  {
+    "name": "Notion AI",
+    "description": "AI-powered workspace",
+    "category": "Productivity",
+    "url": "https://notion.so/product/ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Loom AI",
+    "description": "AI video messaging",
+    "category": "Video",
+    "url": "https://loom.com/ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Grammarly",
+    "description": "AI writing assistant",
+    "category": "Writing",
+    "url": "https://grammarly.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Canva AI",
+    "description": "AI design platform",
+    "category": "Design",
+    "url": "https://canva.com/ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "GitHub Copilot",
+    "description": "AI pair programmer",
+    "category": "Development",
+    "url": "https://github.com/features/copilot",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Figma AI",
+    "description": "AI design features",
+    "category": "Design",
+    "url": "https://figma.com/ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Zapier AI",
+    "description": "AI workflow automation",
+    "category": "Automation",
+    "url": "https://zapier.com/ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Midjourney",
+    "description": "AI image generation",
+    "category": "AI Art",
+    "url": "https://midjourney.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "RunwayML",
+    "description": "AI video creation",
+    "category": "Video AI",
+    "url": "https://runwayml.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Anthropic Claude",
+    "description": "Advanced AI assistant",
+    "category": "AI Assistant",
+    "url": "https://claude.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Stability AI",
+    "description": "Open source AI",
+    "category": "AI Platform",
+    "url": "https://stability.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Hugging Face",
+    "description": "AI model hub",
+    "category": "AI Platform",
+    "url": "https://huggingface.co",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "OpenAI API",
+    "description": "GPT and AI models",
+    "category": "AI API",
+    "url": "https://openai.com/api",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Cohere",
+    "description": "Enterprise AI platform",
+    "category": "Enterprise AI",
+    "url": "https://cohere.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Scale AI",
+    "description": "AI training data",
+    "category": "AI Data",
+    "url": "https://scale.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Weights & Biases",
+    "description": "ML experiment tracking",
+    "category": "ML Tools",
+    "url": "https://wandb.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Replicate",
+    "description": "Run AI models in cloud",
+    "category": "AI Platform",
+    "url": "https://replicate.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Modal",
+    "description": "Serverless AI platform",
+    "category": "AI Infrastructure",
+    "url": "https://modal.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Together AI",
+    "description": "Collaborative AI",
+    "category": "AI Platform",
+    "url": "https://together.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Pinecone",
+    "description": "Vector database for AI",
+    "category": "AI Database",
+    "url": "https://pinecone.io",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Langchain",
+    "description": "LLM application framework",
+    "category": "AI Framework",
+    "url": "https://langchain.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Chroma",
+    "description": "AI-native database",
+    "category": "AI Database",
+    "url": "https://trychroma.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Weaviate",
+    "description": "Vector search engine",
+    "category": "AI Database",
+    "url": "https://weaviate.io",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Qdrant",
+    "description": "Vector similarity search",
+    "category": "AI Database",
+    "url": "https://qdrant.tech",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Milvus",
+    "description": "Vector database",
+    "category": "AI Database",
+    "url": "https://milvus.io",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Gradio",
+    "description": "ML app building",
+    "category": "ML Tools",
+    "url": "https://gradio.app",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Streamlit",
+    "description": "Data app framework",
+    "category": "ML Tools",
+    "url": "https://streamlit.io",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "MLflow",
+    "description": "ML lifecycle management",
+    "category": "ML Tools",
+    "url": "https://mlflow.org",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "DVC",
+    "description": "Data version control",
+    "category": "ML Tools",
+    "url": "https://dvc.org",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "ClearML",
+    "description": "ML ops platform",
+    "category": "ML Tools",
+    "url": "https://clear.ml",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Neptune AI",
+    "description": "ML metadata store",
+    "category": "ML Tools",
+    "url": "https://neptune.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Tecton",
+    "description": "Feature store platform",
+    "category": "ML Tools",
+    "url": "https://tecton.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Feast",
+    "description": "Feature store",
+    "category": "ML Tools",
+    "url": "https://feast.dev",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Ray",
+    "description": "Distributed AI framework",
+    "category": "AI Framework",
+    "url": "https://ray.io",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Kubeflow",
+    "description": "ML on Kubernetes",
+    "category": "ML Platform",
+    "url": "https://kubeflow.org",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Seldon",
+    "description": "ML deployment platform",
+    "category": "ML Platform",
+    "url": "https://seldon.io",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "BentoML",
+    "description": "ML model serving",
+    "category": "ML Platform",
+    "url": "https://bentoml.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Evidently AI",
+    "description": "ML monitoring",
+    "category": "ML Tools",
+    "url": "https://evidentlyai.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Whylabs",
+    "description": "AI observability",
+    "category": "ML Tools",
+    "url": "https://whylabs.ai",
+    "source": "Famous AI Products",
+    "id": "1040"
+  },
+  {
+    "name": "Arize AI",
+    "description": "ML monitoring platform",
+    "category": "ML Tools",
+    "url": "https://arize.com",
+    "source": "Famous AI Products",
+    "id": "1040"
+  }
+]
