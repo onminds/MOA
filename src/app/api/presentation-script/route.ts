@@ -140,32 +140,45 @@ export async function POST(request: NextRequest) {
       console.log('📄 참고 자료 미리보기:', rawContent.substring(0, 200) + (rawContent.length > 200 ? '...' : ''));
       console.log('📄 참고 자료 전체 내용:', rawContent);
       
-      // PDF 메타데이터 감지
+      // PDF 메타데이터 감지 (더 정확한 패턴)
       const isPDFMetadata = /StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+|PDF|Creator|Producer|CreationDate|ModDate/.test(rawContent);
       const hasObjectRefs = /\d+\s+\d+\s+R/g.test(rawContent);
       const hasRealContent = /[A-Za-z가-힣]{10,}/.test(rawContent);
+      
+      // 실제 텍스트 내용이 있는지 더 정확히 확인
+      const hasActualText = /[A-Za-z가-힣]{20,}/.test(rawContent);
+      const hasSentences = /[A-Za-z가-힣][^.!?]*[.!?]/.test(rawContent);
+      const hasParagraphs = /\n\s*\n/.test(rawContent);
+      
+      // 메타데이터 비율 계산 (전체 텍스트 대비 메타데이터 패턴의 비율)
+      const metadataPatterns = rawContent.match(/StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+|PDF|Creator|Producer|CreationDate|ModDate/g) || [];
+      const metadataRatio = metadataPatterns.length / Math.max(rawContent.length / 100, 1);
       
       console.log('🔍 PDF 내용 분석:', {
         isPDFMetadata,
         hasObjectRefs,
         hasRealContent,
-        metadataPatterns: rawContent.match(/StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+/g)?.length || 0,
+        hasActualText,
+        hasSentences,
+        hasParagraphs,
+        metadataPatterns: metadataPatterns.length,
+        metadataRatio: metadataRatio.toFixed(2),
         contentPreview: rawContent.substring(0, 200)
       });
       
-      if (isPDFMetadata || hasObjectRefs) {
+      // 메타데이터가 있더라도 실제 텍스트가 충분히 있으면 사용 (더 관대한 조건)
+      if ((isPDFMetadata || hasObjectRefs) && !hasActualText && metadataRatio > 0.1) {
         console.warn('⚠️ PDF 메타데이터가 감지되었습니다.');
         console.warn('📄 실제 문서 내용이 아닌 PDF 내부 구조 정보입니다.');
         
-        // 메타데이터에서 실제 내용 추출 시도
+        // 메타데이터에서 실제 내용 추출 시도 (개선된 패턴)
         const realContentPatterns = [
-          /Chapter\s+\d+\.\s*([^\n]+)/gi,
-          /([A-Za-z가-힣][A-Za-z가-힣0-9\s\.\,\!\?]{30,}[A-Za-z가-힣0-9])/g,
-          /\(([A-Za-z가-힣0-9\s\.\,\!\?\-\(\)]{30,})\)/g,
           // 더 구체적인 실제 텍스트 패턴
-          /([A-Z][a-z\s]{20,}[.!?])/g,
-          /([가-힣][가-힣\s]{15,}[.!?])/g,
-          /(Abstract|Introduction|Conclusion|Summary|Chapter|Section)\s*[:\.]?\s*([^\n]+)/gi
+          /([A-Z][a-z\s]{30,}[.!?])/g,
+          /([가-힣][가-힣\s]{20,}[.!?])/g,
+          /([A-Za-z가-힣][A-Za-z가-힣0-9\s\.\,\!\?\-\(\)]{40,}[A-Za-z가-힣0-9])/g,
+          /(Abstract|Introduction|Conclusion|Summary|Chapter|Section|제목|개요|결론|요약)\s*[:\.]?\s*([^\n]{30,})/gi,
+          /([A-Za-z가-힣]{15,}\s+[A-Za-z가-힣]{15,}\s+[A-Za-z가-힣]{15,})/g
         ];
         
         let extractedRealContent = '';
@@ -174,23 +187,22 @@ export async function POST(request: NextRequest) {
           if (matches && matches.length > 0) {
             const potentialContent = matches
               .map((match: string) => {
-                if (pattern.source.includes('\\(')) {
-                  return match.replace(/\(([^)]+)\)/, '$1');
-                } else if (pattern.source.includes('Abstract|Introduction|Conclusion|Summary|Chapter|Section')) {
-                  return match.replace(/(Abstract|Introduction|Conclusion|Summary|Chapter|Section)\s*[:\.]?\s*/, '$1: ');
+                if (pattern.source.includes('Abstract|Introduction|Conclusion|Summary|Chapter|Section|제목|개요|결론|요약')) {
+                  return match.replace(/(Abstract|Introduction|Conclusion|Summary|Chapter|Section|제목|개요|결론|요약)\s*[:\.]?\s*/, '$1: ');
                 }
                 return match;
               })
               .filter((text: string) => {
-                const hasRealWords = /[A-Za-z가-힣]{8,}/.test(text);
+                const hasRealWords = /[A-Za-z가-힣]{10,}/.test(text);
                 const notMetadata = !text.match(/^(obj|endobj|R|PDF|Creator|Producer|CreationDate|ModDate|StructTreeRoot|Type|Subtype|Length|Filter|DecodeParms|Width|Height|ColorSpace|BitsPerComponent|Intent|MediaBox|CropBox|BleedBox|TrimBox|ArtBox|Rotate|UserUnit|Contents|Resources|Parent|Kids|Count|First|Last|Prev|Next|Root|Info|ID|Encrypt|Metadata|PieceInfo|LastModified|Private|Perms|Legal|Collection|NeedsRendering|AcroForm|XFA|DSS|Extensions|AP|AS|OC|OU|JS|AA|OpenAction|Dest|Names|Threads|RichMedia|AF|Dests)/);
-                const hasMeaningfulLength = text.trim().length > 20;
+                const hasMeaningfulLength = text.trim().length > 30;
                 const hasPunctuation = /[.!?,]/.test(text);
                 const hasSpaces = /\s/.test(text);
                 const notOnlyNumbers = !/^\d+$/.test(text.trim());
                 const notBinary = !/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/.test(text);
+                const hasRealSentences = /[A-Za-z가-힣][^.!?]*[.!?]/.test(text);
                 
-                return hasRealWords && notMetadata && hasMeaningfulLength && hasPunctuation && hasSpaces && notOnlyNumbers && notBinary;
+                return hasRealWords && notMetadata && hasMeaningfulLength && hasPunctuation && hasSpaces && notOnlyNumbers && notBinary && hasRealSentences;
               })
               .join(' ');
             
@@ -200,7 +212,7 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        if (extractedRealContent.length > 50) {
+        if (extractedRealContent.length > 100) {
           console.log('✅ 메타데이터에서 실제 내용 추출 성공:', extractedRealContent.length, '자');
           console.log('📄 추출된 실제 내용:', extractedRealContent.substring(0, 200) + '...');
           referenceContent = extractedRealContent;
@@ -213,7 +225,10 @@ export async function POST(request: NextRequest) {
             totalLength: rawContent.length,
             hasMetadata: isPDFMetadata,
             hasObjectRefs: hasObjectRefs,
-            metadataCount: rawContent.match(/StructTreeRoot|obj\s+\d+|endobj|R\s+\d+\s+\d+/g)?.length || 0,
+            hasActualText: hasActualText,
+            hasSentences: hasSentences,
+            metadataCount: metadataPatterns.length,
+            metadataRatio: metadataRatio.toFixed(2),
             contentPreview: rawContent.substring(0, 300)
           };
           
@@ -224,7 +239,9 @@ export async function POST(request: NextRequest) {
 🔍 문제 분석:
 • 추출된 텍스트 길이: ${rawContent.length}자
 • 메타데이터 패턴: ${errorDetails.metadataCount}개 발견
-• 실제 텍스트: ${hasRealContent ? '일부 발견' : '발견되지 않음'}
+• 메타데이터 비율: ${errorDetails.metadataRatio}%
+• 실제 텍스트: ${hasActualText ? '일부 발견' : '발견되지 않음'}
+• 문장 구조: ${hasSentences ? '발견됨' : '발견되지 않음'}
 
 💡 해결 방법:
 1. 텍스트 기반 PDF 파일을 사용해주세요
@@ -238,6 +255,20 @@ export async function POST(request: NextRequest) {
 • 온라인 PDF 텍스트 추출 도구 사용 (SmallPDF, ILovePDF 등)
 • Adobe Acrobat으로 텍스트 추출 후 복사`);
         }
+      } else if (hasActualText || hasSentences || (rawContent.length > 100 && (hasRealContent || hasParagraphs))) {
+        // 실제 텍스트가 있는 경우 (메타데이터가 있어도) - 더 관대한 조건
+        console.log('✅ PDF에서 실제 텍스트 내용 발견');
+        console.log('📄 실제 텍스트 길이:', rawContent.length);
+        console.log('📄 텍스트 품질:', {
+          hasActualText,
+          hasSentences,
+          hasParagraphs,
+          hasKoreanText: /[가-힣]/.test(rawContent),
+          hasEnglishText: /[a-zA-Z]/.test(rawContent),
+          metadataRatio: metadataRatio.toFixed(2)
+        });
+        
+        referenceContent = rawContent;
       } else {
         // 기존 품질 검사
         const hasKoreanText = /[가-힣]/.test(rawContent);
@@ -283,7 +314,7 @@ export async function POST(request: NextRequest) {
       console.log('🔍 문제 분석: PDF 자체를 인식하지 못함');
     }
 
-    // 프롬프트 생성
+    // 프롬프트 생성 (간소화)
     let prompt = `다음 조건에 맞는 발표 대본을 작성해주세요:
 
 **발표 정보:**
@@ -302,13 +333,7 @@ export async function POST(request: NextRequest) {
 ${referenceContent}
 
 **📋 발표 대본 작성 지침:**
-위의 PDF 내용을 바탕으로 발표 대본을 작성해주세요. PDF에 나온 내용을 그대로 발표 주제로 사용하고, PDF의 구조와 정보를 그대로 활용하여 체계적인 발표 대본을 작성해주세요.
-
-**중요한 점:**
-1. PDF의 제목과 주제를 그대로 발표 주제로 사용
-2. PDF에 나온 저자, 소속, 목표 등을 발표에 포함
-3. PDF의 핵심 내용을 발표의 주요 포인트로 구성
-4. PDF의 구조를 따라 발표 대본을 구성`;
+위의 PDF 내용을 바탕으로 발표 대본을 작성해주세요. PDF에 나온 내용을 그대로 발표 주제로 사용하고, PDF의 구조와 정보를 그대로 활용하여 체계적인 발표 대본을 작성해주세요.`;
     } else {
       console.log('ℹ️ 참고 자료 없음 - 기본 정보만으로 대본 생성');
     }
@@ -323,8 +348,8 @@ ${referenceContent}
 
     if (additionalInfo) {
       // 추가 정보도 길이 제한
-      const limitedAdditionalInfo = additionalInfo.length > 500 
-        ? additionalInfo.substring(0, 500) + '...' 
+      const limitedAdditionalInfo = additionalInfo.length > 300 
+        ? additionalInfo.substring(0, 300) + '...' 
         : additionalInfo;
       prompt += `\n- 추가 정보: ${limitedAdditionalInfo}`;
     }
@@ -335,14 +360,10 @@ ${referenceContent}
 1. ${duration}분 발표에 적합한 분량으로 작성
 2. 명확한 구조 (도입-본론-결론)
 3. 시간별 섹션 구분 표시
-4. 청중과의 상호작용 포인트 포함
-5. 발표자가 실제로 말할 수 있는 자연스러운 문체
-6. 적절한 강조점과 전환 구문 포함
-7. 마지막에 발표 팁 제공
+4. 자연스러운 문체로 작성
+5. 마지막에 발표 팁 제공
 
 **출력 형식:**
-[발표 대본]
-
 📝 **발표 제목:** [제목]
 
 ⏰ **예상 발표 시간:** ${duration}분
@@ -373,17 +394,17 @@ ${referenceContent}
 
 ---
 
-대본을 자연스럽고 실용적으로 작성해주세요. 청중에게 맞는 언어와 예시를 사용하고, 발표자가 실제로 말하기 쉬운 형태로 구성해주세요.`;
+대본을 자연스럽고 실용적으로 작성해주세요.`;
 
     console.log('📝 프롬프트 생성 완료, 길이:', prompt.length);
     console.log('🔑 OpenAI API 키 확인:', process.env.OPENAI_API_KEY ? '설정됨' : '❌ 설정되지 않음');
     console.log('🔑 OpenAI API 키 미리보기:', process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 20) + '...' : '없음');
 
     // 프롬프트 길이 확인
-    if (prompt.length > 6000) {
+    if (prompt.length > 4000) { // 6000에서 4000으로 줄임
       console.warn('⚠️ 프롬프트가 너무 깁니다. 참고 자료를 더 줄입니다.');
       if (referenceContent) {
-        referenceContent = await summarizeText(referenceContent, 1500);
+        referenceContent = await summarizeText(referenceContent, 1000); // 1500에서 1000으로 줄임
         prompt = prompt.replace(/참고 자료:\n[\s\S]*?(?=\n\n위의 참고 자료)/, `참고 자료:\n${referenceContent}`);
         console.log('📝 수정된 프롬프트 길이:', prompt.length);
       }
@@ -396,25 +417,25 @@ ${referenceContent}
     
     const startTime = Date.now();
     
-    // 타임아웃 설정 (25초)
+    // 타임아웃 설정 (30초로 조정)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('OpenAI API 호출 시간이 초과되었습니다.')), 25000);
+      setTimeout(() => reject(new Error('OpenAI API 호출 시간이 초과되었습니다.')), 30000);
     });
     
     const completionPromise = openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo", // 더 빠른 모델로 변경
       messages: [
         {
           role: "system",
           content: "당신은 전문적인 발표 코치이자 스피치 라이터입니다. PDF 자료가 제공된 경우, PDF의 내용을 그대로 발표 주제로 사용하고, PDF에 나온 제목, 저자, 목표, 내용을 발표 대본에 정확히 반영해주세요. PDF의 구조와 정보를 그대로 활용하여 체계적인 발표 대본을 작성해주세요. PDF 내용을 바탕으로 한 실용적이고 자연스러운 발표 대본을 작성해주세요."
         },
         {
-          role: "user",
+          role: "user", 
           content: prompt
         }
       ],
-      max_tokens: 3000,
-      temperature: 0.7,
+      max_tokens: 2000, // 토큰 수 줄임
+      temperature: 0.7
     });
     
     // 타임아웃과 API 호출을 경쟁시킴
