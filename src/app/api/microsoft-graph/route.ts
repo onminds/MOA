@@ -7,6 +7,12 @@ interface MicrosoftGraphSlide {
   slideType: 'text' | 'image' | 'mixed';
 }
 
+interface SlidesResponse {
+  success: boolean;
+  slides?: MicrosoftGraphSlide[];
+  error?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -49,12 +55,14 @@ export async function POST(request: NextRequest) {
         throw new Error('슬라이드 정보 가져오기 실패');
       }
       
-      console.log('📊 슬라이드 정보 가져오기 완료:', slidesResponse.slides.length, '슬라이드');
+      // slides가 undefined일 수 있는 상황 처리
+      const slides = slidesResponse.slides || [];
+      console.log('📊 슬라이드 정보 가져오기 완료:', slides.length, '슬라이드');
       
       return NextResponse.json({
         success: true,
-        totalSlides: slidesResponse.slides.length,
-        slides: slidesResponse.slides,
+        totalSlides: slides.length,
+        slides: slides,
         environment: process.env.VERCEL === '1' ? 'Vercel' : '호스트'
       });
       
@@ -109,7 +117,7 @@ async function uploadToOneDrive(file: File, accessToken: string) {
 }
 
 // PowerPoint 슬라이드 정보 가져오기
-async function getPowerPointSlides(fileId: string, accessToken: string) {
+async function getPowerPointSlides(fileId: string, accessToken: string): Promise<SlidesResponse> {
   try {
     const response = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`, {
       method: 'GET',
