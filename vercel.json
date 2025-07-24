@@ -1,13 +1,11 @@
 {
+  "buildCommand": "npm run vercel-build",
   "functions": {
-    "src/app/api/presentation-script/route.ts": {
-      "maxDuration": 30
+    "app/api/**/*.ts": {
+      "maxDuration": 60
     },
-    "src/app/api/document-ocr/route.ts": {
-      "maxDuration": 30
+    "app/api/ai-summary/route.ts": {
+      "maxDuration": 120
     }
-  },
-  "env": {
-    "OPENAI_API_KEY": "@openai_api_key"
   }
 } 
