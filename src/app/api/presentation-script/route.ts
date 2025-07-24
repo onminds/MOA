@@ -411,9 +411,11 @@ ${referenceContent}
     }
 
     console.log('🚀 OpenAI API 호출 시작...');
-    console.log('🤖 사용 모델: gpt-4');
-    console.log('📏 최대 토큰: 3000');
+    console.log('🤖 사용 모델: gpt-3.5-turbo');
+    console.log('📏 최대 토큰: 2000');
     console.log('🌡️ 온도: 0.7');
+    console.log('⏱️ 타임아웃: 30초');
+    console.log('📝 프롬프트 길이:', prompt.length);
     
     const startTime = Date.now();
     

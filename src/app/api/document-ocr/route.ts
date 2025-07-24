@@ -48,6 +48,13 @@ export async function POST(request: NextRequest) {
       console.log('✅ Azure Document Intelligence 성공!');
       console.log('📝 추출된 텍스트 길이:', analysisResult.content.length);
       console.log('📝 텍스트 미리보기:', analysisResult.content.substring(0, 200) + '...');
+      console.log('📊 분석 상세 정보:', {
+        페이지수: analysisResult.pages.length,
+        표개수: analysisResult.tables.length,
+        키값쌍개수: analysisResult.keyValuePairs.length,
+        텍스트길이: analysisResult.content.length,
+        환경: isVercel ? 'Vercel' : '호스트'
+      });
       
       return NextResponse.json({
         success: true,
