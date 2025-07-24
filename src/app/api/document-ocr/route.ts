@@ -126,19 +126,26 @@ async function analyzeDocumentWithAzure(buffer: Buffer, fileName: string): Promi
     
     // 1. 문서 업로드 및 분석 시작 (여러 API 경로 시도)
     const apiPaths = [
-      '/formrecognizer/documentModels/prebuilt-document:analyze?api-version=2022-08-31',
+      '/documentintelligence/documentModels/prebuilt-document:analyze?api-version=2024-02-29-preview',
+      '/documentintelligence/documentModels/prebuilt-document:analyze?api-version=2023-10-31',
       '/formrecognizer/documentModels/prebuilt-document:analyze?api-version=2023-10-31',
-      '/documentintelligence/documentModels/prebuilt-document:analyze?api-version=2022-08-31',
-      '/documentintelligence/documentModels/prebuilt-document:analyze?api-version=2023-10-31'
+      '/formrecognizer/documentModels/prebuilt-document:analyze?api-version=2022-08-31'
     ];
     
     let uploadResponse: Response | null = null;
     let lastError: string = '';
     
+    console.log('🔧 Azure 설정 확인:');
+    console.log('  - 엔드포인트:', cleanEndpoint);
+    console.log('  - API 키 존재:', !!AZURE_API_KEY);
+    console.log('  - 파일 크기:', buffer.length, 'bytes');
+    
     for (const apiPath of apiPaths) {
       try {
-        console.log(`🔗 API 경로 시도: ${apiPath}`);
-        uploadResponse = await fetch(`${cleanEndpoint}${apiPath}`, {
+        const fullUrl = `${cleanEndpoint}${apiPath}`;
+        console.log(`🔗 API 경로 시도: ${fullUrl}`);
+        
+        uploadResponse = await fetch(fullUrl, {
           method: 'POST',
           headers: {
             'Ocp-Apim-Subscription-Key': AZURE_API_KEY,
