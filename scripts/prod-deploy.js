@@ -57,6 +57,17 @@ try {
     console.log('ℹ️ Vercel이 자동으로 배포를 감지할 것입니다.');
   }
   
+  // 5. Vercel CLI를 통한 실제 배포 시도
+  try {
+    console.log('🚀 Vercel CLI를 통한 배포 시도...');
+    execSync('vercel --prod --yes', { stdio: 'inherit' });
+    console.log('✅ Vercel CLI 배포 성공!');
+  } catch (vercelError) {
+    console.log('⚠️ Vercel CLI 배포 실패:', vercelError.message);
+    console.log('ℹ️ GitHub 연동을 통한 자동 배포를 기다립니다.');
+    console.log('ℹ️ Vercel 대시보드에서 수동 배포가 필요할 수 있습니다.');
+  }
+  
   console.log('✅ Vercel 배포 완료!');
   console.log('🔗 사이트: https://moa-kappa.vercel.app');
   console.log('');
