@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Header from '../../components/Header';
-import { Presentation, Clock, Users, Target, Lightbulb, FileText, Download, Copy, RefreshCw, Upload, FileCheck, X, Plus, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { Presentation, Clock, Users, Target, Lightbulb, FileText, Download, Copy, RefreshCw, Upload, X, Plus, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 export default function PresentationScript() {
   const [formData, setFormData] = useState({
@@ -10,8 +10,9 @@ export default function PresentationScript() {
     audience: '',
     purpose: '',
     keyPoints: [''],
-    tone: '',
-    additionalInfo: ''
+    additionalInfo: '',
+    customAudience: '',
+    customPurpose: ''
   });
   
   const [generatedScript, setGeneratedScript] = useState('');
@@ -23,14 +24,19 @@ export default function PresentationScript() {
     id: string, 
     data: string, 
     text: string,
+    fileName: string,
     status: 'processing' | 'success' | 'error',
     errorMessage?: string
   }>>([]);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const [isFileMode, setIsFileMode] = useState(false);
   
   // 파일 내용 사용 여부 추적
   const [usedFileContent, setUsedFileContent] = useState<string>('');
+  
+  // 파일 길이 안내 팝업 상태
+  const [showFileInfoPopup, setShowFileInfoPopup] = useState(false);
+  const [showEmphasisInfoPopup, setShowEmphasisInfoPopup] = useState(false);
+  const [showDurationInfoPopup, setShowDurationInfoPopup] = useState(false);
 
   // PDF 내용 분석하여 주제 자동 설정
   const analyzePDFContent = (text: string) => {
@@ -69,15 +75,8 @@ export default function PresentationScript() {
       objectivesLength: objectives.length
     });
     
-    // 주제 자동 설정
-    if (detectedTitle) {
-      const newTopic = detectedTitle.includes('Chapter') ? detectedTitle : `Chapter: ${detectedTitle}`;
-      setFormData(prev => ({
-        ...prev,
-        topic: newTopic
-      }));
-      console.log('✅ 주제 자동 설정:', newTopic);
-    }
+    // 주제 자동 설정 제거 - 사용자가 직접 입력한 주제를 유지
+    console.log('📝 PDF에서 제목이 감지되었지만 자동 설정하지 않습니다. 사용자가 입력한 주제를 유지합니다.');
     
     return { detectedTitle, author, objectives };
   };
@@ -85,41 +84,25 @@ export default function PresentationScript() {
   const durationOptions = [
     { value: '5', label: '5분' },
     { value: '10', label: '10분' },
-    { value: '15', label: '15분' },
-    { value: '20', label: '20분' },
-    { value: '30', label: '30분' },
-    { value: '45', label: '45분' },
-    { value: '60', label: '1시간' }
+    { value: '15', label: '15분' }
   ];
 
   const audienceOptions = [
-    { value: 'colleagues', label: '동료/팀원' },
-    { value: 'executives', label: '경영진/상급자' },
-    { value: 'clients', label: '고객/클라이언트' },
-    { value: 'students', label: '학생/수강생' },
+    { value: 'colleagues', label: '동료 / 팀원' },
+    { value: 'executives', label: '경영진 / 임원' },
+    { value: 'students', label: '학생 / 수강생' },
     { value: 'general', label: '일반 대중' },
-    { value: 'professionals', label: '전문가/업계 관계자' },
-    { value: 'investors', label: '투자자/파트너' }
+    { value: 'clients', label: '고객 / 클라이언트' },
+    { value: 'custom', label: '직접 입력' }
   ];
 
   const purposeOptions = [
     { value: 'inform', label: '정보 전달' },
-    { value: 'persuade', label: '설득/제안' },
-    { value: 'educate', label: '교육/훈련' },
-    { value: 'entertain', label: '오락/흥미 유발' },
-    { value: 'motivate', label: '동기부여/격려' },
-    { value: 'report', label: '보고/상황 전달' },
-    { value: 'present', label: '제품/서비스 소개' }
-  ];
-
-  const toneOptions = [
-    { value: 'professional', label: '전문적/공식적' },
-    { value: 'casual', label: '친근/편안한' },
-    { value: 'enthusiastic', label: '열정적/에너지 넘치는' },
-    { value: 'calm', label: '차분/신뢰감 있는' },
-    { value: 'humorous', label: '유머러스/재미있는' },
-    { value: 'inspirational', label: '영감을 주는/격려하는' },
-    { value: 'authoritative', label: '권위적/확신에 찬' }
+    { value: 'persuade', label: '설득 / 제안' },
+    { value: 'educate', label: '교육 / 훈련' },
+    { value: 'report', label: '보고 / 상황 전달' },
+    { value: 'present', label: '제품 / 서비스 소개' },
+    { value: 'custom', label: '직접 입력' }
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -374,6 +357,7 @@ export default function PresentationScript() {
               id: `doc_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
               data: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`, // 빈 이미지 플레이스홀더
               text: result.text.trim(),
+              fileName: file.name,
               status: 'success' as const
             };
             
@@ -386,6 +370,7 @@ export default function PresentationScript() {
               id: `doc_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
               data: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`,
               text: result.text || '텍스트 추출 실패',
+              fileName: file.name,
               status: 'error' as const,
               errorMessage: result.error || '알 수 없는 오류'
             };
@@ -439,6 +424,7 @@ export default function PresentationScript() {
         id: `doc_${Date.now()}_error_${Math.random().toString(36).substr(2, 9)}`,
         data: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`,
         text: '문서 처리 실패',
+        fileName: file.name,
         status: 'error' as const,
         errorMessage: errorMessage
       };
@@ -475,6 +461,7 @@ export default function PresentationScript() {
         id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, 
         data: imageData, 
         text: '',
+        fileName: file.name,
         status: 'processing' as const
       };
       
@@ -533,6 +520,7 @@ export default function PresentationScript() {
           id: `img_${Date.now()}_error_${Math.random().toString(36).substr(2, 9)}`,
           data: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`,
           text: '이미지 처리 실패',
+          fileName: file.name,
           status: 'error' as const,
           errorMessage: errorMessage
         };
@@ -549,42 +537,32 @@ export default function PresentationScript() {
     setError('');
   };
 
-  // 모드 변경
-  const switchMode = (mode: 'create' | 'improve') => {
-    setIsFileMode(mode === 'improve');
-    setGeneratedScript('');
-    setError('');
-    setUsedFileContent(''); // 파일 내용 추적 상태도 초기화
-  };
-
   const generateScript = async () => {
     console.log('=== 대본 생성 시작 ===');
     
-    if (isFileMode) {
-      // 파일 개선 모드
-      if (uploadedImages.length === 0) {
-        console.error('❌ 개선할 이미지가 없음');
-        setError('먼저 개선할 이미지를 붙여넣거나 업로드해주세요.');
-        return;
-      }
-    } else {
-      // 새 대본 생성 모드
-      if (!formData.topic.trim() || !formData.audience || !formData.purpose) {
-        console.error('❌ 필수 입력 항목 누락:', {
-          topic: formData.topic,
-          audience: formData.audience,
-          purpose: formData.purpose
-        });
-        setError('발표 주제, 대상 청중, 발표 목적은 필수 입력 항목입니다.');
-        return;
-      }
+    // 새 대본 생성 모드
+    if (!formData.topic.trim() || !formData.audience || !formData.purpose) {
+      console.error('❌ 필수 입력 항목 누락:', {
+        topic: formData.topic,
+        audience: formData.audience,
+        purpose: formData.purpose
+      });
+      setError('발표 주제, 대상 청중, 발표 목적은 필수 입력 항목입니다.');
+      return;
+    }
+    
+    // 참고 자료 이미지 필수 체크 추가
+    const hasValidImages = uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0);
+    if (!hasValidImages) {
+      console.error('❌ 참고 자료 이미지가 없음');
+      setError('참고 자료 이미지를 필수로 업로드해주세요. 발표 대본 생성을 위해 PDF나 이미지 파일을 붙여넣거나 업로드해주세요.');
+      return;
     }
 
     setIsLoading(true);
     setError('');
 
     try {
-      const endpoint = isFileMode ? '/api/presentation-script/improve' : '/api/presentation-script';
       const allImageText = uploadedImages
         .filter(img => img.status === 'success')
         .map(img => img.text)
@@ -594,8 +572,7 @@ export default function PresentationScript() {
       setUsedFileContent(allImageText);
       
       console.log('📊 대본 생성 정보:', {
-        mode: isFileMode ? '개선' : '새 생성',
-        endpoint,
+        mode: '새 생성',
         topic: formData.topic,
         audience: formData.audience,
         purpose: formData.purpose,
@@ -613,9 +590,13 @@ export default function PresentationScript() {
         textPreview: img.text?.substring(0, 100) + (img.text?.length > 100 ? '...' : '')
       })));
       
-      const body = isFileMode 
-        ? { imageText: allImageText, fileContent: allImageText, formData }
-        : { ...formData, imageText: allImageText || '', fileContent: allImageText || '' };
+      const body = { 
+            ...formData, 
+            imageText: allImageText || '', 
+            fileContent: allImageText || '',
+            audience: formData.audience === 'custom' ? formData.customAudience : formData.audience,
+            purpose: formData.purpose === 'custom' ? formData.customPurpose : formData.purpose
+          };
 
       console.log('📤 API 요청 본문:', {
         ...body,
@@ -629,7 +610,7 @@ export default function PresentationScript() {
       });
 
       console.log('🚀 API 호출 시작...');
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/presentation-script', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -641,7 +622,7 @@ export default function PresentationScript() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `${isFileMode ? '대본 개선' : '발표 대본 생성'}에 실패했습니다.`;
+        const errorMessage = errorData.error || '발표 대본 생성에 실패했습니다.';
         console.error('❌ API 오류:', errorMessage);
         console.error('❌ 응답 상태:', response.status);
         console.error('❌ 오류 데이터:', errorData);
@@ -659,7 +640,7 @@ export default function PresentationScript() {
         throw new Error('생성된 대본이 없습니다.');
       }
       
-      setGeneratedScript(data.script);
+      setGeneratedScript(removeMarkdownSymbols(data.script));
       console.log('🎉 대본 생성 성공, 길이:', data.script.length);
       console.log('📄 대본 미리보기:', data.script.substring(0, 200) + '...');
       
@@ -681,16 +662,113 @@ export default function PresentationScript() {
     navigator.clipboard.writeText(generatedScript);
   };
 
-  const downloadScript = () => {
-    const blob = new Blob([generatedScript], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `발표대본_${formData.topic || '제목없음'}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const downloadScript = async () => {
+    try {
+      // docx 라이브러리 동적 import
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
+      
+      // 발표 대본을 섹션별로 분할
+      const sections = removeMarkdownSymbols(generatedScript)
+        .split(/(?=도입부|본론|결론)/g)
+        .filter(section => section.trim());
+      
+      // 워드 문서 생성
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            // 제목
+            new Paragraph({
+              text: `발표 대본: ${formData.topic || '제목없음'}`,
+              heading: HeadingLevel.HEADING_1,
+              spacing: { after: 400 }
+            }),
+            
+            // 발표 정보
+            new Paragraph({
+              children: [
+                new TextRun({ text: `발표 대상: ${formData.audience}`, bold: true }),
+                new TextRun({ text: ' | ' }),
+                new TextRun({ text: `발표 시간: ${formData.duration}분`, bold: true }),
+                new TextRun({ text: ' | ' }),
+                new TextRun({ text: `발표 목적: ${formData.purpose}`, bold: true })
+              ],
+              spacing: { after: 200 }
+            }),
+            
+            // 구분선
+            new Paragraph({
+              children: [new TextRun({ text: '─'.repeat(50) })],
+              spacing: { after: 400 }
+            }),
+            
+            // 각 섹션 추가
+            ...sections.map(section => {
+              const lines = section.split('\n').filter(line => line.trim());
+              if (lines.length === 0) return [];
+              
+              const sectionTitle = lines[0].trim();
+              const sectionContent = lines.slice(1).join('\n').trim();
+              
+              return [
+                // 섹션 제목
+                new Paragraph({
+                  text: sectionTitle,
+                  heading: HeadingLevel.HEADING_2,
+                  spacing: { before: 400, after: 200 }
+                }),
+                
+                // 섹션 내용
+                new Paragraph({
+                  text: sectionContent,
+                  spacing: { after: 300 }
+                })
+              ];
+            }).flat()
+          ]
+        }]
+      });
+      
+      // 워드 문서 생성 및 다운로드
+      const buffer = await Packer.toBuffer(doc);
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `발표대본_${formData.topic || '제목없음'}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('워드 문서 생성 중 오류:', error);
+      // 오류 발생 시 기존 텍스트 파일로 fallback
+      const blob = new Blob([generatedScript], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `발표대본_${formData.topic || '제목없음'}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  // 마크다운 기호 제거 함수
+  const removeMarkdownSymbols = (text: string) => {
+    return text
+      .replace(/^\s*[#*]+\s*/gm, '') // 줄 시작의 #, * 제거
+      .replace(/\*\*(.*?)\*\*/g, '$1') // **텍스트** → 텍스트
+      .replace(/\*(.*?)\*/g, '$1') // *텍스트* → 텍스트
+      .replace(/^#+\s+/gm, '') // # 제목 → 제목
+      .replace(/\n\s*[-*+]\s+/g, '\n• ') // - * + → •
+      .replace(/\n\s*\d+\.\s+/g, '\n') // 1. 2. → 줄바꿈
+      .replace(/\[([^\]]+)\]/g, '$1') // [텍스트] → 텍스트
+      .trim();
   };
 
   // 성공한 이미지 개수
@@ -700,8 +778,12 @@ export default function PresentationScript() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4">
+      <div className="min-h-screen bg-gray-50 py-8" onClick={() => {
+        setShowFileInfoPopup(false);
+        setShowEmphasisInfoPopup(false);
+        setShowDurationInfoPopup(false);
+      }}>
+        <div className="max-w-7xl mx-auto px-4">
           {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
@@ -709,115 +791,115 @@ export default function PresentationScript() {
               <h1 className="text-3xl font-bold text-gray-900">AI 발표 대본 생성</h1>
             </div>
             <p className="text-gray-600 text-lg mb-6">
-              새로운 발표 대본을 생성하거나 기존 대본을 개선할 수 있습니다. 이미지를 붙여넣어 참고 자료로 활용할 수 있습니다.
+              발표 자료, 시간, 주제를 입력하면 AI가 대본을 완성합니다. 이미지를 붙여넣어 참고 자료로 활용할 수 있습니다.
             </p>
-            
-            {/* 모드 선택 버튼 */}
-            <div className="flex items-center justify-center space-x-4 mb-6">
-              <button
-                onClick={() => switchMode('create')}
-                className={`px-6 py-3 rounded-lg font-medium flex items-center transition-colors ${
-                  !isFileMode 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                새 대본 생성
-              </button>
-              <button
-                onClick={() => switchMode('improve')}
-                className={`px-6 py-3 rounded-lg font-medium flex items-center transition-colors ${
-                  isFileMode 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                <FileCheck className="w-4 h-4 mr-2" />
-                기존 대본 개선
-              </button>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-8 gap-8">
             {/* 왼쪽: 발표 정보 입력 */}
-            <div className="space-y-6">
+            <div className="lg:col-span-3 space-y-6">
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <Lightbulb className="w-5 h-5 mr-2" />
                   발표 정보 입력
                 </h2>
 
-                {/* 참고 자료 이미지 업로드 */}
+                {/* 발표 주제 */}
                 <div className="mb-6">
-                  <h3 className={`text-lg font-medium mb-3 flex items-center ${
-                    isFileMode ? 'text-green-800' : 'text-blue-800'
-                  }`}>
-                    <Upload className="w-5 h-5 mr-2" />
-                    {isFileMode ? '대본 이미지 업로드' : '참고 자료 이미지 (선택사항)'}
-                  </h3>
-                  
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 mb-2">
-                      이미지, PDF, PowerPoint 파일을 붙여넣기(Ctrl+V)하거나 파일을 선택하세요
-                    </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                      <div className="flex items-start">
-                        <Info className="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
-                        <div className="text-sm text-blue-800">
-                          <p className="font-medium mb-1">📄 파일 길이 안내</p>
-                          <ul className="space-y-1 text-xs">
-                            <li>• <strong>3,000자 이하</strong>: 전체 내용 처리</li>
-                            <li>• <strong>3,000자 초과</strong>: 1-2페이지까지만 요약 처리</li>
-                            <li>• <strong>PDF/PPT</strong>: 페이지 수 자동 계산</li>
-                            <li>• <strong>이미지</strong>: 텍스트 길이 기준</li>
-                          </ul>
+                  <label className="block text-base font-medium text-gray-800 mb-2">
+                    <FileText className="w-4 h-4 inline mr-1" />
+                    발표 주제
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.topic}
+                    onChange={(e) => handleInputChange('topic', e.target.value)}
+                    placeholder="예: 신제품 마케팅 전략, 프로젝트 진행 현황 보고"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500"
+                  />
+                </div>
+
+                {/* 참고 자료 및 추가 정보 */}
+                <div className="mb-6">
+                  <div className="flex items-center mb-2">
+                    <label className="block text-base font-medium text-gray-800">
+                      <FileText className="w-4 h-4 inline mr-1" />
+                      참고 자료 및 추가 정보
+                    </label>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowFileInfoPopup(!showFileInfoPopup);
+                        }}
+                        className="ml-2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="파일 길이 안내"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                      
+                      {/* 파일 길이 안내 팝업 */}
+                      {showFileInfoPopup && (
+                        <div 
+                          className="absolute top-full left-0 mt-1 z-50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-64">
+                            {/* 팝업 헤더 */}
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-semibold text-black">파일 길이 안내</h4>
+                              <button
+                                onClick={() => setShowFileInfoPopup(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            {/* 팝업 내용 */}
+                            <div className="text-xs text-black">
+                              <ul className="space-y-1">
+                                <li className="flex items-start">
+                                  <span className="text-blue-600 mr-2">🔹</span>
+                                  <span>텍스트 3,000자 초과 시 요약 처리</span>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    {/* 파일 선택 영역 */}
-                    <div 
-                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
-                        isFileMode 
-                          ? 'border-green-300 bg-green-50 hover:bg-green-100' 
-                          : 'border-blue-300 bg-blue-50 hover:bg-blue-100'
-                      }`}
-                      onClick={() => document.getElementById('imageInput')?.click()}
-                      tabIndex={0}
-                    >
-                      <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                        <Upload className={`w-6 h-6 mb-1 ${isFileMode ? 'text-green-500' : 'text-blue-500'}`} />
-                        <p className={`text-sm ${isFileMode ? 'text-green-700' : 'text-blue-700'}`}>
-                          <span className="font-semibold">파일 선택</span>
-                        </p>
-                        <p className={`text-xs ${isFileMode ? 'text-green-600' : 'text-blue-600'}`}>
-                          클릭하여 파일 선택 (이미지, PDF, PPT)
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* 붙여넣기 영역 */}
-                    <div 
-                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-colors ${
-                        isFileMode 
-                          ? 'border-green-300 bg-green-50' 
-                          : 'border-blue-300 bg-blue-50'
-                      }`}
+                  {/* 파일 형식 안내 */}
+                  <div className="mb-2 text-xs text-gray-500">
+                    이미지, PDF, PPT 형식 업로드 가능
+                  </div>
+                  
+                  {/* 메인 입력 영역 */}
+                  <div className="relative">
+                    <textarea
+                      value={formData.additionalInfo}
+                      onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
                       onPaste={handleImagePaste}
-                      tabIndex={0}
-                    >
-                      <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                        <Plus className={`w-6 h-6 mb-1 ${isFileMode ? 'text-green-500' : 'text-blue-500'}`} />
-                        <p className={`text-sm ${isFileMode ? 'text-green-700' : 'text-blue-700'}`}>
-                          <span className="font-semibold">붙여넣기</span>
-                        </p>
-                        <p className={`text-xs ${isFileMode ? 'text-green-600' : 'text-blue-600'}`}>
-                          Ctrl+V로 이미지 붙여넣기 (PDF/PPT는 파일 선택만 가능)
-                        </p>
-                      </div>
+                      placeholder="참고 자료를 첨부하거나 내용을 입력해주세요."
+                      rows={5}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500 resize-none"
+                    />
+                    
+                    {/* 파일 첨부 버튼 (오른쪽 하단) */}
+                    <div className="absolute bottom-3 right-3">
+                      <button
+                        onClick={() => document.getElementById('imageInput')?.click()}
+                        className={`p-2 rounded-full transition-colors ${
+                          true 
+                            ? 'bg-blue-100 hover:bg-blue-200 text-blue-600' 
+                            : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
+                        }`}
+                        title="파일 첨부"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </div>
                     
                     {/* 숨겨진 파일 입력 */}
@@ -829,22 +911,23 @@ export default function PresentationScript() {
                       onChange={handleFileSelect}
                       className="hidden"
                     />
-                    
-                    {isProcessingImage && (
-                      <div className="flex items-center justify-center py-2">
-                        <RefreshCw className={`w-4 h-4 mr-2 animate-spin ${isFileMode ? 'text-green-600' : 'text-blue-600'}`} />
-                        <span className={isFileMode ? 'text-green-600' : 'text-blue-600'}>파일 처리 중...</span>
-                      </div>
-                    )}
                   </div>
                   
-                  {/* 업로드된 이미지 목록 */}
+                  {/* 파일 처리 중 표시 */}
+                  {isProcessingImage && (
+                    <div className="flex items-center justify-center py-2 mt-2">
+                      <RefreshCw className={`w-4 h-4 mr-2 animate-spin text-blue-600`} />
+                      <span className="text-blue-600">파일 처리 중...</span>
+                    </div>
+                  )}
+                  
+                  {/* 업로드된 파일 목록 */}
                   {uploadedImages.length > 0 && (
                     <div className="mt-4 space-y-2">
                       <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                        <span>업로드된 이미지 ({uploadedImages.length}개)</span>
+                        <span>첨부된 파일 ({uploadedImages.length}개)</span>
                         {successCount > 0 && (
-                          <span className="text-green-600 flex items-center">
+                          <span className="text-blue-600 flex items-center">
                             <CheckCircle className="w-4 h-4 mr-1" />
                             성공: {successCount}개
                           </span>
@@ -857,143 +940,266 @@ export default function PresentationScript() {
                         )}
                       </div>
                       
-                                              {uploadedImages.map((image, index) => (
-                          <div key={image.id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
-                            <div className="flex items-center">
-                              {image.id.startsWith('doc_') ? (
-                                <div className="w-8 h-8 bg-gray-200 rounded mr-2 flex items-center justify-center">
-                                  <FileText className="w-4 h-4 text-gray-600" />
-                                </div>
-                              ) : (
-                                <img src={image.data} alt={`업로드된 이미지 ${index + 1}`} className="w-8 h-8 object-cover rounded mr-2" />
-                              )}
-                              <span className="text-sm font-medium text-gray-800">
-                                {image.id.startsWith('doc_') ? `문서 페이지 ${index + 1}` : `이미지 ${index + 1}`}
-                              </span>
-                            
-                            {/* 상태 표시 */}
-                            <div className="ml-2">
-                              {image.status === 'processing' && (
-                                <div className="flex items-center text-blue-600">
-                                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                                  <span className="text-xs">처리 중</span>
-                                </div>
-                              )}
-                              {image.status === 'success' && (
-                                <div className="flex items-center text-green-600">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  <span className="text-xs">텍스트 추출 완료</span>
-                                </div>
-                              )}
-                              {image.status === 'error' && (
-                                <div className="flex items-center text-red-600">
-                                  <AlertCircle className="w-3 h-3 mr-1" />
-                                  <span className="text-xs" title={image.errorMessage || '추출 실패'}>
-                                    {image.errorMessage || '추출 실패'}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                      {uploadedImages.map((image, index) => (
+                        <div key={image.id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                          <div className="flex items-center">
+                            {image.id.startsWith('doc_') ? (
+                              <div className="w-8 h-8 bg-gray-200 rounded mr-2 flex items-center justify-center">
+                                <FileText className="w-4 h-4 text-gray-600" />
+                              </div>
+                            ) : (
+                              <img src={image.data} alt={`업로드된 이미지 ${index + 1}`} className="w-8 h-8 object-cover rounded mr-2" />
+                            )}
+                            <span className="text-sm font-medium text-gray-800">
+                              {image.fileName}
+                            </span>
                           </div>
-                          <button
-                            onClick={() => removeImage(image.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          
+                          {/* 상태 표시 */}
+                          <div className="flex items-center">
+                            {image.status === 'processing' && (
+                              <div className="flex items-center text-blue-600 mr-2">
+                                <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                                <span className="text-xs">처리 중</span>
+                              </div>
+                            )}
+                            {image.status === 'success' && (
+                              <div className="flex items-center text-blue-600 mr-2">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                <span className="text-xs">완료</span>
+                              </div>
+                            )}
+                            {image.status === 'error' && (
+                              <div className="flex items-center text-red-600 mr-2">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                <span className="text-xs" title={image.errorMessage || '실패'}>
+                                  {image.errorMessage || '실패'}
+                                </span>
+                              </div>
+                            )}
+                            <button
+                              onClick={() => removeImage(image.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                
-                {/* 발표 주제 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    <FileText className="w-4 h-4 inline mr-1" />
-                    발표 주제 {!isFileMode && '*'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.topic}
-                    onChange={(e) => handleInputChange('topic', e.target.value)}
-                    placeholder={isFileMode ? "개선된 대본의 주제 (선택사항)" : "예: 신제품 마케팅 전략, 프로젝트 진행 현황 보고"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500"
-                  />
-                </div>
 
                 {/* 발표 시간 */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    <Clock className="w-4 h-4 inline mr-1" />
-                    발표 시간
-                  </label>
-                  <select
-                    value={formData.duration}
-                    onChange={(e) => handleInputChange('duration', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  >
+                  <div className="flex items-center mb-2">
+                    <label className="block text-base font-medium text-gray-800">
+                      <Clock className="w-4 h-4 inline mr-1" />
+                      발표 시간
+                    </label>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDurationInfoPopup(!showDurationInfoPopup);
+                        }}
+                        className="ml-2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="발표 시간 안내"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                      
+                      {/* 발표 시간 안내 팝업 */}
+                      {showDurationInfoPopup && (
+                        <div 
+                          className="absolute top-full left-0 mt-1 z-50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-64">
+                            {/* 팝업 헤더 */}
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-semibold text-black">발표 시간 안내</h4>
+                              <button
+                                onClick={() => setShowDurationInfoPopup(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            {/* 팝업 내용 */}
+                            <div className="text-xs text-black">
+                              발표 시간에 따라 대본의 길이가 정해집니다.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
                     {durationOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <button
+                        key={option.value}
+                        onClick={() => handleInputChange('duration', option.value)}
+                        className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                          formData.duration === option.value
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-blue-300'
+                        }`}
+                      >
                         {option.label}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
-                {/* 대상 청중 */}
+                {/* 발표 대상 */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                  <label className="block text-base font-medium text-gray-800 mb-2">
                     <Users className="w-4 h-4 inline mr-1" />
-                    대상 청중 {!isFileMode && '*'}
+                    발표 대상
                   </label>
-                  <select
-                    value={formData.audience}
-                    onChange={(e) => handleInputChange('audience', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  >
-                    <option value="">청중을 선택하세요</option>
+                  <div className="grid grid-cols-2 gap-2">
                     {audienceOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          handleInputChange('audience', option.value);
+                          if (option.value === 'custom') {
+                            // 직접 입력 버튼 클릭 시 입력 필드에 포커스
+                            setTimeout(() => {
+                              const input = document.getElementById('customAudienceInput');
+                              if (input) input.focus();
+                            }, 100);
+                          }
+                        }}
+                        className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                          formData.audience === option.value
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-blue-300'
+                        }`}
+                      >
                         {option.label}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
+                  
+                  {/* 직접 입력 필드 */}
+                  {formData.audience === 'custom' && (
+                    <div className="mt-3">
+                      <input
+                        id="customAudienceInput"
+                        type="text"
+                        value={formData.customAudience}
+                        onChange={(e) => handleInputChange('customAudience', e.target.value)}
+                        placeholder="발표 대상을 입력해주세요."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500"
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* 발표 목적 */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                  <label className="block text-base font-medium text-gray-800 mb-2">
                     <Target className="w-4 h-4 inline mr-1" />
-                    발표 목적 {!isFileMode && '*'}
+                    발표 목적
                   </label>
-                  <select
-                    value={formData.purpose}
-                    onChange={(e) => handleInputChange('purpose', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  >
-                    <option value="">목적을 선택하세요</option>
+                  <div className="grid grid-cols-2 gap-2">
                     {purposeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          handleInputChange('purpose', option.value);
+                          if (option.value === 'custom') {
+                            // 직접 입력 버튼 클릭 시 입력 필드에 포커스
+                            setTimeout(() => {
+                              const input = document.getElementById('customPurposeInput');
+                              if (input) input.focus();
+                            }, 100);
+                          }
+                        }}
+                        className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                          formData.purpose === option.value
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-blue-300'
+                        }`}
+                      >
                         {option.label}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
+                  
+                  {/* 직접 입력 필드 */}
+                  {formData.purpose === 'custom' && (
+                    <div className="mt-3">
+                      <input
+                        id="customPurposeInput"
+                        type="text"
+                        value={formData.customPurpose}
+                        onChange={(e) => handleInputChange('customPurpose', e.target.value)}
+                        placeholder="발표 목적을 입력해주세요."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500"
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* 주요 포인트 */}
+                {/* 강조 포인트 */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    <Lightbulb className="w-4 h-4 inline mr-1" />
-                    주요 포인트 (선택사항)
-                  </label>
+                  <div className="flex items-center mb-2">
+                    <label className="block text-base font-medium text-gray-800">
+                      <Lightbulb className="w-4 h-4 inline mr-1" />
+                      강조 포인트 (선택사항)
+                    </label>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowEmphasisInfoPopup(!showEmphasisInfoPopup);
+                        }}
+                        className="ml-2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="강조 포인트 안내"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                      
+                      {/* 강조 포인트 안내 팝업 */}
+                      {showEmphasisInfoPopup && (
+                        <div 
+                          className="absolute top-full left-0 mt-1 z-50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-64">
+                            {/* 팝업 헤더 */}
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-semibold text-black">강조 포인트 안내</h4>
+                              <button
+                                onClick={() => setShowEmphasisInfoPopup(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            {/* 팝업 내용 */}
+                            <div className="text-xs text-black">
+                              발표에서 꼭 전달하고 싶은 핵심 내용을 적어주세요. (예 : "매출 성장 요인", "AI 도입 효과")
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   {formData.keyPoints.map((point, index) => (
                     <div key={index} className="flex items-center mb-2">
                       <input
                         type="text"
                         value={point}
                         onChange={(e) => handleKeyPointChange(index, e.target.value)}
-                        placeholder={`주요 포인트 ${index + 1}`}
+                        placeholder="강조 포인트를 입력해주세요."
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500"
                       />
                       {formData.keyPoints.length > 1 && (
@@ -1014,48 +1220,7 @@ export default function PresentationScript() {
                     포인트 추가
                   </button>
                 </div>
-
-                {/* 발표 톤 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    발표 톤 (선택사항)
-                  </label>
-                  <select
-                    value={formData.tone}
-                    onChange={(e) => handleInputChange('tone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  >
-                    <option value="">톤을 선택하세요</option>
-                    {toneOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 추가 정보 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    추가 정보 (선택사항)
-                  </label>
-                  <textarea
-                    value={formData.additionalInfo}
-                    onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
-                    placeholder="발표에 포함하고 싶은 추가 정보나 특별한 요구사항을 입력하세요. PDF 처리에 실패한 경우, PDF 내용을 여기에 복사해서 붙여넣기 해주세요."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-gray-500"
-                  />
-                  {uploadedImages.length > 0 && uploadedImages.every(img => img.status === 'error') && (
-                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-                      <p className="font-medium mb-1">💡 PDF 처리 실패 시 대안:</p>
-                      <p>1. PDF 파일을 열어서 텍스트를 선택하고 복사 (Ctrl+A, Ctrl+C)</p>
-                      <p>2. 위의 "추가 정보"란에 붙여넣기 (Ctrl+V)</p>
-                      <p>3. 발표 대본 생성하기 버튼을 클릭</p>
-                    </div>
-                  )}
-                </div>
-
+                
                 {/* 오류 메시지 */}
                 {error && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -1096,34 +1261,40 @@ export default function PresentationScript() {
                 )}
 
                 {/* 대본 생성 버튼 */}
-                <button
-                  onClick={generateScript}
-                  disabled={isLoading}
-                  className={`w-full py-3 px-6 rounded-lg font-medium flex items-center justify-center transition-colors ${
-                    isLoading
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      생성 중...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4 mr-2" />
-                      {isFileMode ? '대본 개선하기' : '발표 대본 생성하기'}
-                    </>
-                  )}
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={generateScript}
+                    disabled={isLoading || !uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0)}
+                    className={`w-full py-3 px-6 rounded-lg font-medium flex items-center justify-center transition-colors ${
+                      isLoading || !uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0)
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                    title={!uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0) 
+                      ? '참고 자료 이미지를 필수로 업로드해주세요' 
+                      : ''
+                    }
+                  >
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        생성 중...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4 mr-2" />
+                        발표 대본 생성하기
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* 오른쪽: 생성된 발표 대본 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="lg:col-span-5 bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                <Presentation className="w-5 h-5 mr-2" />
+                <FileText className="w-5 h-5 mr-2" />
                 생성된 발표 대본
               </h2>
               
@@ -1195,10 +1366,17 @@ export default function PresentationScript() {
                     </div>
                   )}
                   
-                  <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
-                      {generatedScript}
-                    </pre>
+                  <div className="bg-gray-50 rounded-lg p-4 max-h-[600px] overflow-y-auto">
+                    <div className="text-sm text-gray-800">
+                      {removeMarkdownSymbols(generatedScript)
+                        .split(/(?=도입부|본론|결론)/g)  // 실제 제목 패턴으로 분할
+                        .filter(paragraph => paragraph.trim())  // 빈 문단 제거
+                        .map((paragraph, idx) => (
+                          <p key={idx} className="mb-4 whitespace-pre-line">
+                            {paragraph.trim()}
+                          </p>
+                        ))}
+                    </div>
                   </div>
                   
                   <div className="flex space-x-2">
@@ -1217,6 +1395,14 @@ export default function PresentationScript() {
                       다운로드
                     </button>
                   </div>
+                </div>
+              ) : isLoading ? (
+                <div className="text-center py-12">
+                  <div className="flex items-center justify-center mb-4">
+                    <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+                  </div>
+                  <p className="text-blue-600 font-medium">발표 대본 생성 중...</p>
+                  <p className="text-sm text-gray-500 mt-2">잠시만 기다려주세요.</p>
                 </div>
               ) : (
                 <div className="text-center py-12 text-gray-500">
