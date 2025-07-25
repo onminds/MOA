@@ -3862,7 +3862,7 @@ export default function UnifiedProjectCodeReview() {
                         🚨 즉시 수정 필요
                       </h4>
                       <ul className="space-y-3">
-                        {reviewResult?.structuredRecommendations?.immediate?.length > 0 ? (
+                        {reviewResult?.structuredRecommendations?.immediate && reviewResult.structuredRecommendations.immediate.length > 0 ? (
                           // 구조화된 데이터가 있으면 사용
                           reviewResult.structuredRecommendations.immediate.map((item, index) => (
                             <li key={index} className="text-sm text-red-800">
@@ -3945,7 +3945,7 @@ export default function UnifiedProjectCodeReview() {
                         📋 단기 개선사항
                       </h4>
                       <ul className="space-y-3">
-                        {reviewResult?.structuredRecommendations?.shortTerm?.length > 0 ? (
+                        {reviewResult?.structuredRecommendations?.shortTerm && reviewResult.structuredRecommendations.shortTerm.length > 0 ? (
                           // 구조화된 데이터가 있으면 사용
                           reviewResult.structuredRecommendations.shortTerm.map((item, index) => (
                             <li key={index} className="text-sm text-yellow-800">
@@ -4013,7 +4013,7 @@ export default function UnifiedProjectCodeReview() {
                         🎯 장기 개선사항
                       </h4>
                       <ul className="space-y-3">
-                        {reviewResult?.structuredRecommendations?.longTerm?.length > 0 ? (
+                        {reviewResult?.structuredRecommendations?.longTerm && reviewResult.structuredRecommendations.longTerm.length > 0 ? (
                           // 구조화된 데이터가 있으면 사용
                           reviewResult.structuredRecommendations.longTerm.map((item, index) => (
                             <li key={index} className="text-sm text-green-800">
