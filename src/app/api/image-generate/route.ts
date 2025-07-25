@@ -12,94 +12,120 @@ const prisma = new PrismaClient();
 
 // 사용자 플랜별 이미지 생성 제한 확인
 async function checkImageGenerationLimit(userId: string) {
-  // 사용자 정보와 결제 내역 확인
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      payments: {
-        where: { status: 'completed' },
-        orderBy: { createdAt: 'desc' },
-        take: 1
+  try {
+    // 사용자 정보와 결제 내역 확인
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        payments: {
+          where: { status: 'completed' },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
       }
+    });
+
+    if (!user) {
+      console.log('사용자를 찾을 수 없음, 기본 제한 적용');
+      return { 
+        allowed: true, 
+        usageCount: 0,
+        limitCount: 2,
+        remainingCount: 2,
+        planType: 'basic',
+        error: null
+      };
     }
-  });
 
-  if (!user) {
-    return { allowed: false, error: '사용자를 찾을 수 없습니다.' };
-  }
-
-  // 현재 사용량 확인
-  const usage = await prisma.usage.findUnique({
-    where: {
-      userId_serviceType: {
-        userId,
-        serviceType: 'image-generate'
+    // 현재 사용량 확인
+    const usage = await prisma.usage.findUnique({
+      where: {
+        userId_serviceType: {
+          userId,
+          serviceType: 'image-generate'
+        }
       }
-    }
-  });
+    });
 
-  let maxLimit = 2; // 기본 (로그인만)
-  let planType = 'basic';
-  
-  // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
-  if (user.payments.length > 0) {
-    const latestPayment = user.payments[0];
-    planType = latestPayment.planType;
+    let maxLimit = 2; // 기본 (로그인만)
+    let planType = 'basic';
     
-    switch (planType) {
-      case 'standard':
-        maxLimit = 120;
-        break;
-      case 'pro':
-        maxLimit = 300;
-        break;
-      default:
-        maxLimit = 2;
+    // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
+    if (user.payments.length > 0) {
+      const latestPayment = user.payments[0];
+      planType = latestPayment.planType;
+      
+      switch (planType) {
+        case 'standard':
+          maxLimit = 120;
+          break;
+        case 'pro':
+          maxLimit = 300;
+          break;
+        default:
+          maxLimit = 2;
+      }
     }
+    // 관리자이면서 결제 내역이 없으면 무제한
+    else if (user.role === 'ADMIN') {
+      maxLimit = 9999;
+      planType = 'admin';
+    }
+
+    const currentUsage = usage?.usageCount || 0;
+    const allowed = currentUsage < maxLimit;
+
+    console.log(`이미지 생성 요청 - 사용자: ${user.email}, 역할: ${user.role}, 플랜: ${planType}, 사용량: ${currentUsage}/${maxLimit}`);
+
+    return {
+      allowed,
+      usageCount: currentUsage,
+      limitCount: maxLimit,
+      remainingCount: Math.max(0, maxLimit - currentUsage),
+      planType,
+      error: allowed ? null : `${planType === 'basic' ? '기본' : planType === 'standard' ? 'Standard' : planType === 'pro' ? 'Pro' : 'Admin'} 플랜의 이미지 생성 한도에 도달했습니다.`
+    };
+  } catch (error) {
+    console.error('사용량 체크 오류:', error);
+    // 오류 발생 시 기본 제한 적용
+    return { 
+      allowed: true, 
+      usageCount: 0,
+      limitCount: 2,
+      remainingCount: 2,
+      planType: 'basic',
+      error: null
+    };
   }
-  // 관리자이면서 결제 내역이 없으면 무제한
-  else if (user.role === 'ADMIN') {
-    maxLimit = 9999;
-    planType = 'admin';
-  }
-
-  const currentUsage = usage?.usageCount || 0;
-  const allowed = currentUsage < maxLimit;
-
-  console.log(`이미지 생성 요청 - 사용자: ${user.email}, 역할: ${user.role}, 플랜: ${planType}, 사용량: ${currentUsage}/${maxLimit}`);
-
-  return {
-    allowed,
-    usageCount: currentUsage,
-    limitCount: maxLimit,
-    remainingCount: Math.max(0, maxLimit - currentUsage),
-    planType,
-    error: allowed ? null : `${planType === 'basic' ? '기본' : planType === 'standard' ? 'Standard' : planType === 'pro' ? 'Pro' : 'Admin'} 플랜의 이미지 생성 한도에 도달했습니다.`
-  };
 }
 
 // 이미지 생성 사용량 증가
 async function incrementImageUsage(userId: string) {
-  await prisma.usage.upsert({
-    where: {
-      userId_serviceType: {
+  try {
+    await prisma.usage.upsert({
+      where: {
+        userId_serviceType: {
+          userId,
+          serviceType: 'image-generate'
+        }
+      },
+      update: {
+        usageCount: {
+          increment: 1
+        }
+      },
+      create: {
         userId,
-        serviceType: 'image-generate'
+        serviceType: 'image-generate',
+        usageCount: 1,
+        limitCount: 2, // 기본값
+        resetDate: new Date()
       }
-    },
-    update: {
-      usageCount: {
-        increment: 1
-      }
-    },
-    create: {
-      userId,
-      serviceType: 'image-generate',
-      usageCount: 1,
-      limitCount: 2, // 기본값
-      resetDate: new Date()
-    }
-  });
+    });
+  } catch (error) {
+    console.error('사용량 증가 오류:', error);
+    // 오류가 발생해도 이미지 생성은 계속 진행
+  }
 }
 
 export async function POST(request: NextRequest) {

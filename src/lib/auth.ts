@@ -101,14 +101,30 @@ export async function incrementUsage(userId: string, serviceType: string) {
 export async function requireAuth() {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.id) {
+  if (!session?.user) {
     return {
       error: "로그인이 필요합니다.",
       status: 401,
     };
   }
 
+  // 사용자 ID 확인 (여러 방법으로 시도)
+  const userId = session.user.id || session.user.email;
+  
+  if (!userId) {
+    return {
+      error: "사용자 정보를 찾을 수 없습니다.",
+      status: 401,
+    };
+  }
+
   return {
-    user: session.user,
+    user: {
+      id: userId,
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role,
+      image: session.user.image,
+    },
   };
 } 

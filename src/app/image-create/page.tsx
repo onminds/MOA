@@ -3,34 +3,35 @@ import { useState, useEffect } from "react";
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import {
-  Download, X, RotateCcw, User, Palette, Ruler, Paperclip, ChevronDown
+  Download, X, RotateCcw, User, Palette, Ruler, Paperclip, ChevronDown, MoreVertical, Save, RefreshCw
 } from 'lucide-react';
 import Image from 'next/image';
 
 export default function ImageCreate() {
-  const [prompt, setPrompt] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState("Mixture-of-Agents");
-  const [autoPrompt, setAutoPrompt] = useState(true);
-  const [selectedStyle, setSelectedStyle] = useState("자동 스타일");
-  const [selectedSize, setSelectedSize] = useState("자동 크기");
+  const [userInput, setUserInput] = useState("");
   const [selectedModel, setSelectedModel] = useState("DALL-E 3");
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [selectedStyle, setSelectedStyle] = useState("자동 스타일");
+  const [selectedSize, setSelectedSize] = useState("1024x1024");
   const [loading, setLoading] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [showImageMenu, setShowImageMenu] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showStyleDropdown, setShowStyleDropdown] = useState(false);
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
-  const [userInput, setUserInput] = useState(""); // 사용자 원본 입력
+  const [autoPrompt, setAutoPrompt] = useState(true);
 
   const models = [
-    { name: "DALL-E 3", description: "가장 정확한 이미지 생성" },
-    { name: "Midjourney", description: "예술적 스타일 이미지" },
-    { name: "Stable Diffusion", description: "빠른 이미지 생성" }
+    { name: "DALL-E 3", description: "가장 정확한 이미지 생성", image: "/images/models/dalle3.jpg" },
+    { name: "Stable Diffusion XL", description: "고품질 이미지 생성", image: "/images/models/sdxl.jpg" },
+    { name: "Kandinsky", description: "실사 스타일보다는 예술/추상화이미지", image: "/images/models/kandinsky.jpg" },
+    { name: "Realistic Vision", description: "사실적인 이미지 생성", image: "/images/models/realistic-vision.jpg" }
   ];
 
   const styles = [
-    { name: "자동 스타일", description: "AI가 자동으로 선택", image: "/images/styles/auto-style.jpg", promptSuffix: "" },
+    { name: "자동 스타일", description: "AI가 자동으로 선택", image: null, promptSuffix: "" },
     { name: "실사화", description: "사진처럼 사실적인 스타일", image: "/images/styles/realistic.jpg", promptSuffix: ", realistic, high quality, detailed, photorealistic" },
     { name: "만화", description: "만화나 일러스트 스타일", image: "/images/styles/cartoon.jpg", promptSuffix: ", cartoon style, anime, illustration, colorful" },
     { name: "수채화", description: "부드러운 수채화 스타일", image: "/images/styles/watercolor.jpg", promptSuffix: ", watercolor painting, soft colors, artistic" },
@@ -42,88 +43,10 @@ export default function ImageCreate() {
   ];
 
   const sizes = [
-    { name: "자동 크기", description: "AI가 자동으로 선택", width: 1024, height: 1024 },
     { name: "1024x1024", description: "정사각형 (1:1)", width: 1024, height: 1024 },
     { name: "1024x1792", description: "세로형 (9:16)", width: 1024, height: 1792 },
     { name: "1792x1024", description: "가로형 (16:9)", width: 1792, height: 1024 }
   ];
-
-  const enhancePrompt = (userPrompt: string) => {
-    if (!autoPrompt) return userPrompt;
-    
-    // 기본적인 프롬프트 강화
-    let enhancedPrompt = userPrompt;
-    
-    // 색상 관련 키워드가 없으면 추가
-    if (!enhancedPrompt.includes('color') && !enhancedPrompt.includes('색') && !enhancedPrompt.includes('빨간') && !enhancedPrompt.includes('파란') && !enhancedPrompt.includes('노란') && !enhancedPrompt.includes('초록')) {
-      enhancedPrompt += ', vibrant colors, high contrast';
-    }
-    
-    // 품질 관련 키워드가 없으면 추가
-    if (!enhancedPrompt.includes('quality') && !enhancedPrompt.includes('고품질') && !enhancedPrompt.includes('상세')) {
-      enhancedPrompt += ', high quality, detailed';
-    }
-    
-    // 조명 관련 키워드가 없으면 추가
-    if (!enhancedPrompt.includes('light') && !enhancedPrompt.includes('조명') && !enhancedPrompt.includes('밝은') && !enhancedPrompt.includes('어두운')) {
-      enhancedPrompt += ', well-lit, professional lighting';
-    }
-    
-    // 구도 관련 키워드가 없으면 추가
-    if (!enhancedPrompt.includes('composition') && !enhancedPrompt.includes('구도') && !enhancedPrompt.includes('전체') && !enhancedPrompt.includes('클로즈업')) {
-      enhancedPrompt += ', balanced composition';
-    }
-    
-    // 해상도 관련 키워드가 없으면 추가
-    if (!enhancedPrompt.includes('resolution') && !enhancedPrompt.includes('해상도') && !enhancedPrompt.includes('4k') && !enhancedPrompt.includes('8k')) {
-      enhancedPrompt += ', high resolution';
-    }
-    
-    return enhancedPrompt;
-  };
-
-  const handleStyleChange = (styleName: string) => {
-    setSelectedStyle(styleName);
-    setShowStyleDropdown(false);
-    
-    // 선택된 스타일에 따라 프롬프트 업데이트
-    const selectedStyleObj = styles.find(style => style.name === styleName);
-    if (selectedStyleObj && selectedStyleObj.promptSuffix) {
-      // 기존 프롬프트에서 스타일 접미사 제거
-      let cleanPrompt = userInput;
-      styles.forEach(style => {
-        if (style.promptSuffix) {
-          cleanPrompt = cleanPrompt.replace(style.promptSuffix, '');
-        }
-      });
-      
-      // 새로운 스타일 접미사 추가 (사용자 입력창에는 표시하지 않음)
-      setPrompt(cleanPrompt.trim() + selectedStyleObj.promptSuffix);
-    }
-  };
-
-  const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    setUserInput(inputValue); // 사용자 원본 입력 업데이트
-    
-    // 스타일 접미사가 있으면 프롬프트에 추가
-    const selectedStyleObj = styles.find(style => style.name === selectedStyle);
-    if (selectedStyleObj && selectedStyleObj.promptSuffix) {
-      setPrompt(inputValue + selectedStyleObj.promptSuffix);
-    } else {
-      setPrompt(inputValue);
-    }
-  };
-
-  const handleAutoPromptChange = (checked: boolean) => {
-    setAutoPrompt(checked);
-    // 자동 프롬프트 상태 변경 시에는 사용자 입력창은 그대로 유지
-  };
-
-  const handleSizeChange = (sizeName: string) => {
-    setSelectedSize(sizeName);
-    setShowSizeDropdown(false);
-  };
 
   const getSelectedSize = () => {
     const selectedSizeObj = sizes.find(size => size.name === selectedSize);
@@ -138,13 +61,12 @@ export default function ImageCreate() {
   const getContainerStyle = () => {
     const aspectRatio = getAspectRatio();
     
-    // 비율에 따라 최대 크기 조정
     if (aspectRatio > 1.5) {
       // 16:9 (가로형) - 원본 크기 그대로
       return {
         aspectRatio: aspectRatio,
         maxWidth: '800px',
-        maxHeight: '1024px',
+        maxHeight: '450px',
         width: '100%',
         height: 'auto'
       };
@@ -169,15 +91,96 @@ export default function ImageCreate() {
     }
   };
 
-  const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAttachedFile(file);
+  const handleFileAttach = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setAttachedFiles(prev => [...prev, ...files]);
+    
+    // 첫 번째 이미지가 첨부되면 자동으로 프롬프트 생성
+    if (files.length > 0 && attachedFiles.length === 0) {
+      await generatePromptFromImage(files[0]);
     }
   };
 
-  const removeAttachedFile = () => {
-    setAttachedFile(null);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    setAttachedFiles(prev => [...prev, ...files]);
+    
+    // 첫 번째 이미지가 첨부되면 자동으로 프롬프트 생성
+    if (files.length > 0 && attachedFiles.length === 0) {
+      await generatePromptFromImage(files[0]);
+    }
+  };
+
+  const generatePromptFromImage = async (imageFile: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      
+      const response = await fetch('/api/image-analyze', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.prompt) {
+          setUserInput(data.prompt);
+        }
+      }
+    } catch (error) {
+      console.error('이미지 분석 중 오류:', error);
+      setUserInput('이 이미지를 기반으로 새로운 이미지를 생성해주세요');
+    }
+  };
+
+  const removeAttachedFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleImageMenuToggle = () => {
+    setShowImageMenu(!showImageMenu);
+  };
+
+  const handleDownloadImage = () => {
+    if (generatedImage) {
+      const link = document.createElement('a');
+      link.href = generatedImage;
+      link.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleSaveImage = () => {
+    if (generatedImage) {
+      const link = document.createElement('a');
+      link.href = generatedImage;
+      link.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleNewImage = () => {
+    setGeneratedImage(null);
+    setUserInput("");
+    setAttachedFiles([]);
+    setShowImageMenu(false);
   };
 
   const handleGenerate = async () => {
@@ -191,20 +194,52 @@ export default function ImageCreate() {
       const selectedSizeObj = getSelectedSize();
       const formData = new FormData();
       
-      // 자동 프롬프트가 켜져있으면 강화된 프롬프트 사용
-      const finalPrompt = autoPrompt ? enhancePrompt(prompt) : prompt;
-      formData.append('prompt', finalPrompt);
+      // 스타일이 설정 가능한 모델들
+      const styleEnabledModels = ["DALL-E 3", "Stable Diffusion XL", "Realistic Vision"];
+      const isStyleEnabled = styleEnabledModels.includes(selectedModel);
       
-      formData.append('agent', selectedAgent);
-      formData.append('autoPrompt', autoPrompt.toString());
+      // 선택된 스타일의 프롬프트 접미사 가져오기
+      const selectedStyleObj = styles.find(style => style.name === selectedStyle);
+      const stylePrompt = isStyleEnabled && selectedStyleObj?.promptSuffix ? selectedStyleObj.promptSuffix : "";
+      
+      // 사용자 입력 + 스타일 프롬프트 결합
+      const combinedPrompt = stylePrompt ? `${userInput}${stylePrompt}` : userInput;
+      
+      let finalPrompt = combinedPrompt;
+      
+      // 자동 프롬프트가 켜져있으면 OpenAI로 번역 및 최적화
+      if (autoPrompt) {
+        const optimizeResponse = await fetch("/api/optimize-prompt", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: combinedPrompt,
+            model: selectedModel
+          }),
+        });
+
+        if (!optimizeResponse.ok) {
+          throw new Error('프롬프트 최적화에 실패했습니다.');
+        }
+
+        const optimizeData = await optimizeResponse.json();
+        finalPrompt = optimizeData.optimizedPrompt;
+      }
+      
+      formData.append('prompt', finalPrompt);
       formData.append('style', selectedStyle);
       formData.append('size', selectedSize);
       formData.append('width', selectedSizeObj.width.toString());
       formData.append('height', selectedSizeObj.height.toString());
       formData.append('model', selectedModel);
+      formData.append('ratio', getAspectRatio() > 1.5 ? "16:9" : getAspectRatio() < 0.7 ? "9:16" : "1:1");
       
-      if (attachedFile) {
-        formData.append('referenceImage', attachedFile);
+      if (attachedFiles.length > 0) {
+        attachedFiles.forEach(file => {
+          formData.append('referenceImages', file);
+        });
       }
 
       const res = await fetch("/api/image-generate", {
@@ -221,7 +256,6 @@ export default function ImageCreate() {
     } catch (err) {
       console.error('이미지 생성 에러:', err);
       
-      // OpenAI API 결제 한도 에러 처리
       if (err instanceof Error) {
         if (err.message.includes('billing') || err.message.includes('limit') || err.message.includes('400')) {
           setError('OpenAI API 사용량 한도에 도달했습니다. 잠시 후 다시 시도해주세요.');
@@ -254,17 +288,32 @@ export default function ImageCreate() {
     setShowStyleDropdown(false);
   };
 
+  const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserInput(e.target.value);
+  };
+
+  const handleAutoPromptChange = (checked: boolean) => {
+    setAutoPrompt(checked);
+  };
+
+  const handleStyleChange = (styleName: string) => {
+    setSelectedStyle(styleName);
+    setShowStyleDropdown(false);
+  };
+
+  const handleSizeChange = (sizeName: string) => {
+    setSelectedSize(sizeName);
+    setShowSizeDropdown(false);
+  };
+
   return (
     <>
       <Header />
       <div className="min-h-screen bg-white">
         <div className="flex">
-          {/* 공통 사이드바 */}
           <Sidebar currentPath="/image-create" />
           
-          {/* 메인 콘텐츠 */}
           <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-8">
-            {/* 상단 인사말 */}
             {!loading && !generatedImage && (
               <div className="text-center mb-12">
                 <h1 className="text-4xl font-semibold text-gray-800 mb-2">
@@ -273,27 +322,20 @@ export default function ImageCreate() {
               </div>
             )}
 
-            {/* 중앙 예시 이미지 */}
             <div className="mb-16">
               <div className="bg-white rounded-2xl flex items-center justify-center relative" style={getContainerStyle()}>
                 {loading ? (
                   <div className="text-center w-full h-full flex flex-col items-center justify-center">
-                    {/* 중앙 MOA 아이콘 */}
                     <div className="relative flex items-center justify-center">
-                      {/* 메인 MOA 텍스트 */}
                       <div className="text-black font-bold text-5xl z-10 relative">MOA</div>
-                      
-                      {/* AI가 영상 제작중 텍스트 */}
                       <div className="absolute top-16 text-black text-lg font-medium z-10 text-center w-full whitespace-nowrap">AI가 영상 제작중</div>
-                      
-                      {/* 회전하는 링들 */}
                       <div className="absolute w-60 h-60 border-2 border-black border-t-transparent rounded-full animate-spin flex items-center justify-center">
                         <div className="w-48 h-48 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '2s'}}></div>
                       </div>
                     </div>
                   </div>
                 ) : generatedImage ? (
-                  <div className="text-center w-full h-full">
+                  <div className="text-center w-full h-full relative">
                     <div className="w-full h-full rounded-xl overflow-hidden" style={getContainerStyle()}>
                       <Image
                         src={generatedImage}
@@ -302,52 +344,93 @@ export default function ImageCreate() {
                         height={getSelectedSize().height}
                         className="w-full h-full object-cover"
                       />
-                    </div>
-                    <div className="mt-4 flex items-center justify-center gap-4">
-                      <button
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = generatedImage;
-                          link.download = 'generated-image.png';
-                          link.click();
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                      >
-                        <Download className="w-4 h-4" />
-                        다운로드
-                      </button>
-                      <button
-                        onClick={() => {
-                          setGeneratedImage(null);
-                          setUserInput("");
-                          setPrompt("");
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        새로 만들기
-                      </button>
+                      
+                      <div className="absolute top-4 right-4 z-10 image-menu-container">
+                        <button
+                          onClick={handleImageMenuToggle}
+                          className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white transition-all"
+                        >
+                          <MoreVertical className="w-5 h-5 text-gray-700" />
+                        </button>
+                        
+                        {showImageMenu && (
+                          <div className="absolute right-0 top-12 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[160px] z-20">
+                            <button
+                              onClick={handleDownloadImage}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <Download className="w-4 h-4" />
+                              다운로드
+                            </button>
+                            <button
+                              onClick={handleSaveImage}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <Save className="w-4 h-4" />
+                              저장
+                            </button>
+                            <div className="border-t border-gray-200 my-1"></div>
+                            <button
+                              onClick={handleNewImage}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                              새로 만들기
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center w-full h-full flex items-center justify-center">
+                    {/* 빈 상태 */}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 하단 입력 영역 */}
             <div className="w-full max-w-4xl mt-8">
-              {/* 컨트롤 버튼들 */}
               <div className="flex items-center gap-4 mb-6 justify-center h-12">
-                {/* 모델 선택 드롭업 */}
                 <div className="relative">
                   <button
                     onClick={handleModelDropdown}
-                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-sm min-w-[140px]"
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-gray-400 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md w-[200px] hover:border-gray-500 hover:shadow-lg transition-all"
                   >
-                    <span className="font-medium">{selectedModel}</span>
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                    <div className="w-8 h-8 rounded overflow-hidden">
+                      {(() => {
+                        const selectedModelData = models.find(model => model.name === selectedModel);
+                        return selectedModelData?.image ? (
+                          <Image
+                            src={selectedModelData.image}
+                            alt={selectedModel}
+                            width={512}
+                            height={512}
+                            className="w-full h-full object-cover"
+                            style={{
+                              imageRendering: 'crisp-edges'
+                            }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                const fallback = document.createElement('div');
+                                fallback.className = 'w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center';
+                                fallback.innerHTML = `<span class="text-white text-xs font-bold">${selectedModel.substring(0, 2).toUpperCase()}</span>`;
+                                parent.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">{selectedModel.substring(0, 2).toUpperCase()}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <span className="font-medium truncate text-gray-800">{selectedModel}</span>
+                    <ChevronDown className="w-4 h-4 text-gray-700" />
                   </button>
                   {showModelDropdown && (
                     <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
@@ -364,20 +447,32 @@ export default function ImageCreate() {
                             <span className="font-medium text-gray-900">{model.name}</span>
                             <span className="text-xs text-gray-500">{model.description}</span>
                           </div>
-                          <div className="w-8 h-8 rounded-lg overflow-hidden">
-                            {model.name === "DALL-E 3" && (
-                              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">D3</span>
-                              </div>
-                            )}
-                            {model.name === "Midjourney" && (
-                              <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">MJ</span>
-                              </div>
-                            )}
-                            {model.name === "Stable Diffusion" && (
-                              <div className="w-full h-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">SD</span>
+                          <div className="w-10 h-10 rounded-lg overflow-hidden">
+                            {model.image ? (
+                              <Image
+                                src={model.image}
+                                alt={model.name}
+                                width={512}
+                                height={512}
+                                className="w-full h-full object-cover"
+                                style={{
+                                  imageRendering: 'crisp-edges'
+                                }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center';
+                                    fallback.innerHTML = `<span class="text-white text-xs font-bold">${model.name.substring(0, 2).toUpperCase()}</span>`;
+                                    parent.appendChild(fallback);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">{model.name.substring(0, 2).toUpperCase()}</span>
                               </div>
                             )}
                           </div>
@@ -402,7 +497,6 @@ export default function ImageCreate() {
                   <span className="text-base text-gray-700 font-medium">자동 프롬프트</span>
                 </label>
 
-                {/* 스타일 선택 드롭업 */}
                 <div className="relative">
                   <button
                     onClick={handleStyleDropdown}
@@ -482,20 +576,19 @@ export default function ImageCreate() {
                   )}
                 </div>
 
-                {/* 크기 선택 드롭업 */}
                 <div className="relative">
                   <button
                     onClick={handleSizeDropdown}
                     disabled={generatedImage !== null}
-                    className={`flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-sm min-w-[120px] ${
+                    className={`flex items-center gap-2 px-3 py-2 border-2 border-gray-400 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md min-w-[120px] hover:border-gray-500 hover:shadow-lg transition-all ${
                       generatedImage !== null ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
-                    <span className="font-medium">{selectedSize}</span>
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium text-gray-800">{selectedSize}</span>
+                    <ChevronDown className="w-4 h-4 text-gray-700" />
                   </button>
                   {showSizeDropdown && generatedImage === null && (
-                    <div className="absolute bottom-full left-0 mb-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                       {sizes.map((size) => (
                         <button
                           key={size.name}
@@ -511,91 +604,117 @@ export default function ImageCreate() {
                 </div>
               </div>
 
-              {/* 입력 필드와 생성 버튼 */}
-              <div className="flex items-center gap-4 max-w-3xl mx-auto h-16">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={userInput}
-                    onChange={handlePromptChange}
-                    placeholder="어떤 이미지를 만들고 싶으신가요?"
-                    className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-gray-900"
-                    disabled={loading}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !loading && userInput.trim()) {
+              <div className="max-w-3xl mx-auto">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className={`relative bg-white border-2 border-gray-200 rounded-xl shadow-sm transition-all duration-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 ${attachedFiles.length > 0 ? 'pb-4' : ''}`}>
+                      <input
+                        type="text"
+                        value={userInput}
+                        onChange={handlePromptChange}
+                        placeholder={isDragOver ? "이미지를 여기에 드롭하세요!" : "어떤 이미지를 만들고 싶으신가요?"}
+                        className={`w-full px-4 py-3 pr-12 border-none rounded-t-xl bg-white focus:outline-none text-gray-900 shadow-none transition-all ${
+                          isDragOver 
+                            ? 'bg-blue-50' 
+                            : ''
+                        } ${attachedFiles.length > 0 ? 'rounded-b-none' : 'rounded-b-xl'}`}
+                        disabled={loading}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !loading && userInput.trim()) {
+                            handleGenerate();
+                          }
+                        }}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                        <label className="cursor-pointer p-1 text-gray-500 hover:text-gray-700 transition-colors" title="파일 첨부">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileAttach}
+                            multiple
+                            className="hidden"
+                          />
+                          <Paperclip className="w-4 h-4" />
+                        </label>
+                      </div>
+                      
+                      {/* 첨부된 이미지들 - 입력창 안에 배치 */}
+                      {attachedFiles.length > 0 && (
+                        <div className="px-4 pt-3 flex items-start gap-3 flex-wrap">
+                          {attachedFiles.map((file, index) => (
+                            <div key={index} className="relative w-[128px] h-[128px] rounded-lg overflow-hidden shadow border border-gray-200 bg-white flex-shrink-0">
+                              {file.type.startsWith('image/') ? (
+                                <Image
+                                  src={URL.createObjectURL(file)}
+                                  alt={file.name}
+                                  width={128}
+                                  height={128}
+                                  className="w-full h-full object-contain mx-auto"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.innerHTML = '<div class=\'w-full h-full flex items-center justify-center text-gray-500\'>이미지를 불러올 수 없습니다</div>';
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                                  <Paperclip className="w-8 h-8 text-gray-500" />
+                                </div>
+                              )}
+                              <button
+                                onClick={() => removeAttachedFile(index)}
+                                className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-red-500 hover:text-red-700 shadow"
+                                title="첨부 파일 제거"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!userInput.trim()) {
+                        const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+                        if (inputElement) {
+                          inputElement.focus();
+                        }
+                      } else {
                         handleGenerate();
                       }
                     }}
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                    {attachedFile && (
-                      <button
-                        onClick={removeAttachedFile}
-                        className="p-1 text-red-500 hover:text-red-700 transition-colors"
-                        title="첨부 파일 제거"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                    disabled={loading}
+                    className={`px-6 py-3 rounded-xl transition-all flex items-center gap-2 border-2 shadow-md text-base font-medium ${
+                      !userInput.trim() 
+                        ? 'bg-gray-400 text-gray-600 border-gray-400 cursor-pointer hover:bg-gray-500 hover:border-gray-500' 
+                        : loading 
+                          ? 'bg-gray-500 text-white border-gray-500 cursor-not-allowed'
+                          : 'bg-black text-white border-black hover:bg-gray-800 hover:border-gray-800 hover:shadow-lg'
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        생성 중...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="w-5 h-5" />
+                        생성
+                      </>
                     )}
-                    <label className="cursor-pointer p-1 text-gray-500 hover:text-gray-700 transition-colors" title="파일 첨부">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileAttach}
-                        className="hidden"
-                      />
-                      <Paperclip className="w-4 h-4" />
-                    </label>
-                  </div>
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    if (!userInput.trim()) {
-                      // 입력 문구가 없으면 입력창에 포커스
-                      const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
-                      if (inputElement) {
-                        inputElement.focus();
-                      }
-                    } else {
-                      // 입력 문구가 있으면 생성 실행
-                      handleGenerate();
-                    }
-                  }}
-                  disabled={loading}
-                  className={`px-6 py-3 rounded-xl transition-colors flex items-center gap-2 border-2 shadow-sm text-base font-medium ${
-                    !userInput.trim() 
-                      ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-pointer' 
-                      : loading 
-                        ? 'bg-gray-400 text-white border-gray-400 cursor-not-allowed'
-                        : 'bg-black text-white border-black hover:bg-gray-800 hover:border-gray-800'
-                  }`}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      생성 중...
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="w-5 h-5" />
-                      생성
-                    </>
-                  )}
-                </button>
               </div>
 
-              {/* 첨부된 파일 표시 */}
-              {attachedFile && (
-                <div className="mt-4 max-w-3xl mx-auto">
-                  <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <Paperclip className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm text-blue-800 font-medium">{attachedFile.name}</span>
-                    <span className="text-xs text-blue-600">({(attachedFile.size / 1024).toFixed(1)} KB)</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 에러 메시지 */}
               {error && (
                 <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center max-w-3xl mx-auto">
                   {error}
