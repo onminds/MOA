@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 // 토큰 제한 설정
 const MAX_TOKENS_PER_REQUEST = 8000;
-const MAX_CODE_LENGTH = 10000; // 코드 길이 제한
+const MAX_CODE_LENGTH = 10000; // 코드 길이 제한 (10000자)
 
 export async function POST(request: NextRequest) {
   try {

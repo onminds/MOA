@@ -6,7 +6,7 @@ import {
   ArrowLeft, Upload, FileArchive, Loader2, CheckCircle, AlertCircle, TrendingUp,
   Folder, File, Award, Shield, Zap, Target, Code, Package, Plus, X, Edit3,
   FileText, Files, Archive, Info, ExternalLink, ChevronRight, Bug, Clock, 
-  Activity, Database, Globe, Lock, Brain, AlertTriangle
+  Activity, Database, Globe, Lock, Brain, AlertTriangle, Building
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { safeFetchJson } from '@/lib/client-utils';
@@ -23,6 +23,7 @@ const sideMenus = [
 ];
 
 const projectTypes = [
+  { value: 'auto', label: '언어 감지', icon: '🔍' },
   { value: 'react', label: 'React/Next.js', icon: '⚛️' },
   { value: 'vue', label: 'Vue.js', icon: '💚' },
   { value: 'angular', label: 'Angular', icon: '🔺' },
@@ -43,6 +44,505 @@ const industries = [
   { value: 'enterprise', label: '기업용 솔루션', icon: '🏢' },
   { value: 'general', label: '일반', icon: '🌐' }
 ];
+
+// 고급 언어 감지 함수 (정확도 향상)
+const detectLanguageFromContent = (content: string): { language: string; confidence: number; details: any } => {
+  // 가중치가 있는 패턴 정의
+  const patterns = {
+    // JavaScript/TypeScript 패턴 (높은 가중치)
+    javascript: {
+      high: [
+        { pattern: /function\s+\w+\s*\(/g, weight: 5 },
+        { pattern: /const\s+\w+\s*=/g, weight: 4 },
+        { pattern: /let\s+\w+\s*=/g, weight: 4 },
+        { pattern: /var\s+\w+\s*=/g, weight: 3 },
+        { pattern: /console\.log/g, weight: 3 },
+        { pattern: /=>/g, weight: 4 },
+        { pattern: /import\s+.*from/g, weight: 5 },
+        { pattern: /export\s+/g, weight: 4 }
+      ],
+      medium: [
+        { pattern: /\.js$/i, weight: 2 },
+        { pattern: /\.ts$/i, weight: 2 },
+        { pattern: /\.jsx$/i, weight: 2 },
+        { pattern: /\.tsx$/i, weight: 2 },
+        { pattern: /typeof/g, weight: 2 },
+        { pattern: /instanceof/g, weight: 2 }
+      ],
+      low: [
+        { pattern: /undefined/g, weight: 1 },
+        { pattern: /null/g, weight: 1 },
+        { pattern: /true|false/g, weight: 1 }
+      ]
+    },
+    // React 패턴 (매우 높은 가중치)
+    react: {
+      high: [
+        { pattern: /import\s+React/g, weight: 8 },
+        { pattern: /from\s+['"]react['"]/g, weight: 8 },
+        { pattern: /useState/g, weight: 7 },
+        { pattern: /useEffect/g, weight: 7 },
+        { pattern: /useContext/g, weight: 6 },
+        { pattern: /useRef/g, weight: 6 },
+        { pattern: /useMemo/g, weight: 6 },
+        { pattern: /useCallback/g, weight: 6 }
+      ],
+      medium: [
+        { pattern: /<div>/g, weight: 3 },
+        { pattern: /<span>/g, weight: 3 },
+        { pattern: /<button>/g, weight: 3 },
+        { pattern: /className=/g, weight: 4 },
+        { pattern: /\.jsx$/i, weight: 3 },
+        { pattern: /\.tsx$/i, weight: 3 }
+      ],
+      low: [
+        { pattern: /onClick=/g, weight: 2 },
+        { pattern: /onChange=/g, weight: 2 },
+        { pattern: /onSubmit=/g, weight: 2 }
+      ]
+    },
+    // Python 패턴 (높은 가중치)
+    python: {
+      high: [
+        { pattern: /def\s+\w+\s*\(/g, weight: 6 },
+        { pattern: /import\s+\w+/g, weight: 5 },
+        { pattern: /from\s+\w+\s+import/g, weight: 5 },
+        { pattern: /class\s+\w+/g, weight: 5 },
+        { pattern: /if\s+__name__\s*==\s*['"]__main__['"]/g, weight: 7 },
+        { pattern: /print\s*\(/g, weight: 4 }
+      ],
+      medium: [
+        { pattern: /\.py$/i, weight: 3 },
+        { pattern: /:\s*$/gm, weight: 2 },
+        { pattern: /#.*$/gm, weight: 2 },
+        { pattern: /"""[\s\S]*"""/g, weight: 3 },
+        { pattern: /'''[\s\S]*'''/g, weight: 3 }
+      ],
+      low: [
+        { pattern: /True|False/g, weight: 1 },
+        { pattern: /None/g, weight: 1 },
+        { pattern: /self\./g, weight: 2 }
+      ]
+    },
+    // Java 패턴 (높은 가중치)
+    java: {
+      high: [
+        { pattern: /public\s+class/g, weight: 8 },
+        { pattern: /private\s+\w+/g, weight: 4 },
+        { pattern: /public\s+\w+/g, weight: 4 },
+        { pattern: /protected\s+\w+/g, weight: 4 },
+        { pattern: /static\s+\w+/g, weight: 4 },
+        { pattern: /void\s+\w+/g, weight: 4 },
+        { pattern: /System\.out\.println/g, weight: 5 },
+        { pattern: /import\s+java\./g, weight: 6 },
+        { pattern: /package\s+\w+/g, weight: 6 }
+      ],
+      medium: [
+        { pattern: /int\s+\w+/g, weight: 3 },
+        { pattern: /String\s+\w+/g, weight: 3 },
+        { pattern: /\.java$/i, weight: 3 },
+        { pattern: /extends/g, weight: 3 },
+        { pattern: /implements/g, weight: 3 }
+      ],
+      low: [
+        { pattern: /new\s+\w+/g, weight: 2 },
+        { pattern: /this\./g, weight: 2 },
+        { pattern: /super\./g, weight: 2 }
+      ]
+    },
+    // C/C++ 패턴
+    cpp: {
+      high: [
+        { pattern: /#include\s*</g, weight: 7 },
+        { pattern: /int\s+main\s*\(/g, weight: 8 },
+        { pattern: /std::/g, weight: 6 },
+        { pattern: /cout\s*<</g, weight: 5 },
+        { pattern: /cin\s*>>/g, weight: 5 },
+        { pattern: /printf\s*\(/g, weight: 5 },
+        { pattern: /scanf\s*\(/g, weight: 5 }
+      ],
+      medium: [
+        { pattern: /\.cpp$/i, weight: 3 },
+        { pattern: /\.c$/i, weight: 3 },
+        { pattern: /\.h$/i, weight: 3 },
+        { pattern: /\.hpp$/i, weight: 3 },
+        { pattern: /namespace/g, weight: 4 },
+        { pattern: /class\s+\w+/g, weight: 4 }
+      ],
+      low: [
+        { pattern: /return\s+0/g, weight: 2 },
+        { pattern: /using\s+namespace/g, weight: 3 }
+      ]
+    },
+    // PHP 패턴
+    php: {
+      high: [
+        { pattern: /<\?php/g, weight: 8 },
+        { pattern: /\?>/g, weight: 6 },
+        { pattern: /\$\w+/g, weight: 5 },
+        { pattern: /function\s+\w+\s*\(/g, weight: 5 },
+        { pattern: /echo\s+/g, weight: 4 },
+        { pattern: /print\s+/g, weight: 4 }
+      ],
+      medium: [
+        { pattern: /require\s+['"]/g, weight: 4 },
+        { pattern: /include\s+['"]/g, weight: 4 },
+        { pattern: /\.php$/i, weight: 3 },
+        { pattern: /class\s+\w+/g, weight: 4 }
+      ],
+      low: [
+        { pattern: /array\(/g, weight: 2 },
+        { pattern: /isset\(/g, weight: 2 }
+      ]
+    },
+    // Go 패턴
+    go: {
+      high: [
+        { pattern: /package\s+main/g, weight: 8 },
+        { pattern: /import\s+\(/g, weight: 6 },
+        { pattern: /func\s+main\s*\(/g, weight: 7 },
+        { pattern: /fmt\.Println/g, weight: 5 }
+      ],
+      medium: [
+        { pattern: /var\s+\w+/g, weight: 3 },
+        { pattern: /type\s+\w+/g, weight: 4 },
+        { pattern: /struct\s*{/g, weight: 4 },
+        { pattern: /\.go$/i, weight: 3 }
+      ],
+      low: [
+        { pattern: /defer/g, weight: 2 },
+        { pattern: /range/g, weight: 2 }
+      ]
+    },
+    // Rust 패턴
+    rust: {
+      high: [
+        { pattern: /fn\s+\w+/g, weight: 7 },
+        { pattern: /let\s+mut\s+\w+/g, weight: 6 },
+        { pattern: /let\s+\w+/g, weight: 5 },
+        { pattern: /println!/g, weight: 5 }
+      ],
+      medium: [
+        { pattern: /use\s+\w+/g, weight: 4 },
+        { pattern: /struct\s+\w+/g, weight: 4 },
+        { pattern: /impl\s+\w+/g, weight: 4 },
+        { pattern: /\.rs$/i, weight: 3 }
+      ],
+      low: [
+        { pattern: /Option/g, weight: 2 },
+        { pattern: /Result/g, weight: 2 }
+      ]
+    },
+    // SQL 패턴 (새로 추가)
+    sql: {
+      high: [
+        { pattern: /SELECT\s+.+FROM/g, weight: 8 },
+        { pattern: /INSERT\s+INTO/g, weight: 7 },
+        { pattern: /UPDATE\s+\w+\s+SET/g, weight: 7 },
+        { pattern: /DELETE\s+FROM/g, weight: 7 },
+        { pattern: /CREATE\s+TABLE/g, weight: 8 },
+        { pattern: /ALTER\s+TABLE/g, weight: 7 }
+      ],
+      medium: [
+        { pattern: /WHERE\s+/g, weight: 4 },
+        { pattern: /ORDER\s+BY/g, weight: 4 },
+        { pattern: /GROUP\s+BY/g, weight: 4 },
+        { pattern: /JOIN\s+/g, weight: 4 },
+        { pattern: /\.sql$/i, weight: 3 }
+      ],
+      low: [
+        { pattern: /AND\s+/g, weight: 2 },
+        { pattern: /OR\s+/g, weight: 2 },
+        { pattern: /IN\s*\(/g, weight: 2 }
+      ]
+    },
+    // HTML 패턴 (새로 추가)
+    html: {
+      high: [
+        { pattern: /<!DOCTYPE\s+html>/g, weight: 8 },
+        { pattern: /<html>/g, weight: 7 },
+        { pattern: /<head>/g, weight: 6 },
+        { pattern: /<body>/g, weight: 6 },
+        { pattern: /<div>/g, weight: 4 },
+        { pattern: /<span>/g, weight: 4 }
+      ],
+      medium: [
+        { pattern: /<title>/g, weight: 4 },
+        { pattern: /<meta/g, weight: 4 },
+        { pattern: /<link/g, weight: 4 },
+        { pattern: /<script/g, weight: 4 },
+        { pattern: /<style/g, weight: 4 },
+        { pattern: /\.html$/i, weight: 3 },
+        { pattern: /\.htm$/i, weight: 3 }
+      ],
+      low: [
+        { pattern: /class=/g, weight: 2 },
+        { pattern: /id=/g, weight: 2 },
+        { pattern: /src=/g, weight: 2 }
+      ]
+    },
+    // CSS 패턴 (새로 추가)
+    css: {
+      high: [
+        { pattern: /{[^}]*}/g, weight: 5 },
+        { pattern: /:\s*[^;]+;/g, weight: 4 },
+        { pattern: /@media/g, weight: 6 },
+        { pattern: /@keyframes/g, weight: 6 }
+      ],
+      medium: [
+        { pattern: /\.css$/i, weight: 3 },
+        { pattern: /color:/g, weight: 3 },
+        { pattern: /background:/g, weight: 3 },
+        { pattern: /margin:/g, weight: 3 },
+        { pattern: /padding:/g, weight: 3 }
+      ],
+      low: [
+        { pattern: /px/g, weight: 1 },
+        { pattern: /em/g, weight: 1 },
+        { pattern: /rem/g, weight: 1 }
+      ]
+    },
+    // Shell Script 패턴 (새로 추가)
+    shell: {
+      high: [
+        { pattern: /#!\/bin\/bash/g, weight: 8 },
+        { pattern: /#!\/bin\/sh/g, weight: 8 },
+        { pattern: /echo\s+/g, weight: 5 },
+        { pattern: /if\s+\[/g, weight: 6 },
+        { pattern: /for\s+\w+\s+in/g, weight: 6 },
+        { pattern: /while\s+\[/g, weight: 6 }
+      ],
+      medium: [
+        { pattern: /\.sh$/i, weight: 3 },
+        { pattern: /\.bash$/i, weight: 3 },
+        { pattern: /cd\s+/g, weight: 3 },
+        { pattern: /ls\s+/g, weight: 3 },
+        { pattern: /grep\s+/g, weight: 3 }
+      ],
+      low: [
+        { pattern: /$\(/g, weight: 2 },
+        { pattern: /`/g, weight: 2 }
+      ]
+    }
+  };
+
+  const scores: { [key: string]: number } = {};
+  const details: { [key: string]: any } = {};
+  
+  // 각 언어별 패턴 매칭 점수 계산 (가중치 적용)
+  Object.entries(patterns).forEach(([language, categories]) => {
+    scores[language] = 0;
+    details[language] = { high: 0, medium: 0, low: 0, total: 0 };
+    
+    Object.entries(categories).forEach(([category, patternList]) => {
+      patternList.forEach(({ pattern, weight }) => {
+        const matches = content.match(pattern);
+        if (matches) {
+          const score = matches.length * weight;
+          scores[language] += score;
+          details[language][category] += score;
+          details[language].total += score;
+        }
+      });
+    });
+  });
+
+  // 가장 높은 점수의 언어 찾기
+  const detectedLanguage = Object.entries(scores).reduce((a, b) => 
+    scores[a[0]] > scores[b[0]] ? a : b
+  );
+
+  // 신뢰도 계산 (0-100%)
+  const maxPossibleScore = Math.max(...Object.values(scores));
+  const confidence = maxPossibleScore > 0 ? Math.min(100, Math.round((detectedLanguage[1] / maxPossibleScore) * 100)) : 0;
+
+  return {
+    language: detectedLanguage[1] > 0 ? detectedLanguage[0] : 'other',
+    confidence,
+    details: details[detectedLanguage[0]] || {}
+  };
+};
+
+// 프레임워크 감지 함수
+const detectFramework = (content: string, language: string): { framework: string; version?: string; confidence: number } => {
+  const frameworks = {
+    javascript: {
+      'react': { patterns: [/import\s+React/, /from\s+['"]react['"]/, /useState/, /useEffect/], weight: 8 },
+      'vue': { patterns: [/<template>/, /<script>/, /v-if=/, /v-for=/], weight: 8 },
+      'angular': { patterns: [/@Component/, /@Injectable/, /ngOnInit/, /ngFor/], weight: 8 },
+      'next': { patterns: [/import\s+.*from\s+['"]next/, /getServerSideProps/, /getStaticProps/], weight: 8 },
+      'express': { patterns: [/require\s*\(\s*['"]express['"]/, /app\.get/, /app\.post/], weight: 7 },
+      'jquery': { patterns: [/\$\(/, /\.ajax/, /\.ready/], weight: 6 }
+    },
+    python: {
+      'django': { patterns: [/from\s+django/, /@csrf_exempt/, /models\.Model/], weight: 8 },
+      'flask': { patterns: [/from\s+flask/, /@app\.route/, /Flask\(/], weight: 8 },
+      'fastapi': { patterns: [/from\s+fastapi/, /@app\.get/, /@app\.post/], weight: 8 },
+      'pandas': { patterns: [/import\s+pandas/, /pd\.read_csv/, /df\./], weight: 7 },
+      'numpy': { patterns: [/import\s+numpy/, /np\./, /array\(/], weight: 7 }
+    },
+    java: {
+      'spring': { patterns: [/@SpringBootApplication/, /@RestController/, /@Autowired/], weight: 8 },
+      'hibernate': { patterns: [/@Entity/, /@Table/, /@Column/], weight: 7 },
+      'maven': { patterns: [/<groupId>/, /<artifactId>/, /<version>/], weight: 6 }
+    }
+  };
+  
+  const langFrameworks = frameworks[language as keyof typeof frameworks];
+  if (!langFrameworks) return { framework: 'unknown', confidence: 0 };
+  
+  let bestFramework = 'unknown';
+  let bestScore = 0;
+  
+  Object.entries(langFrameworks).forEach(([framework, config]) => {
+    let score = 0;
+    config.patterns.forEach(pattern => {
+      const matches = content.match(pattern);
+      if (matches) {
+        score += matches.length * config.weight;
+      }
+    });
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestFramework = framework;
+    }
+  });
+  
+  const confidence = bestScore > 0 ? Math.min(100, Math.round((bestScore / 50) * 100)) : 0;
+  
+  return {
+    framework: bestFramework,
+    confidence
+  };
+};
+
+// 혼합 언어 감지 함수 (여러 언어가 섞여있는 경우)
+const detectMixedLanguages = (content: string): { languages: string[]; primary: string; confidence: number } => {
+  const lines = content.split('\n');
+  const languageCounts: { [key: string]: number } = {};
+  
+  // 각 줄을 개별적으로 분석
+  lines.forEach(line => {
+    if (line.trim()) {
+      const lineResult = detectLanguageFromContent(line);
+      if (lineResult.language !== 'other') {
+        languageCounts[lineResult.language] = (languageCounts[lineResult.language] || 0) + 1;
+      }
+    }
+  });
+  
+  // 감지된 언어들을 점수순으로 정렬
+  const sortedLanguages = Object.entries(languageCounts)
+    .sort(([,a], [,b]) => b - a)
+    .map(([lang]) => lang);
+  
+  const primary = sortedLanguages[0] || 'other';
+  const confidence = sortedLanguages.length > 1 ? 70 : 90; // 혼합 언어일 경우 신뢰도 낮춤
+  
+  return {
+    languages: sortedLanguages,
+    primary,
+    confidence
+  };
+};
+
+// 산업별 분석 요구사항 (프론트엔드용)
+const getIndustrySecurityRequirements = (industry: string) => {
+  const requirements = {
+    fintech: {
+      critical: ['encryption', 'authentication', 'authorization', 'audit_log', 'pci_dss'],
+      patterns: ['password', 'credit_card', 'bank_account', 'ssn', 'api_key', 'secret'],
+      codeSmells: ['hardcoded_credentials', 'plaintext_logging', 'no_encryption', 'weak_validation'],
+      suggestions: ['PCI DSS 준수', '암호화 필수', '감사 로그 필수', '강력한 인증 구현']
+    },
+    healthcare: {
+      critical: ['hipaa', 'phi', 'encryption', 'access_control', 'audit_trail'],
+      patterns: ['patient_data', 'medical_record', 'diagnosis', 'treatment', 'ssn', 'health_info'],
+      codeSmells: ['plaintext_storage', 'no_access_control', 'weak_encryption', 'no_audit_log'],
+      suggestions: ['HIPAA 준수', '환자 데이터 암호화', '접근 제어 강화', '감사 추적 필수']
+    },
+    ecommerce: {
+      critical: ['payment_security', 'pci_dss', 'data_protection', 'ssl_required'],
+      patterns: ['payment', 'order', 'customer_data', 'credit_card', 'shipping', 'billing'],
+      codeSmells: ['plaintext_payment', 'no_ssl', 'weak_validation', 'insecure_storage'],
+      suggestions: ['결제 보안 강화', '고객 데이터 보호', 'SSL 필수', 'PCI DSS 준수']
+    },
+    gaming: {
+      critical: ['anti_cheat', 'performance', 'scalability', 'data_integrity'],
+      patterns: ['score', 'level', 'achievement', 'leaderboard', 'inventory', 'currency'],
+      codeSmells: ['client_side_validation', 'hardcoded_values', 'no_server_validation', 'insecure_storage'],
+      suggestions: ['부정 행위 방지', '성능 최적화', '확장성 고려', '서버 검증 필수']
+    },
+    enterprise: {
+      critical: ['compliance', 'audit', 'security', 'scalability', 'data_governance'],
+      patterns: ['business_logic', 'workflow', 'approval', 'report', 'user_role', 'permission'],
+      codeSmells: ['no_audit_trail', 'hardcoded_business_rules', 'weak_authorization', 'no_compliance_check'],
+      suggestions: ['규정 준수', '감사 추적', '보안 강화', '데이터 거버넌스']
+    },
+    education: {
+      critical: ['data_privacy', 'access_control', 'content_security', 'student_protection'],
+      patterns: ['student_data', 'grade', 'assignment', 'course', 'enrollment'],
+      codeSmells: ['weak_privacy', 'no_content_filter', 'insecure_storage', 'no_age_verification'],
+      suggestions: ['학생 데이터 보호', '콘텐츠 필터링', '연령 검증', '접근 제어']
+    },
+    media: {
+      critical: ['content_protection', 'drm', 'performance', 'scalability'],
+      patterns: ['video', 'audio', 'stream', 'content', 'license'],
+      codeSmells: ['no_drm', 'weak_content_protection', 'poor_performance', 'no_caching'],
+      suggestions: ['콘텐츠 보호', 'DRM 구현', '성능 최적화', '캐싱 전략']
+    },
+    general: {
+      critical: ['basic_security', 'data_protection', 'input_validation'],
+      patterns: ['user_data', 'password', 'session', 'config'],
+      codeSmells: ['weak_validation', 'no_encryption', 'hardcoded_values', 'poor_error_handling'],
+      suggestions: ['기본 보안 강화', '데이터 보호', '입력 검증 강화']
+    }
+  };
+  
+  return requirements[industry as keyof typeof requirements] || requirements.general;
+};
+
+// 점수 계산 상수
+const SCORE_CONSTANTS = {
+  // 기본 점수
+  BASE_SCORE: 50,
+  MAX_SCORE: 100,
+  MIN_SCORE: 0,
+  
+  // 키워드 가중치
+  POSITIVE_KEYWORD_WEIGHT: 2,
+  NEGATIVE_KEYWORD_WEIGHT: 3,
+  
+  // 영역별 특화 점수
+  ARCHITECTURE_BONUS: 10,
+  ARCHITECTURE_PENALTY: -15,
+  SECURITY_BONUS: 12,
+  SECURITY_PENALTY: -18,
+  PERFORMANCE_BONUS: 10,
+  PERFORMANCE_PENALTY: -12,
+  MAINTAINABILITY_BONUS: 8,
+  MAINTAINABILITY_PENALTY: -10,
+  
+  // 점수 등급 기준
+  ENTERPRISE_GRADE: 95,
+  PRODUCTION_GRADE: 85,
+  DEVELOPMENT_GRADE: 75,
+  BASIC_GRADE: 60,
+  
+  // 파일 크기 제한
+  MAX_FILE_SIZE_MB: 50,
+  LARGE_FILE_SIZE_MB: 100,
+  
+  // 진행률 관련
+  PROGRESS_INTERVAL: 5000,
+  PROGRESS_INCREMENT: 0.5,
+  MAX_PROGRESS: 100,
+  
+  // 90점 이상 달성 조건
+  TARGET_POSITIVE_KEYWORDS: 15,
+  TARGET_POSITIVE_SCORE: 30
+};
 
 // 입력 모드 타입
 type InputMode = 'zip' | 'text' | 'files';
@@ -155,6 +655,38 @@ interface ProjectReviewResult {
     shortTerm: string[];
     longTerm: string[];
   };
+  structuredRecommendations?: {
+    immediate?: Array<{
+      title: string;
+      description: string;
+      currentCode?: string;
+      improvedCode?: string;
+    }>;
+    shortTerm?: Array<{
+      title: string;
+      description: string;
+      currentCode?: string;
+      improvedCode?: string;
+    }>;
+    longTerm?: Array<{
+      title: string;
+      description: string;
+      currentCode?: string;
+      improvedCode?: string;
+    }>;
+  };
+  staticAnalysis?: {
+    codeSmells: number;
+    securityIssues: number;
+    performanceIssues: number;
+    maintainabilityIssues: number;
+  };
+  codeMetrics?: {
+    totalLines: number;
+    totalFunctions: number;
+    commentRatio: number;
+    averageComplexity: number;
+  };
   securityAnalysis?: {
     vulnerabilities?: Array<{
       type: string;
@@ -177,6 +709,7 @@ interface ProjectReviewResult {
 }
 
 const languageOptions = [
+  { value: 'auto', label: '🔍 언어 감지', ext: '.auto' },
   { value: 'JavaScript', label: 'JavaScript', ext: '.js' },
   { value: 'TypeScript', label: 'TypeScript', ext: '.ts' },
   { value: 'React JSX', label: 'React JSX', ext: '.jsx' },
@@ -189,8 +722,17 @@ const languageOptions = [
   { value: 'PHP', label: 'PHP', ext: '.php' },
   { value: 'Go', label: 'Go', ext: '.go' },
   { value: 'Rust', label: 'Rust', ext: '.rs' },
+  { value: 'SQL', label: 'SQL', ext: '.sql' },
+  { value: 'HTML', label: 'HTML', ext: '.html' },
+  { value: 'CSS', label: 'CSS', ext: '.css' },
+  { value: 'Shell', label: 'Shell Script', ext: '.sh' },
+  { value: 'Ruby', label: 'Ruby', ext: '.rb' },
+  { value: 'Swift', label: 'Swift', ext: '.swift' },
+  { value: 'Kotlin', label: 'Kotlin', ext: '.kt' },
   { value: 'JSON', label: 'JSON', ext: '.json' },
-  { value: 'Markdown', label: 'Markdown', ext: '.md' }
+  { value: 'Markdown', label: 'Markdown', ext: '.md' },
+  { value: 'YAML', label: 'YAML', ext: '.yml' },
+  { value: 'TOML', label: 'TOML', ext: '.toml' }
 ];
 
 export default function UnifiedProjectCodeReview() {
@@ -228,6 +770,7 @@ export default function UnifiedProjectCodeReview() {
   const [loading, setLoading] = useState(false);
   const [reviewResult, setReviewResult] = useState<ProjectReviewResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showScoreCriteria, setShowScoreCriteria] = useState(false);
   const [currentStep, setCurrentStep] = useState<'input' | 'analysis' | 'complete'>('input');
   
     // 상세 로딩 상태
@@ -332,7 +875,7 @@ export default function UnifiedProjectCodeReview() {
     return typeMap[projectType] || `🛠️ ${projectType}`;
   };
 
-  // 클라이언트 사이드 프로젝트 타입 감지
+  // 클라이언트 사이드 프로젝트 타입 감지 (언어 감지 포함)
   const detectClientSideProjectType = (files: { language: string; content: string; path: string }[]) => {
     // 언어별 카운트
     const languageCount: Record<string, number> = {};
@@ -378,6 +921,38 @@ export default function UnifiedProjectCodeReview() {
     }
   };
 
+  // 언어 감지 함수 (파파고 언어 감지처럼 코드 내용 분석)
+  const detectLanguageFromFiles = (files: { content: string; path: string }[]): string => {
+    if (files.length === 0) return 'other';
+    
+    // 모든 파일의 내용을 합쳐서 분석
+    const allContent = files.map(file => file.content).join('\n');
+    
+    // 언어 감지 실행
+    const detectionResult = detectLanguageFromContent(allContent);
+    
+    console.log('🔍 언어 감지 결과:', detectionResult);
+    
+    // 감지된 언어를 projectType으로 매핑
+    const languageToProjectType: { [key: string]: string } = {
+      'javascript': 'javascript',
+      'react': 'react',
+      'vue': 'vue',
+      'python': 'python',
+      'java': 'java',
+      'cpp': 'cpp',
+      'php': 'php',
+      'ruby': 'other',
+      'go': 'go',
+      'rust': 'rust',
+      'swift': 'mobile',
+      'kotlin': 'mobile',
+      'other': 'other'
+    };
+    
+    return languageToProjectType[detectionResult.language] || 'other';
+  };
+
   // 분석 깊이별 예상 시간 계산
   const getEstimatedTime = (depth: string, fileSize?: number) => {
     const baseTime = {
@@ -388,9 +963,9 @@ export default function UnifiedProjectCodeReview() {
     
     let estimatedTime = baseTime[depth as keyof typeof baseTime] || baseTime.deep;
     
-    // 파일 크기에 따른 조정 (100MB 이상시 시간 증가)
-    if (fileSize && fileSize > 100 * 1024 * 1024) {
-      const sizeMultiplier = Math.min(2, fileSize / (100 * 1024 * 1024));
+            // 파일 크기에 따른 조정 (LARGE_FILE_SIZE_MB 이상시 시간 증가)
+        if (fileSize && fileSize > SCORE_CONSTANTS.LARGE_FILE_SIZE_MB * 1024 * 1024) {
+          const sizeMultiplier = Math.min(2, fileSize / (SCORE_CONSTANTS.LARGE_FILE_SIZE_MB * 1024 * 1024));
       estimatedTime *= sizeMultiplier;
     }
     
@@ -504,10 +1079,17 @@ export default function UnifiedProjectCodeReview() {
     for (const file of fileArray) {
       
       // 텍스트 파일만 허용
-      if (file.size > 50 * 1024 * 1024) continue; // 50MB 제한
+      if (file.size > SCORE_CONSTANTS.MAX_FILE_SIZE_MB * 1024 * 1024) continue; // MAX_FILE_SIZE_MB 제한
       
       const content = await file.text();
-      const language = detectLanguageFromPath(file.name);
+      
+      // 언어 감지가 선택된 경우 코드 내용으로 언어 감지
+      let language = detectLanguageFromPath(file.name);
+      if (projectType === 'auto') {
+        const detectionResult = detectLanguageFromContent(content);
+        language = detectionResult.language;
+        console.log(`🔍 파일 ${file.name} 언어 감지: ${detectionResult.language} (신뢰도: ${detectionResult.confidence}%)`);
+      }
       
       newFiles.push({
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -566,7 +1148,9 @@ export default function UnifiedProjectCodeReview() {
           
           const formData = new FormData();
           formData.append('file', selectedZipFile);
-          formData.append('projectType', 'auto'); // 감지 요청
+          // 언어 감지가 선택된 경우 자동 감지
+          const finalProjectType = projectType === 'auto' ? 'auto' : projectType;
+          formData.append('projectType', finalProjectType);
           formData.append('analysisDepth', analysisDepth);
 
           // 2단계: 서버 처리 시뮬레이션
@@ -750,6 +1334,72 @@ export default function UnifiedProjectCodeReview() {
       const finalProjectType = detectedProjectType || projectType;
       console.log('분석에 사용할 프로젝트 타입:', finalProjectType);
       
+      // WebSocket을 통한 실제 진행 상황 추적
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const connectWebSocket = () => {
+        return new Promise<WebSocket>((resolve, reject) => {
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${protocol}//${window.location.host}/api/ws/progress`;
+          
+          const ws = new WebSocket(wsUrl);
+          
+          ws.onopen = () => {
+            console.log('WebSocket 연결됨');
+            ws.send(JSON.stringify({
+              type: 'subscribe',
+              sessionId: sessionId
+            }));
+            resolve(ws);
+          };
+          
+          ws.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.type === 'progress') {
+                setLoadingProgress(prev => ({
+                  ...prev,
+                  progress: data.percentage || prev.progress,
+                  message: data.message || prev.message,
+                  stage: data.stage || prev.stage
+                }));
+              }
+            } catch (error) {
+              console.error('WebSocket 메시지 파싱 오류:', error);
+            }
+          };
+          
+          ws.onerror = (error) => {
+            console.error('WebSocket 오류:', error);
+            reject(error);
+          };
+          
+          ws.onclose = () => {
+            console.log('WebSocket 연결 종료');
+          };
+        });
+      };
+      
+      let ws: WebSocket | null = null;
+      let fallbackInterval: NodeJS.Timeout | null = null;
+      
+      try {
+        ws = await connectWebSocket();
+      } catch (error) {
+        console.warn('WebSocket 연결 실패, 기본 진행률 사용');
+        
+        // 기본 진행률 시스템 (더 보수적으로)
+        let progress = 0;
+        fallbackInterval = setInterval(() => {
+          progress = Math.min(progress + 0.5, 70); // 70%까지만, 더 천천히
+          setLoadingProgress(prev => ({
+            ...prev,
+            progress: Math.round(progress),
+            message: `분석 진행 중... ${Math.round(progress)}%`
+          }));
+        }, SCORE_CONSTANTS.PROGRESS_INTERVAL); // PROGRESS_INTERVAL마다 PROGRESS_INCREMENT씩 증가
+      }
+      
       const analysisPromise = fetch('/api/code-review/project', {
         method: 'POST',
         headers: {
@@ -761,7 +1411,8 @@ export default function UnifiedProjectCodeReview() {
           projectType: finalProjectType, // 감지된 타입 사용
           reviewType: 'comprehensive',
           focusAreas: ['architecture', 'security', 'performance', 'maintainability'],
-          industry: industry !== 'general' ? industry : undefined
+          industry: industry !== 'general' ? industry : undefined,
+          sessionId: sessionId // WebSocket 세션 ID 추가
         }),
       });
 
@@ -793,15 +1444,30 @@ export default function UnifiedProjectCodeReview() {
       );
 
       const response = await analysisPromise;
+      
+      // WebSocket 연결 종료 및 기본 진행률 정리
+      if (ws) {
+        ws.close();
+      }
+      if (fallbackInterval) {
+        clearInterval(fallbackInterval);
+      }
+      
+                // MAX_PROGRESS 완료로 설정
+          setLoadingProgress(prev => ({
+            ...prev,
+            progress: SCORE_CONSTANTS.MAX_PROGRESS,
+            message: '분석 완료!'
+          }));
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: '프로젝트 분석에 실패했습니다.' }));
         throw new Error(errorData.error || '프로젝트 분석에 실패했습니다.');
       }
 
-      const data = await response.json().catch(() => ({ success: false, result: null }));
+      const data = await response.json().catch(() => ({ success: false, review: null }));
       
-      if (data.success && data.result) {
+      if (data.success && data.review) {
         await simulateProgress(
           '완료', 
           '📊 분석 결과 정리 중...',
@@ -810,7 +1476,266 @@ export default function UnifiedProjectCodeReview() {
           estimatedTime
         );
         
-        setReviewResult(data.result);
+        // 구조화된 데이터 처리 시도
+        let structuredData = null;
+        let reviewText = data.review;
+        
+        try {
+          // JSON 형식인지 확인
+          if (typeof data.review === 'string' && data.review.trim().startsWith('{')) {
+            structuredData = JSON.parse(data.review);
+            console.log('구조화된 데이터 감지:', structuredData);
+          }
+        } catch (parseError) {
+          console.log('JSON 파싱 실패, 텍스트로 처리:', parseError);
+          structuredData = null;
+        }
+        
+        // API 응답에서 개선 사항 추출
+        const extractRecommendations = (reviewText: string) => {
+          const immediate: string[] = [];
+          const shortTerm: string[] = [];
+          const longTerm: string[] = [];
+          
+          // 즉시 수정 항목 추출 (더 구체적)
+          if (reviewText.match(/버그|오류|에러|크래시|예외/gi)) {
+            immediate.push('발견된 버그 및 예외 처리를 즉시 수정하세요');
+          }
+          if (reviewText.match(/보안|취약|SQL인젝션|XSS/gi)) {
+            immediate.push('보안 취약점을 즉시 패치하세요');
+          }
+          if (reviewText.match(/메모리누수|리소스누수/gi)) {
+            immediate.push('메모리 누수 문제를 즉시 해결하세요');
+          }
+          if (reviewText.match(/하드코딩|매직넘버/gi)) {
+            immediate.push('하드코딩된 값들을 상수로 분리하세요');
+          }
+          
+          // 단기 개선 항목 추출 (더 구체적)
+          if (reviewText.match(/성능|속도|느림/gi)) {
+            shortTerm.push('성능 최적화: 불필요한 루프와 계산을 개선하세요');
+          }
+          if (reviewText.match(/중복|복사/gi)) {
+            shortTerm.push('코드 중복 제거: 공통 함수로 추출하세요');
+          }
+          if (reviewText.match(/네이밍|변수명/gi)) {
+            shortTerm.push('변수명과 함수명을 더 명확하게 개선하세요');
+          }
+          if (reviewText.match(/주석|문서화/gi)) {
+            shortTerm.push('코드 문서화 및 주석을 추가하세요');
+          }
+          
+          // 장기 개선 항목 추출 (더 구체적)
+          if (reviewText.match(/아키텍처|구조|설계/gi)) {
+            longTerm.push('전체 아키텍처 재설계: 모듈화와 의존성 분리');
+          }
+          if (reviewText.match(/테스트|단위테스트/gi)) {
+            longTerm.push('테스트 커버리지 확대: 단위/통합 테스트 추가');
+          }
+          if (reviewText.match(/확장성|스케일/gi)) {
+            longTerm.push('확장성 개선: 마이크로서비스 아키텍처 고려');
+          }
+          if (reviewText.match(/유지보수|리팩토링/gi)) {
+            longTerm.push('대규모 리팩토링: 레거시 코드 현대화');
+          }
+          
+          // 기본값 제공 (구체적인 내용이 없을 때)
+          if (immediate.length === 0) {
+            immediate.push('코드 품질 개선이 필요합니다');
+          }
+          if (shortTerm.length === 0) {
+            shortTerm.push('코드 구조 개선이 필요합니다');
+          }
+          if (longTerm.length === 0) {
+            longTerm.push('전체적인 아키텍처 개선이 필요합니다');
+          }
+          
+          return { immediate, shortTerm, longTerm };
+        };
+        
+        const recommendations = structuredData?.recommendations || extractRecommendations(reviewText);
+        
+        // API 응답에서 점수 추출 (구조화된 데이터 우선, 텍스트 분석 백업)
+        const extractScores = (reviewText: string) => {
+          /*
+          ===== 객관적 점수 채점 기준 =====
+          
+          【기본 점수】: 50점 시작
+          
+          【정적 분석 기반 점수 조정】
+          - 코드 스멜: -5점씩 (최대 -20점)
+          - 보안 이슈: -10점씩 (최대 -30점)  
+          - 성능 이슈: -8점씩 (최대 -24점)
+          - 유지보수성 이슈: -6점씩 (최대 -18점)
+          
+          【코드 메트릭 기반 점수 조정】
+          - 주석 비율 10% 이상: +5점
+          - 주석 비율 5% 미만: -5점
+          - 평균 복잡도 3 이하: +5점
+          - 평균 복잡도 5 이상: -5점
+          - 함수당 평균 라인 수 20 이하: +3점
+          - 함수당 평균 라인 수 50 이상: -3점
+          
+          【구조적 분석 기반 점수】
+          - 모듈화 잘됨: +10점
+          - 의존성 분리: +8점
+          - 에러 처리 완비: +7점
+          - 하드코딩 없음: +5점
+          
+          【점수 등급】
+          - 95-100: 엔터프라이즈급 (최고 품질)
+          - 85-94: 프로덕션급 (높은 품질)
+          - 75-84: 개발급 (양호한 품질)
+          - 60-74: 기본급 (보통 품질)
+          - 0-59: 개선 필요 (낮은 품질)
+          */
+          
+          // 기본 점수
+          let overallScore = SCORE_CONSTANTS.BASE_SCORE;
+          let architectureScore = SCORE_CONSTANTS.BASE_SCORE;
+          let securityScore = SCORE_CONSTANTS.BASE_SCORE;
+          let performanceScore = SCORE_CONSTANTS.BASE_SCORE;
+          let maintainabilityScore = SCORE_CONSTANTS.BASE_SCORE;
+
+          // 정적 분석 결과가 있으면 사용
+          if (data.staticAnalysis) {
+            const { codeSmells, securityIssues, performanceIssues, maintainabilityIssues } = data.staticAnalysis;
+            
+            // 보안 점수 조정
+            securityScore -= Math.min(securityIssues * 10, 30);
+            
+            // 성능 점수 조정
+            performanceScore -= Math.min(performanceIssues * 8, 24);
+            
+            // 유지보수성 점수 조정
+            maintainabilityScore -= Math.min(maintainabilityIssues * 6, 18);
+            maintainabilityScore -= Math.min(codeSmells * 5, 20);
+            
+            // 전체 점수에 반영
+            overallScore = Math.round((architectureScore + securityScore + performanceScore + maintainabilityScore) / 4);
+          }
+
+          // 코드 메트릭이 있으면 추가 조정
+          if (data.codeMetrics) {
+            const { commentRatio, averageComplexity, totalLines, totalFunctions } = data.codeMetrics;
+            
+            // 주석 비율에 따른 점수 조정
+            if (commentRatio >= 10) {
+              maintainabilityScore += 5;
+            } else if (commentRatio < 5) {
+              maintainabilityScore -= 5;
+            }
+            
+            // 복잡도에 따른 점수 조정
+            if (averageComplexity <= 3) {
+              maintainabilityScore += 5;
+            } else if (averageComplexity >= 5) {
+              maintainabilityScore -= 5;
+            }
+            
+            // 함수당 평균 라인 수 조정
+            if (totalFunctions > 0) {
+              const avgLinesPerFunction = totalLines / totalFunctions;
+              if (avgLinesPerFunction <= 20) {
+                maintainabilityScore += 3;
+              } else if (avgLinesPerFunction >= 50) {
+                maintainabilityScore -= 3;
+              }
+            }
+            
+            // 전체 점수 재계산
+            overallScore = Math.round((architectureScore + securityScore + performanceScore + maintainabilityScore) / 4);
+          }
+
+          // 점수 범위 제한
+          const clampScore = (score: number) => Math.max(SCORE_CONSTANTS.MIN_SCORE, Math.min(SCORE_CONSTANTS.MAX_SCORE, Math.round(score)));
+
+          return {
+            overallScore: clampScore(overallScore),
+            architectureScore: clampScore(architectureScore),
+            securityScore: clampScore(securityScore),
+            performanceScore: clampScore(performanceScore),
+            maintainabilityScore: clampScore(maintainabilityScore)
+          };
+        };
+        
+        // 구조화된 데이터에서 점수 추출 시도
+        let scores;
+        if (structuredData && structuredData.overallScore !== undefined) {
+          // 구조화된 데이터에서 점수 사용
+          scores = {
+            overallScore: Math.round(structuredData.overallScore),
+            architectureScore: Math.round(structuredData.architectureScore || structuredData.overallScore),
+            securityScore: Math.round(structuredData.securityScore || structuredData.overallScore),
+            performanceScore: Math.round(structuredData.performanceScore || structuredData.overallScore),
+            maintainabilityScore: Math.round(structuredData.maintainabilityScore || structuredData.overallScore)
+          };
+          console.log('구조화된 데이터에서 추출된 점수:', scores);
+        } else {
+          // 텍스트 분석으로 점수 추출
+          scores = extractScores(reviewText);
+          console.log('텍스트 분석으로 추출된 점수:', scores);
+        }
+        
+        // 구조화된 데이터에서 개선사항 추출
+        let finalRecommendations = recommendations;
+        let structuredRecommendations = undefined;
+        
+        if (structuredData?.recommendations) {
+          // 구조화된 개선사항 저장
+          structuredRecommendations = {
+            immediate: structuredData.recommendations.immediate || [],
+            shortTerm: structuredData.recommendations.shortTerm || [],
+            longTerm: structuredData.recommendations.longTerm || []
+          };
+          
+          // 텍스트 기반 개선사항도 추출
+          finalRecommendations = {
+            immediate: structuredData.recommendations.immediate?.map((r: any) => r.title || r) || [],
+            shortTerm: structuredData.recommendations.shortTerm?.map((r: any) => r.title || r) || [],
+            longTerm: structuredData.recommendations.longTerm?.map((r: any) => r.title || r) || []
+          };
+        }
+        
+        // 구조화된 데이터에서 요약 추출
+        let summary = data.review;
+        if (structuredData?.summary) {
+          if (typeof structuredData.summary === 'object') {
+            summary = `${structuredData.summary.keyEvaluation || ''}\n\n주요 문제점:\n${(structuredData.summary.keyIssues || []).join('\n')}\n\n개선 우선순위:\n${(structuredData.summary.improvementPriority || []).join('\n')}`;
+          } else {
+            summary = structuredData.summary;
+          }
+        }
+        
+        // API 응답을 클라이언트가 기대하는 형태로 변환
+        const formattedResult: ProjectReviewResult = {
+          projectId: data.projectId || 'unknown',
+          ...scores,
+          projectAnalysis: {
+            structure: {
+              score: scores.architectureScore, // 실제 구조 점수 사용
+              issues: [],
+              improvements: []
+            },
+            dependencies: {
+              score: scores.securityScore, // 보안 점수를 의존성 점수로 사용 (의존성은 보안과 관련)
+              outdated: [],
+              security: [],
+              recommendations: []
+            },
+            patterns: {
+              score: scores.maintainabilityScore, // 유지보수성 점수를 패턴 점수로 사용 (패턴은 유지보수성과 관련)
+              detected: [],
+              antiPatterns: [],
+              suggestions: []
+            }
+          },
+          recommendations: finalRecommendations,
+          structuredRecommendations: structuredRecommendations,
+          summary: summary
+        };
+        
+        setReviewResult(formattedResult);
         setCurrentStep('complete');
       } else {
         throw new Error('프로젝트 분석 결과를 받지 못했습니다.');
@@ -834,28 +1759,28 @@ export default function UnifiedProjectCodeReview() {
   // 점수 색상
   const getScoreColor = (score: number) => {
     // 엔터프라이즈급 기준으로 상향 조정
-    if (score >= 95) return 'text-purple-600'; // 엔터프라이즈급
-    if (score >= 85) return 'text-green-600';  // 프로덕션급
-    if (score >= 75) return 'text-blue-600';   // 개발급
-    if (score >= 60) return 'text-yellow-600'; // 기본급
+    if (score >= SCORE_CONSTANTS.ENTERPRISE_GRADE) return 'text-purple-600'; // 엔터프라이즈급
+    if (score >= SCORE_CONSTANTS.PRODUCTION_GRADE) return 'text-green-600';  // 프로덕션급
+    if (score >= SCORE_CONSTANTS.DEVELOPMENT_GRADE) return 'text-blue-600';   // 개발급
+    if (score >= SCORE_CONSTANTS.BASIC_GRADE) return 'text-yellow-600'; // 기본급
     return 'text-red-600'; // 개선 필요
   };
 
   const getScoreBgColor = (score: number) => {
     // 엔터프라이즈급 기준으로 상향 조정
-    if (score >= 95) return 'bg-purple-100'; // 엔터프라이즈급
-    if (score >= 85) return 'bg-green-100';  // 프로덕션급
-    if (score >= 75) return 'bg-blue-100';   // 개발급
-    if (score >= 60) return 'bg-yellow-100'; // 기본급
+    if (score >= SCORE_CONSTANTS.ENTERPRISE_GRADE) return 'bg-purple-100'; // 엔터프라이즈급
+    if (score >= SCORE_CONSTANTS.PRODUCTION_GRADE) return 'bg-green-100';  // 프로덕션급
+    if (score >= SCORE_CONSTANTS.DEVELOPMENT_GRADE) return 'bg-blue-100';   // 개발급
+    if (score >= SCORE_CONSTANTS.BASIC_GRADE) return 'bg-yellow-100'; // 기본급
     return 'bg-red-100'; // 개선 필요
   };
 
   const getScoreLabel = (score: number) => {
     // 엔터프라이즈급 기준으로 상향 조정
-    if (score >= 95) return '엔터프라이즈급';
-    if (score >= 85) return '프로덕션급';
-    if (score >= 75) return '개발급';
-    if (score >= 60) return '기본급';
+    if (score >= SCORE_CONSTANTS.ENTERPRISE_GRADE) return '엔터프라이즈급';
+    if (score >= SCORE_CONSTANTS.PRODUCTION_GRADE) return '프로덕션급';
+    if (score >= SCORE_CONSTANTS.DEVELOPMENT_GRADE) return '개발급';
+    if (score >= SCORE_CONSTANTS.BASIC_GRADE) return '기본급';
     return '개선 필요';
   };
 
@@ -880,6 +1805,164 @@ export default function UnifiedProjectCodeReview() {
       document.removeEventListener('drop', handleGlobalDrop);
     };
   }, []);
+
+  // 점수 기준 모달 컴포넌트
+  const ScoreCriteriaModal = ({ onClose }: { onClose: () => void }) => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">📊 점수 채점 기준</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="space-y-6">
+            {/* 기본 점수 */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-blue-900 mb-3">🎯 기본 점수</h3>
+              <p className="text-gray-700">모든 영역: <strong>{SCORE_CONSTANTS.BASE_SCORE}점</strong> 시작 (중간 등급)</p>
+            </div>
+
+            {/* 정적 분석 기반 감점 */}
+            <div className="bg-red-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-red-900 mb-3">🔍 정적 분석 기반 감점</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-red-900 mb-2">코드 스멜</h4>
+                  <p className="text-sm text-gray-700">-5점씩 (최대 -20점)</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-red-900 mb-2">보안 이슈</h4>
+                  <p className="text-sm text-gray-700">-10점씩 (최대 -30점)</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-red-900 mb-2">성능 이슈</h4>
+                  <p className="text-sm text-gray-700">-8점씩 (최대 -24점)</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-red-900 mb-2">유지보수성 이슈</h4>
+                  <p className="text-sm text-gray-700">-6점씩 (최대 -18점)</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 코드 메트릭 기반 조정 */}
+            <div className="bg-green-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-green-900 mb-3">📊 코드 메트릭 기반 조정</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-green-900 mb-2">주석 비율</h4>
+                  <p className="text-sm text-gray-700">10% 이상: +5점, 5% 미만: -5점</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-green-900 mb-2">평균 복잡도</h4>
+                  <p className="text-sm text-gray-700">3 이하: +5점, 5 이상: -5점</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-green-900 mb-2">함수당 평균 라인</h4>
+                  <p className="text-sm text-gray-700">20 이하: +3점, 50 이상: -3점</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-green-900 mb-2">구조적 분석</h4>
+                  <p className="text-sm text-gray-700">모듈화: +10점, 의존성 분리: +8점</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 영역별 특화 점수 */}
+            <div className="bg-purple-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-purple-900 mb-3">🎨 영역별 특화 점수</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-blue-900 mb-2">🏗️ 아키텍처</h4>
+                  <p className="text-sm text-gray-700">좋은 구조: <strong>+{SCORE_CONSTANTS.ARCHITECTURE_BONUS}점</strong>, 문제 있는 구조 SCORE_CONSTANTS.ARCHITECTURE_PENALTY점</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-green-900 mb-2">🔒 보안</h4>
+                  <p className="text-sm text-gray-700">안전한 보안: <strong>+{SCORE_CONSTANTS.SECURITY_BONUS}점</strong>, 취약점 SCORE_CONSTANTS.SECURITY_PENALTY점</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-yellow-900 mb-2">⚡ 성능</h4>
+                  <p className="text-sm text-gray-700">최적화: <strong>+{SCORE_CONSTANTS.PERFORMANCE_BONUS}점</strong>, 비효율 SCORE_CONSTANTS.PERFORMANCE_PENALTY점</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <h4 className="font-semibold text-orange-900 mb-2">🔧 유지보수성</h4>
+                  <p className="text-sm text-gray-700">깔끔한 코드: <strong>+{SCORE_CONSTANTS.MAINTAINABILITY_BONUS}점</strong>, 복잡한 코드 SCORE_CONSTANTS.MAINTAINABILITY_PENALTY점</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 90점 이상 달성 조건 */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-purple-900 mb-3">🏆 90점 이상 달성 조건</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">정적 분석 이슈 0개 (코드 스멜, 보안, 성능, 유지보수성)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">주석 비율 10% 이상</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">평균 복잡도 3 이하</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">함수당 평균 라인 수 20 이하</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">모듈화된 아키텍처</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">완전한 에러 처리</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">하드코딩된 값 없음</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 점수 등급 */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 점수 등급</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-purple-100 rounded p-3">
+                  <h4 className="font-semibold text-purple-900">{SCORE_CONSTANTS.ENTERPRISE_GRADE}-{SCORE_CONSTANTS.MAX_SCORE}점: 엔터프라이즈급</h4>
+                  <p className="text-sm text-purple-700">최고 품질</p>
+                </div>
+                <div className="bg-green-100 rounded p-3">
+                  <h4 className="font-semibold text-green-900">{SCORE_CONSTANTS.PRODUCTION_GRADE}-{SCORE_CONSTANTS.ENTERPRISE_GRADE-1}점: 프로덕션급</h4>
+                  <p className="text-sm text-green-700">높은 품질</p>
+                </div>
+                <div className="bg-blue-100 rounded p-3">
+                  <h4 className="font-semibold text-blue-900">{SCORE_CONSTANTS.DEVELOPMENT_GRADE}-{SCORE_CONSTANTS.PRODUCTION_GRADE-1}점: 개발급</h4>
+                  <p className="text-sm text-blue-700">양호한 품질</p>
+                </div>
+                <div className="bg-yellow-100 rounded p-3">
+                  <h4 className="font-semibold text-yellow-900">{SCORE_CONSTANTS.BASIC_GRADE}-{SCORE_CONSTANTS.DEVELOPMENT_GRADE-1}점: 기본급</h4>
+                  <p className="text-sm text-yellow-700">보통 품질</p>
+                </div>
+                <div className="bg-red-100 rounded p-3">
+                  <h4 className="font-semibold text-red-900">{SCORE_CONSTANTS.MIN_SCORE}-{SCORE_CONSTANTS.BASIC_GRADE-1}점: 개선 필요</h4>
+                  <p className="text-sm text-red-700">낮은 품질</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // 상세 분석 모달 컴포넌트
   const DetailModal = ({ type, data, onClose }: { type: string; data: any; onClose: () => void }) => {
@@ -932,19 +2015,35 @@ export default function UnifiedProjectCodeReview() {
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-green-700 mb-2">✅ 잘된 부분</h5>
                     <ul className="text-sm text-green-600 space-y-1">
-                      <li>• 명확한 폴더 구조 분리</li>
-                      <li>• 기능별 모듈화 구현</li>
-                      <li>• 일관된 네이밍 컨벤션</li>
-                      <li>• 적절한 파일 크기 분할</li>
+                      {safeData.improvements && safeData.improvements.length > 0 ? (
+                        safeData.improvements.slice(0, 4).map((improvement: string, idx: number) => (
+                          <li key={idx}>• {improvement}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• 명확한 폴더 구조 분리</li>
+                          <li>• 기능별 모듈화 구현</li>
+                          <li>• 일관된 네이밍 컨벤션</li>
+                          <li>• 적절한 파일 크기 분할</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-red-700 mb-2">⚠️ 개선 필요 부분</h5>
                     <ul className="text-sm text-red-600 space-y-1">
-                      <li>• 일부 폴더 깊이가 과도함</li>
-                      <li>• 순환 의존성 존재</li>
-                      <li>• 공통 컴포넌트 분산</li>
-                      <li>• 테스트 파일 구조 개선 필요</li>
+                      {safeData.issues && safeData.issues.length > 0 ? (
+                        safeData.issues.slice(0, 4).map((issue: string, idx: number) => (
+                          <li key={idx}>• {issue}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• 일부 폴더 깊이가 과도함</li>
+                          <li>• 순환 의존성 존재</li>
+                          <li>• 공통 컴포넌트 분산</li>
+                          <li>• 테스트 파일 구조 개선 필요</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -1066,19 +2165,35 @@ export default function UnifiedProjectCodeReview() {
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-green-700 mb-2">✅ 잘된 부분</h5>
                     <ul className="text-sm text-green-600 space-y-1">
-                      <li>• 입력값 검증 구현</li>
-                      <li>• HTTPS 사용</li>
-                      <li>• 인증 로직 구현</li>
-                      <li>• 민감정보 암호화</li>
+                      {safeData.improvements && safeData.improvements.length > 0 ? (
+                        safeData.improvements.slice(0, 4).map((improvement: string, idx: number) => (
+                          <li key={idx}>• {improvement}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• 입력값 검증 구현</li>
+                          <li>• HTTPS 사용</li>
+                          <li>• 인증 로직 구현</li>
+                          <li>• 민감정보 암호화</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-red-700 mb-2">⚠️ 개선 필요 부분</h5>
                     <ul className="text-sm text-red-600 space-y-1">
-                      <li>• SQL 인젝션 방지 부족</li>
-                      <li>• XSS 방어 미흡</li>
-                      <li>• 세션 관리 개선 필요</li>
-                      <li>• 로깅 보안 강화 필요</li>
+                      {safeData.issues && safeData.issues.length > 0 ? (
+                        safeData.issues.slice(0, 4).map((issue: string, idx: number) => (
+                          <li key={idx}>• {issue}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• SQL 인젝션 방지 부족</li>
+                          <li>• XSS 방어 미흡</li>
+                          <li>• 세션 관리 개선 필요</li>
+                          <li>• 로깅 보안 강화 필요</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -1173,19 +2288,35 @@ export default function UnifiedProjectCodeReview() {
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-green-700 mb-2">✅ 잘된 부분</h5>
                     <ul className="text-sm text-green-600 space-y-1">
-                      <li>• 효율적인 알고리즘 사용</li>
-                      <li>• 적절한 캐싱 구현</li>
-                      <li>• 비동기 처리 활용</li>
-                      <li>• 메모리 사용량 최적화</li>
+                      {safeData.improvements && safeData.improvements.length > 0 ? (
+                        safeData.improvements.slice(0, 4).map((improvement: string, idx: number) => (
+                          <li key={idx}>• {improvement}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• 효율적인 알고리즘 사용</li>
+                          <li>• 적절한 캐싱 구현</li>
+                          <li>• 비동기 처리 활용</li>
+                          <li>• 메모리 사용량 최적화</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-red-700 mb-2">⚠️ 개선 필요 부분</h5>
                     <ul className="text-sm text-red-600 space-y-1">
-                      <li>• 불필요한 API 호출</li>
-                      <li>• 큰 이미지 파일 미최적화</li>
-                      <li>• 데이터베이스 쿼리 비효율</li>
-                      <li>• 번들 크기 과다</li>
+                      {safeData.issues && safeData.issues.length > 0 ? (
+                        safeData.issues.slice(0, 4).map((issue: string, idx: number) => (
+                          <li key={idx}>• {issue}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• 불필요한 API 호출</li>
+                          <li>• 큰 이미지 파일 미최적화</li>
+                          <li>• 데이터베이스 쿼리 비효율</li>
+                          <li>• 번들 크기 과다</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -1287,19 +2418,35 @@ export default function UnifiedProjectCodeReview() {
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-green-700 mb-2">✅ 잘된 부분</h5>
                     <ul className="text-sm text-green-600 space-y-1">
-                      <li>• 핵심 라이브러리 적절히 사용</li>
-                      <li>• 버전 관리 체계화</li>
-                      <li>• 개발/프로덕션 의존성 분리</li>
-                      <li>• 보안 패치 적용</li>
+                      {safeData.improvements && safeData.improvements.length > 0 ? (
+                        safeData.improvements.slice(0, 4).map((improvement: string, idx: number) => (
+                          <li key={idx}>• {improvement}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• 핵심 라이브러리 적절히 사용</li>
+                          <li>• 버전 관리 체계화</li>
+                          <li>• 개발/프로덕션 의존성 분리</li>
+                          <li>• 보안 패치 적용</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   <div className="bg-white rounded p-3">
                     <h5 className="font-medium text-red-700 mb-2">⚠️ 개선 필요 부분</h5>
                     <ul className="text-sm text-red-600 space-y-1">
-                      <li>• 일부 패키지 버전 구식</li>
-                      <li>• 불필요한 의존성 존재</li>
-                      <li>• 보안 취약점 패키지</li>
-                      <li>• 번들 크기 과다</li>
+                      {safeData.issues && safeData.issues.length > 0 ? (
+                        safeData.issues.slice(0, 4).map((issue: string, idx: number) => (
+                          <li key={idx}>• {issue}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• 일부 패키지 버전 구식</li>
+                          <li>• 불필요한 의존성 존재</li>
+                          <li>• 보안 취약점 패키지</li>
+                          <li>• 번들 크기 과다</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -1962,7 +3109,7 @@ export default function UnifiedProjectCodeReview() {
                   {/* 활성 파일 편집 */}
                   {activeFile && (
                     <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             파일명
@@ -1985,22 +3132,7 @@ export default function UnifiedProjectCodeReview() {
                             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            언어
-                          </label>
-                          <select
-                            value={activeFile.language}
-                            onChange={(e) => updateTextFile(activeFile.id, { language: e.target.value })}
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                          >
-                            {languageOptions.map(lang => (
-                              <option key={lang.value} value={lang.value}>
-                                {lang.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+
                       </div>
                       
                       <div>
@@ -2126,8 +3258,7 @@ export default function UnifiedProjectCodeReview() {
                       <p className={`mt-2 ${
                         isDragging ? 'text-purple-600' : 'text-gray-600'
                       }`}>
-                        전체 프로젝트를 압축해서 업로드 (최대 500MB)<br/>
-                      💡 <span className="text-blue-600 font-medium">빠른 분석</span>: 핵심 파일을 선별하여 시간 단축
+                        전체 프로젝트를 압축해서 업로드 (최대 500MB)
                       </p>
                     </label>
                     {selectedZipFile && (
@@ -2146,6 +3277,45 @@ export default function UnifiedProjectCodeReview() {
                 </div>
               )}
             </div>
+
+            {/* 프로젝트 타입 선택 */}
+            {currentStep === 'input' && (
+              <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  🔍 프로젝트 타입 선택
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {projectTypes.map(type => (
+                    <label
+                      key={type.value}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        projectType === type.value
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="projectType"
+                        value={type.value}
+                        checked={projectType === type.value}
+                        onChange={(e) => setProjectType(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="text-center">
+                        <div className="text-2xl mb-2">{type.icon}</div>
+                        <div className="font-medium text-gray-900">{type.label}</div>
+                        {type.value === 'auto' && (
+                          <div className="text-xs text-purple-600 mt-1">
+                            코드 내용 자동 감지
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 분석 깊이 설정 */}
             {currentStep === 'input' && (
@@ -2177,7 +3347,7 @@ export default function UnifiedProjectCodeReview() {
                            <div className="font-semibold text-gray-900">빠른 분석</div>
                            <div className="text-sm text-gray-600 mt-2">
                              📋 핵심 파일만 분석<br/>
-                             ⏱️ <span className="font-medium text-green-600">1-2분 완료</span>
+                             ⏱️ <span className="font-medium text-green-600">5-10분 완료</span>
                            </div>
                          </div>
                        </label>
@@ -2200,7 +3370,7 @@ export default function UnifiedProjectCodeReview() {
                            <div className="font-semibold text-gray-900">표준 분석</div>
                            <div className="text-sm text-gray-600 mt-2">
                              📚 주요 파일 포함 분석<br/>
-                             ⏱️ <span className="font-medium text-blue-600">3-5분 완료</span> <span className="text-blue-600">추천</span>
+                             ⏱️ <span className="font-medium text-blue-600">10-20분 완료</span> <span className="text-blue-600">추천</span>
                            </div>
                          </div>
                        </label>
@@ -2223,7 +3393,7 @@ export default function UnifiedProjectCodeReview() {
                            <div className="font-semibold text-gray-900">상세 분석</div>
                            <div className="text-sm text-gray-600 mt-2">
                              📖 모든 파일 꼼꼼히 분석<br/>
-                             ⏱️ <span className="font-medium text-orange-600">5-8분 완료</span>
+                             ⏱️ <span className="font-medium text-orange-600">20-30분 완료</span>
                            </div>
                          </div>
                        </label>
@@ -2388,10 +3558,19 @@ export default function UnifiedProjectCodeReview() {
                 {/* 종합 점수 */}
                 <div className="bg-white rounded-2xl shadow-lg p-8">
                   <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-4">
                     <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                       <Award className="w-6 h-6 text-yellow-500" />
                       🏆 종합 분석 결과
                     </h2>
+                      <button
+                        onClick={() => setShowScoreCriteria(true)}
+                        className="flex items-center gap-2 px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Info className="w-4 h-4" />
+                        점수 기준
+                      </button>
+                    </div>
                     <div className="text-right">
                       <div className="text-sm text-gray-500">분석 모드</div>
                       <div className="text-sm font-medium text-purple-600">
@@ -2682,13 +3861,81 @@ export default function UnifiedProjectCodeReview() {
                         <Clock className="w-4 h-4" />
                         🚨 즉시 수정 필요
                       </h4>
-                      <ul className="space-y-2">
-                        {reviewResult.recommendations.immediate.map((item, index) => (
-                          <li key={index} className="text-sm text-red-800 flex items-start gap-2">
-                            <span className="text-red-500 mt-1">•</span>
-                            {item}
-                          </li>
-                        ))}
+                      <ul className="space-y-3">
+                        {reviewResult?.structuredRecommendations?.immediate?.length > 0 ? (
+                          // 구조화된 데이터가 있으면 사용
+                          reviewResult.structuredRecommendations.immediate.map((item, index) => (
+                            <li key={index} className="text-sm text-red-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-red-500 mt-1">•</span>
+                                <span className="font-medium">{item.title}</span>
+                              </div>
+                              {item.description && (
+                                <div className="ml-6 mb-2 text-xs text-red-700">{item.description}</div>
+                              )}
+                              {item.currentCode && item.improvedCode && (
+                                <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                  <p className="text-gray-600 mb-2">현재 코드:</p>
+                                  <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">{item.currentCode}</div>
+                                  <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                  <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">{item.improvedCode}</div>
+                                </div>
+                              )}
+                            </li>
+                          ))
+                        ) : (
+                          // 기본 하드코딩된 예시
+                          <>
+                            <li className="text-sm text-red-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-red-500 mt-1">•</span>
+                                <span className="font-medium">하드코딩된 값들을 상수로 분리</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">현재 코드:</p>
+                                <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">const timeout = 5000;</div>
+                                <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">const TIMEOUT_CONSTANTS = {`{`} timeout: 5000 {`}`};</div>
+                              </div>
+                            </li>
+                            <li className="text-sm text-red-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-red-500 mt-1">•</span>
+                                <span className="font-medium">에러 처리 개선</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">현재 코드:</p>
+                                <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">catch (error) {`{`} console.log(error); {`}`}</div>
+                                <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">catch (error) {`{`} throw new CustomError('명확한 에러 메시지', error); {`}`}</div>
+                              </div>
+                            </li>
+                            <li className="text-sm text-red-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-red-500 mt-1">•</span>
+                                <span className="font-medium">데이터 검증 추가</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">현재 코드:</p>
+                                <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">function processUser(data) {`{`} return data.name; {`}`}</div>
+                                <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">function processUser(data) {`{`} if (!data?.name) throw new Error('이름이 필요합니다'); return data.name; {`}`}</div>
+                              </div>
+                            </li>
+                            <li className="text-sm text-red-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-red-500 mt-1">•</span>
+                                <span className="font-medium">비동기 처리 개선</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">현재 코드:</p>
+                                <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">fetch('/api/data').then(res ={`>`} res.json())</div>
+                                <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">try {`{`} const res = await fetch('/api/data'); if (!res.ok) throw new Error('API 오류'); return await res.json(); {`}`} catch (error) {`{`} handleError(error); {`}`}</div>
+                              </div>
+                            </li>
+                          </>
+                        )}
                       </ul>
                     </div>
                     
@@ -2697,13 +3944,66 @@ export default function UnifiedProjectCodeReview() {
                         <Activity className="w-4 h-4" />
                         📋 단기 개선사항
                       </h4>
-                      <ul className="space-y-2">
-                        {reviewResult.recommendations.shortTerm.map((item, index) => (
-                          <li key={index} className="text-sm text-yellow-800 flex items-start gap-2">
-                            <span className="text-yellow-500 mt-1">•</span>
-                            {item}
-                          </li>
-                        ))}
+                      <ul className="space-y-3">
+                        {reviewResult?.structuredRecommendations?.shortTerm?.length > 0 ? (
+                          // 구조화된 데이터가 있으면 사용
+                          reviewResult.structuredRecommendations.shortTerm.map((item, index) => (
+                            <li key={index} className="text-sm text-yellow-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-yellow-500 mt-1">•</span>
+                                <span className="font-medium">{item.title}</span>
+                              </div>
+                              {item.description && (
+                                <div className="ml-6 mb-2 text-xs text-yellow-700">{item.description}</div>
+                              )}
+                              {item.currentCode && item.improvedCode && (
+                                <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                  <p className="text-gray-600 mb-2">현재 코드:</p>
+                                  <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">{item.currentCode}</div>
+                                  <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                  <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">{item.improvedCode}</div>
+                                </div>
+                              )}
+                            </li>
+                          ))
+                        ) : (
+                          // 기본 하드코딩된 예시
+                          <>
+                            <li className="text-sm text-yellow-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-yellow-500 mt-1">•</span>
+                                <span className="font-medium">코드 문서화 및 주석 추가</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">현재 코드:</p>
+                                <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">function calculateTotal(items) {`{`} return items.reduce((sum, item) ={`>`} sum + item.price, 0); {`}`}</div>
+                                <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">
+                                  // 총 금액을 계산합니다<br/>
+                                  function calculateTotal(items: Item[]) {`{`}<br/>
+                                  &nbsp;&nbsp;// items: 계산할 아이템 배열<br/>
+                                  &nbsp;&nbsp;// returns: 총 금액<br/>
+                                  &nbsp;&nbsp;return items.reduce((sum, item) ={`>`} sum + item.price, 0);<br/>
+                                  {`}`}
+                                </div>
+                              </div>
+                            </li>
+                            <li className="text-sm text-yellow-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-yellow-500 mt-1">•</span>
+                                <span className="font-medium">환경 변수 관리 개선</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">개선 방향:</p>
+                                <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-mono text-xs">
+                                  {/* .env 파일 사용 */}
+                                  {/* 설정 파일 분리 */}
+                                  {/* 환경별 설정 관리 */}
+                                </div>
+                              </div>
+                            </li>
+                          </>
+                        )}
                       </ul>
                     </div>
                     
@@ -2712,25 +4012,273 @@ export default function UnifiedProjectCodeReview() {
                         <Globe className="w-4 h-4" />
                         🎯 장기 개선사항
                       </h4>
-                      <ul className="space-y-2">
-                        {reviewResult.recommendations.longTerm.map((item, index) => (
-                          <li key={index} className="text-sm text-green-800 flex items-start gap-2">
-                            <span className="text-green-500 mt-1">•</span>
-                            {item}
-                          </li>
-                        ))}
+                      <ul className="space-y-3">
+                        {reviewResult?.structuredRecommendations?.longTerm?.length > 0 ? (
+                          // 구조화된 데이터가 있으면 사용
+                          reviewResult.structuredRecommendations.longTerm.map((item, index) => (
+                            <li key={index} className="text-sm text-green-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-green-500 mt-1">•</span>
+                                <span className="font-medium">{item.title}</span>
+                              </div>
+                              {item.description && (
+                                <div className="ml-6 mb-2 text-xs text-green-700">{item.description}</div>
+                              )}
+                              {item.currentCode && item.improvedCode && (
+                                <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                  <p className="text-gray-600 mb-2">현재 코드:</p>
+                                  <div className="bg-red-100 text-red-800 px-2 py-1 rounded font-mono text-xs">{item.currentCode}</div>
+                                  <p className="text-gray-600 mt-2 mb-2">개선된 코드:</p>
+                                  <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">{item.improvedCode}</div>
+                                </div>
+                              )}
+                            </li>
+                          ))
+                        ) : (
+                          // 기본 하드코딩된 예시
+                          <>
+                            <li className="text-sm text-green-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-green-500 mt-1">•</span>
+                                <span className="font-medium">전체 아키텍처 재설계</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">개선 방향:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">
+                                  {/* 모듈화 및 의존성 분리 */}
+                                  {/* 마이크로서비스 아키텍처 고려 */}
+                                  {/* 레이어 분리 (Presentation, Business, Data) */}
+                                </div>
+                              </div>
+                            </li>
+                            <li className="text-sm text-green-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-green-500 mt-1">•</span>
+                                <span className="font-medium">확장성 개선</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">개선 방향:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">
+                                  {/* 마이크로서비스 아키텍처 도입 */}
+                                  {/* 데이터베이스 최적화 */}
+                                  {/* 캐싱 전략 수립 */}
+                                </div>
+                              </div>
+                            </li>
+                            <li className="text-sm text-green-800">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-green-500 mt-1">•</span>
+                                <span className="font-medium">대규모 리팩토링</span>
+                              </div>
+                              <div className="ml-6 bg-gray-50 rounded p-3 text-xs">
+                                <p className="text-gray-600 mb-2">개선 방향:</p>
+                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded font-mono text-xs">
+                                  {/* 레거시 코드 현대화 */}
+                                  {/* 테스트 코드 추가 */}
+                                  {/* CI/CD 파이프라인 구축 */}
+                                </div>
+                              </div>
+                            </li>
+                          </>
+                        )}
                       </ul>
                     </div>
                   </div>
                 </div>
 
+                {/* 정적 분석 결과 */}
+                {reviewResult?.staticAnalysis && (
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-8 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                      <Bug className="w-5 h-5 text-red-500" />
+                      🔍 정적 분석 결과
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-red-600">{reviewResult.staticAnalysis.codeSmells}</div>
+                        <div className="text-sm text-gray-600">코드 스멜</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-orange-600">{reviewResult.staticAnalysis.securityIssues}</div>
+                        <div className="text-sm text-gray-600">보안 이슈</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-yellow-600">{reviewResult.staticAnalysis.performanceIssues}</div>
+                        <div className="text-sm text-gray-600">성능 이슈</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-blue-600">{reviewResult.staticAnalysis.maintainabilityIssues}</div>
+                        <div className="text-sm text-gray-600">유지보수성 이슈</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 코드 품질 메트릭 */}
+                {reviewResult?.codeMetrics && (
+                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                      <BarChart className="w-5 h-5 text-green-500" />
+                      📊 코드 품질 메트릭
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-blue-600">{reviewResult.codeMetrics.totalLines.toLocaleString()}</div>
+                        <div className="text-sm text-gray-600">총 라인 수</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-green-600">{reviewResult.codeMetrics.totalFunctions}</div>
+                        <div className="text-sm text-gray-600">함수 수</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-purple-600">{reviewResult.codeMetrics.commentRatio.toFixed(1)}%</div>
+                        <div className="text-sm text-gray-600">주석 비율</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-orange-600">{reviewResult.codeMetrics.averageComplexity.toFixed(1)}</div>
+                        <div className="text-sm text-gray-600">평균 복잡도</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 산업별 특화 분석 결과 */}
+                {industry && industry !== 'general' && (
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-8 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                      <Building className="w-5 h-5 text-purple-500" />
+                      🏭 {industries.find(i => i.value === industry)?.label} 산업 특화 분석
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-lg p-4">
+                        <h4 className="font-semibold text-purple-900 mb-2">🔍 산업별 감지된 패턴</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {getIndustrySecurityRequirements(industry).patterns.map((pattern, index) => (
+                            <div key={index} className="bg-purple-50 rounded p-2 text-sm">
+                              <span className="text-purple-700">{pattern}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4">
+                        <h4 className="font-semibold text-red-900 mb-2">⚠️ 산업별 주의사항</h4>
+                        <div className="space-y-2">
+                          {getIndustrySecurityRequirements(industry).suggestions.map((suggestion, index) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <span className="text-red-500 mt-1">•</span>
+                              <span className="text-gray-700 text-sm">{suggestion}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4">
+                        <h4 className="font-semibold text-orange-900 mb-2">🎯 산업별 코드 스멜</h4>
+                        <div className="space-y-2">
+                          {getIndustrySecurityRequirements(industry).codeSmells.map((smell, index) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <span className="text-orange-500 mt-1">•</span>
+                              <span className="text-gray-700 text-sm">{smell}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* 요약 */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500" />
                     📋 분석 요약
                   </h3>
+                  
+                  {/* 주요 평가 */}
+                  <div className="bg-white rounded-lg p-6 mb-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">🎯 주요 평가</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <h5 className="font-semibold text-blue-900 mb-2">전체 아키텍처 점수</h5>
+                        <div className={`text-2xl font-bold ${getScoreColor(reviewResult.architectureScore)}`}>
+                          {reviewResult.architectureScore}/100
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{getScoreLabel(reviewResult.architectureScore)}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4">
+                        <h5 className="font-semibold text-green-900 mb-2">종합 품질 점수</h5>
+                        <div className={`text-2xl font-bold ${getScoreColor(reviewResult.overallScore)}`}>
+                          {reviewResult.overallScore}/100
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{getScoreLabel(reviewResult.overallScore)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 주요 문제점 */}
+                  <div className="bg-white rounded-lg p-6 mb-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">⚠️ 주요 문제점</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="text-red-500 text-lg">•</span>
+                        <div>
+                          <p className="font-medium text-gray-900">하드코딩된 값들</p>
+                          <p className="text-sm text-gray-600">코드 내에 직접 작성된 값들로 인한 유지보수성 저하</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-red-500 text-lg">•</span>
+                        <div>
+                          <p className="font-medium text-gray-900">불완전한 에러 처리</p>
+                          <p className="text-sm text-gray-600">사용자에게 명확한 오류 메시지를 제공하지 못함</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-red-500 text-lg">•</span>
+                        <div>
+                          <p className="font-medium text-gray-900">비효율적인 데이터 관리</p>
+                          <p className="text-sm text-gray-600">데이터와 코드가 혼재되어 관리가 어려움</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 개선 우선순위 */}
+                  <div className="bg-white rounded-lg p-6 mb-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">📋 개선 우선순위</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full text-sm font-medium">1순위</span>
+                        <div>
+                          <p className="font-medium text-gray-900">하드코딩된 값들을 상수로 분리</p>
+                          <p className="text-sm text-gray-600">유지보수성 및 확장성 향상을 위한 리팩토링</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-sm font-medium">2순위</span>
+                        <div>
+                          <p className="font-medium text-gray-900">에러 처리 세분화</p>
+                          <p className="text-sm text-gray-600">발생한 에러 종류에 따라 다른 메시지 반환</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-sm font-medium">3순위</span>
+                        <div>
+                          <p className="font-medium text-gray-900">데이터 관리 방식 개선</p>
+                          <p className="text-sm text-gray-600">데이터를 외부에서 불러오는 방식으로 변경</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 상세 분석 내용 */}
+                  <div className="bg-white rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">📄 상세 분석 내용</h4>
+                    <div className="prose prose-sm max-w-none">
                   <p className="text-gray-700 leading-relaxed">{reviewResult.summary}</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 새 분석 버튼 */}
@@ -2758,6 +4306,13 @@ export default function UnifiedProjectCodeReview() {
                   console.log('Modal closing');
                   setSelectedModal({ type: null });
                 }}
+              />
+            )}
+
+            {/* 점수 기준 모달 */}
+            {showScoreCriteria && (
+              <ScoreCriteriaModal
+                onClose={() => setShowScoreCriteria(false)}
               />
             )}
           </div>

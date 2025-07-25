@@ -97,6 +97,11 @@ export default function CodeReview() {
       return;
     }
 
+    if (code.length > 10000) {
+      setError('코드가 너무 깁니다. 10,000자 이하로 줄여주세요.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setReviewResult(null);
@@ -258,11 +263,22 @@ export default function CodeReview() {
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="여기에 코드를 붙여넣어 주세요... 걱정마세요, AI가 친절하게 검사해드릴게요!"
                       rows={12}
+                      maxLength={10000}
                       className="w-full p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-500 text-black font-mono text-sm"
                     />
-                    <p className="text-sm text-gray-600 mt-2">
-                      💡 팁: 어떤 언어든 상관없어요! AI가 알아서 분석해드립니다
-                    </p>
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-sm text-gray-600">
+                        💡 팁: 어떤 언어든 상관없어요! AI가 알아서 분석해드립니다
+                      </p>
+                      <p className={`text-sm ${code.length > 9000 ? 'text-red-600' : code.length > 8000 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                        {code.length}/10,000자
+                      </p>
+                    </div>
+                    {code.length > 10000 && (
+                      <p className="text-sm text-red-600 mt-1">
+                        ⚠️ 코드가 너무 깁니다. 10,000자 이하로 줄여주세요.
+                      </p>
+                    )}
                   </div>
 
                                                         {/* 기본 설정 */}
@@ -322,7 +338,7 @@ export default function CodeReview() {
                   <div className="text-center">
                     <button
                       onClick={performReview}
-                      disabled={loading || !code.trim()}
+                      disabled={loading || !code.trim() || code.length > 10000}
                       className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-bold text-xl disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
                     >
                       {loading ? (
@@ -338,7 +354,9 @@ export default function CodeReview() {
                       )}
                     </button>
                     <p className="text-sm text-gray-600 mt-3">
-                      {!code.trim() ? '👆 위에서 코드를 먼저 붙여넣어주세요!' : '📋 코드 검사를 시작할 준비가 되었어요!'}
+                      {!code.trim() ? '👆 위에서 코드를 먼저 붙여넣어주세요!' : 
+                       code.length > 10000 ? '⚠️ 코드가 너무 깁니다. 10,000자 이하로 줄여주세요.' :
+                       '📋 코드 검사를 시작할 준비가 되었어요!'}
                     </p>
                   </div>
                 </div>
