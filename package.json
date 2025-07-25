@@ -12,7 +12,7 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "postinstall": "prisma generate",
-    "vercel-build": "npm install && prisma generate && next build",
+    "vercel-build": "prisma generate && next build",
     "vercel-build-optimized": "npm install --ignore-scripts && prisma generate && next build",
     "dev-setup": "node scripts/dev-setup.js",
     "deploy": "node scripts/prod-deploy.js",
