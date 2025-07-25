@@ -1,11 +1,18 @@
 {
   "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install",
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 60
     },
     "app/api/ai-summary/route.ts": {
       "maxDuration": 120
+    },
+    "app/api/presentation-script/upload/route.ts": {
+      "maxDuration": 120
     }
+  },
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
   }
 } 

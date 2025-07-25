@@ -143,6 +143,19 @@ async function extractTextWithOCR(buffer: Buffer): Promise<string> {
     console.error('OCR 텍스트 추출 실패:', error);
     console.error('OCR 오류 상세:', error instanceof Error ? error.message : 'Unknown error');
     console.error('OCR 오류 스택:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // OCR 실패 시 대안 방법 시도
+    try {
+      console.log('OCR 실패 후 대안 방법 시도...');
+      const alternativeText = await extractTextWithAlternatives(buffer);
+      if (alternativeText.trim() && alternativeText.trim().length > 10 && isValidText(alternativeText)) {
+        console.log('대안 방법으로 텍스트 추출 성공 (OCR 실패 후)');
+        return cleanText(alternativeText.trim());
+      }
+    } catch (alternativeError) {
+      console.error('대안 방법 시도도 실패:', alternativeError);
+    }
+    
     throw error;
   }
 }
@@ -152,7 +165,7 @@ async function convertPDFToImage(pdfPath: string): Promise<string | null> {
   try {
     console.log('PDF를 이미지로 변환 시작...');
     
-    // pdf2pic 대신 다른 방법 사용
+    // canvas 대신 다른 방법 사용
     const { spawn } = require('child_process');
     const imagePath = pdfPath.replace('.pdf', '.png');
     
@@ -188,38 +201,23 @@ async function extractFirstPageAsImage(pdfPath: string): Promise<string | null> 
   try {
     console.log('대안: PDF 첫 페이지 추출...');
     
-    // PDF를 텍스트로 읽어서 간단한 이미지 생성
+    // canvas 없이 간단한 텍스트 파일 생성
     const fs = require('fs');
-    const imagePath = pdfPath.replace('.pdf', '.png');
+    const imagePath = pdfPath.replace('.pdf', '.txt');
     
-    // 간단한 텍스트 기반 이미지 생성 (실제로는 작동하지 않을 수 있음)
-    const canvas = require('canvas');
-    const { createCanvas } = canvas;
+    // PDF 내용을 텍스트로 읽어서 간단한 파일 생성
+    const pdfContent = fs.readFileSync(pdfPath);
+    const textContent = `PDF 내용을 이미지로 변환할 수 없습니다.
+텍스트 추출을 시도합니다.
+파일 크기: ${pdfContent.length} bytes
+생성 시간: ${new Date().toISOString()}`;
     
-    const width = 800;
-    const height = 600;
-    const canvasInstance = createCanvas(width, height);
-    const ctx = canvasInstance.getContext('2d');
-    
-    // 흰색 배경
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
-    
-    // 텍스트 추가
-    ctx.fillStyle = 'black';
-    ctx.font = '16px Arial';
-    ctx.fillText('PDF 내용을 이미지로 변환할 수 없습니다.', 50, 50);
-    ctx.fillText('텍스트 추출을 시도합니다.', 50, 80);
-    
-    // 이미지 저장
-    const buffer = canvasInstance.toBuffer('image/png');
-    fs.writeFileSync(imagePath, buffer);
-    
-    console.log('대안 이미지 생성 완료:', imagePath);
+    fs.writeFileSync(imagePath, textContent);
+    console.log('텍스트 파일 생성 완료:', imagePath);
     return imagePath;
     
   } catch (error) {
-    console.error('대안 이미지 생성 실패:', error);
+    console.error('텍스트 파일 생성 실패:', error);
     return null;
   }
 }
