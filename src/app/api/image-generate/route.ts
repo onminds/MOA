@@ -102,6 +102,30 @@ async function incrementImageUsage(userId: string) {
   });
 }
 
+// 모델별 설정
+const modelConfigs = {
+  "DALL-E 3": {
+    model: "dall-e-3",
+    supportsStyle: true,
+    maxTokens: 4000
+  },
+  "Stable Diffusion XL": {
+    model: "dall-e-3", // 실제로는 다른 API를 사용해야 함
+    supportsStyle: true,
+    maxTokens: 4000
+  },
+  "Kandinsky": {
+    model: "dall-e-3", // 실제로는 다른 API를 사용해야 함
+    supportsStyle: false,
+    maxTokens: 4000
+  },
+  "Realistic Vision": {
+    model: "dall-e-3", // 실제로는 다른 API를 사용해야 함
+    supportsStyle: true,
+    maxTokens: 4000
+  }
+};
+
 export async function POST(request: NextRequest) {
   try {
     // 인증 체크
@@ -123,83 +147,134 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const prompt = formData.get('prompt') as string;
+    const style = formData.get('style') as string;
+    const size = formData.get('size') as string;
+    const width = parseInt(formData.get('width') as string);
+    const height = parseInt(formData.get('height') as string);
+    const model = formData.get('model') as string;
     const ratio = formData.get('ratio') as string;
-    const referenceImage = formData.get('referenceImage') as File | null;
+    const referenceImages = formData.getAll('referenceImages') as File[];
 
     if (!prompt) {
       return NextResponse.json({ error: '프롬프트가 필요합니다.' }, { status: 400 });
     }
 
-    console.log('이미지 생성 요청:', { prompt, ratio, hasReferenceImage: !!referenceImage, userId: user.id });
+    console.log('이미지 생성 요청:', { 
+      prompt, 
+      style, 
+      size, 
+      width, 
+      height, 
+      model, 
+      ratio, 
+      referenceImagesCount: referenceImages.length,
+      userId: user.id 
+    });
 
-    // 비율에 따른 크기 설정
-    const size = ratio === "1:1" ? "1024x1024" : "1792x1024";
+    // 모델 설정 가져오기
+    const modelConfig = modelConfigs[model as keyof typeof modelConfigs] || modelConfigs["DALL-E 3"];
 
-    let response;
+    // 크기 설정
+    const sizeString = `${width}x${height}`;
+    
+    // DALL-E 3 모델의 크기 제한에 맞게 조정
+    let validSize: string;
+    if (width === 1024 && height === 1024) {
+      validSize = "1024x1024";
+    } else if (width === 1792 && height === 1024) {
+      validSize = "1792x1024";
+    } else if (width === 1024 && height === 1792) {
+      validSize = "1024x1792";
+    } else {
+      // 기본값으로 설정
+      validSize = "1024x1024";
+    }
+
+    let finalPrompt = prompt;
 
     // 참고 이미지가 있는 경우 스타일 분석 후 프롬프트에 추가
-    if (referenceImage) {
-      // 파일 크기 검증 (4MB = 4 * 1024 * 1024 bytes)
-      if (referenceImage.size > 4 * 1024 * 1024) {
-        return NextResponse.json({ error: '이미지 크기는 4MB 이하여야 합니다.' }, { status: 400 });
-      }
-
-      // 프롬프트 로깅 (디버깅용)
-      console.log('참고 이미지와 함께 사용된 프롬프트:', prompt);
-
-      // 이미지 분석을 통한 스타일 추출
+    if (referenceImages.length > 0) {
       let styleDescription = "";
+      
       try {
-        const imageBuffer = await referenceImage.arrayBuffer();
-        const imageInfo = await sharp(Buffer.from(imageBuffer)).metadata();
-        
-        // 이미지 특성에 따른 스타일 설명
-        if (imageInfo.width && imageInfo.height) {
-          const aspectRatio = imageInfo.width / imageInfo.height;
+        // 모든 참고 이미지를 분석하여 통합된 스타일 설명 생성
+        for (let i = 0; i < referenceImages.length; i++) {
+          const imageFile = referenceImages[i];
           
-          if (aspectRatio > 1.5) {
-            styleDescription += "가로형 풍경화 스타일, ";
-          } else if (aspectRatio < 0.7) {
-            styleDescription += "세로형 인물화 스타일, ";
-          } else {
-            styleDescription += "정사각형 구도 스타일, ";
+          // 파일 크기 검증 (4MB = 4 * 1024 * 1024 bytes)
+          if (imageFile.size > 4 * 1024 * 1024) {
+            return NextResponse.json({ error: '이미지 크기는 4MB 이하여야 합니다.' }, { status: 400 });
+          }
+
+          // 이미지 분석을 통한 스타일 추출
+          const imageBuffer = await imageFile.arrayBuffer();
+          const imageInfo = await sharp(Buffer.from(imageBuffer)).metadata();
+          
+          // 이미지 특성에 따른 스타일 설명
+          if (imageInfo.width && imageInfo.height) {
+            const aspectRatio = imageInfo.width / imageInfo.height;
+            
+            if (aspectRatio > 1.5) {
+              styleDescription += "가로형 풍경화 스타일, ";
+            } else if (aspectRatio < 0.7) {
+              styleDescription += "세로형 인물화 스타일, ";
+            } else {
+              styleDescription += "정사각형 구도 스타일, ";
+            }
+          }
+          
+          // 파일 크기로 이미지 품질 추정
+          if (imageFile.size > 2 * 1024 * 1024) {
+            styleDescription += "고해상도 고품질, ";
           }
         }
         
-        // 파일 크기로 이미지 품질 추정
-        if (referenceImage.size > 2 * 1024 * 1024) {
-          styleDescription += "고해상도 고품질, ";
-        }
-        
-        styleDescription += "참고 이미지와 동일한 아트 스타일, 색상 팔레트, 조명, 브러시 스타일, 질감, 분위기로";
+        // 여러 이미지의 공통 스타일 요소 추가
+        styleDescription += "참고 이미지들과 동일한 아트 스타일, 색상 팔레트, 조명, 브러시 스타일, 질감, 분위기로";
       } catch (error) {
         console.error('이미지 분석 오류:', error);
-        styleDescription = "참고 이미지와 동일한 아트 스타일, 색상 팔레트, 조명, 구도, 브러시 스타일, 질감, 분위기로";
+        styleDescription = "참고 이미지들과 동일한 아트 스타일, 색상 팔레트, 조명, 구도, 브러시 스타일, 질감, 분위기로";
       }
 
       // 참고 이미지의 스타일을 프롬프트에 추가
-      const enhancedPrompt = `${prompt}, ${styleDescription} 생성해주세요. 참고 이미지의 모든 시각적 요소를 그대로 유지하면서`;
+      finalPrompt = `${prompt}, ${styleDescription} 생성해주세요. 참고 이미지들의 모든 시각적 요소를 그대로 유지하면서`;
 
-      console.log('향상된 프롬프트:', enhancedPrompt);
-
-      // 일반 이미지 생성 (참고 이미지 스타일을 프롬프트에 반영)
-      response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: enhancedPrompt,
-        n: 1,
-        size: size,
-      });
-    } else {
-      // 일반 이미지 생성
-      console.log('일반 프롬프트로 이미지 생성:', prompt);
-      
-      response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: prompt,
-        n: 1,
-        size: size,
-      });
+      console.log('향상된 프롬프트:', finalPrompt);
     }
+
+    // 스타일이 설정 가능한 모델들에 대해 스타일 프롬프트 추가
+    if (modelConfig.supportsStyle && style && style !== "자동 스타일") {
+      const stylePrompts = {
+        "실사화": ", realistic, high quality, detailed, photorealistic",
+        "만화": ", cartoon style, anime, illustration, colorful",
+        "수채화": ", watercolor painting, soft colors, artistic",
+        "애니메이션": ", 3D animation, CGI, Pixar style",
+        "유화": ", oil painting, textured, artistic, painterly",
+        "3D": ", 3D render, digital art, clean",
+        "미니멀리스트": ", minimalist, simple, clean lines, geometric",
+        "팝 아트": ", pop art, bold colors, graphic design, Andy Warhol style"
+      };
+      
+      const stylePrompt = stylePrompts[style as keyof typeof stylePrompts];
+      if (stylePrompt) {
+        finalPrompt += stylePrompt;
+      }
+    }
+
+    // 프롬프트 길이 제한
+    if (finalPrompt.length > modelConfig.maxTokens) {
+      finalPrompt = finalPrompt.substring(0, modelConfig.maxTokens - 100) + "...";
+    }
+
+    console.log('최종 프롬프트:', finalPrompt);
+
+    // 이미지 생성
+    const response = await openai.images.generate({
+      model: modelConfig.model,
+      prompt: finalPrompt,
+      n: 1,
+      size: validSize as "1024x1024" | "1792x1024" | "1024x1792",
+    });
 
     if (response.data && response.data[0] && response.data[0].url) {
       console.log('이미지 생성 성공:', response.data[0].url);
@@ -212,7 +287,8 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({ 
         url: response.data[0].url,
-        usage: updatedUsage
+        usage: updatedUsage,
+        prompt: finalPrompt
       });
     } else {
       console.error('이미지 생성 응답 오류:', response);
