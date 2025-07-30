@@ -118,8 +118,8 @@ export default function ImageCreate() {
     const files = Array.from(event.target.files || []);
     setAttachedFiles(prev => [...prev, ...files]);
     
-    // 이미지가 첨부되면 자동으로 프롬프트 생성
-    if (files.length > 0) {
+    // 자동 프롬프트가 켜져있을 때만 자동으로 프롬프트 생성
+    if (files.length > 0 && autoPrompt) {
       await generatePromptFromImage(files);
     }
   };
@@ -141,8 +141,8 @@ export default function ImageCreate() {
     const files = Array.from(e.dataTransfer.files);
     setAttachedFiles(prev => [...prev, ...files]);
     
-    // 이미지가 첨부되면 자동으로 프롬프트 생성
-    if (files.length > 0) {
+    // 자동 프롬프트가 켜져있을 때만 자동으로 프롬프트 생성
+    if (files.length > 0 && autoPrompt) {
       await generatePromptFromImage(files);
     }
   };
@@ -295,6 +295,11 @@ export default function ImageCreate() {
       if (attachedFiles.length > 0) {
         attachedFiles.forEach(file => {
           formData.append('referenceImages', file);
+        });
+        console.log('참고 이미지 첨부됨:', {
+          autoPrompt,
+          attachedFilesCount: attachedFiles.length,
+          files: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type }))
         });
       }
 

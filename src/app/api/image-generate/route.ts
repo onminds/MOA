@@ -194,12 +194,22 @@ export async function POST(request: NextRequest) {
 
     // 참고 이미지가 있는 경우 스타일 분석 후 프롬프트에 추가
     if (referenceImages.length > 0) {
+      console.log('참고 이미지 처리 시작:', {
+        referenceImagesCount: referenceImages.length,
+        originalPrompt: prompt
+      });
+      
       let styleDescription = "";
       
       try {
         // 모든 참고 이미지를 분석하여 통합된 스타일 설명 생성
         for (let i = 0; i < referenceImages.length; i++) {
           const imageFile = referenceImages[i];
+          console.log(`참고 이미지 ${i + 1} 분석:`, {
+            name: imageFile.name,
+            size: imageFile.size,
+            type: imageFile.type
+          });
           
           // 파일 크기 검증 (4MB = 4 * 1024 * 1024 bytes)
           if (imageFile.size > 4 * 1024 * 1024) {
@@ -209,6 +219,13 @@ export async function POST(request: NextRequest) {
           // 이미지 분석을 통한 스타일 추출
           const imageBuffer = await imageFile.arrayBuffer();
           const imageInfo = await sharp(Buffer.from(imageBuffer)).metadata();
+          
+          console.log(`이미지 ${i + 1} 메타데이터:`, {
+            width: imageInfo.width,
+            height: imageInfo.height,
+            format: imageInfo.format,
+            size: imageFile.size
+          });
           
           // 이미지 특성에 따른 스타일 설명
           if (imageInfo.width && imageInfo.height) {
@@ -231,6 +248,8 @@ export async function POST(request: NextRequest) {
         
         // 여러 이미지의 공통 스타일 요소 추가
         styleDescription += "참고 이미지들과 동일한 아트 스타일, 색상 팔레트, 조명, 브러시 스타일, 질감, 분위기로";
+        
+        console.log('생성된 스타일 설명:', styleDescription);
       } catch (error) {
         console.error('이미지 분석 오류:', error);
         styleDescription = "참고 이미지들과 동일한 아트 스타일, 색상 팔레트, 조명, 구도, 브러시 스타일, 질감, 분위기로";
@@ -240,6 +259,8 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${prompt}, ${styleDescription} 생성해주세요. 참고 이미지들의 모든 시각적 요소를 그대로 유지하면서`;
 
       console.log('향상된 프롬프트:', finalPrompt);
+    } else {
+      console.log('참고 이미지 없음');
     }
 
     // 스타일이 설정 가능한 모델들에 대해 스타일 프롬프트 추가
