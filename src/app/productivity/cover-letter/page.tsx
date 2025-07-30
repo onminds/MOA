@@ -31,7 +31,6 @@ export default function CoverLetter() {
   const [keyExperience, setKeyExperience] = useState('');
   const [coreSkills, setCoreSkills] = useState('');
   const [useSearchResults, setUseSearchResults] = useState(true);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [coverLetterContent, setCoverLetterContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +47,7 @@ export default function CoverLetter() {
     keyCompetencies: string[];
     originalCompanyName?: string;
   } | null>(null);
+  const [writingStyle, setWritingStyle] = useState<'connected' | 'separated'>('connected');
 
   const addQuestion = () => {
     const newQuestion: QuestionItem = {
@@ -191,30 +191,7 @@ export default function CoverLetter() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // 파일 크기 체크 (10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('파일 크기는 10MB 이하여야 합니다.');
-        return;
-      }
-      
-      // 파일 형식 체크
-      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowedTypes.includes(file.type)) {
-        setError('PDF 또는 DOCX 파일만 업로드 가능합니다.');
-        return;
-      }
-      
-      setUploadedFile(file);
-      setError(null);
-    }
-  };
 
-  const removeFile = () => {
-    setUploadedFile(null);
-  };
 
   const handleGenerateCoverLetter = async () => {
     if (!companyName.trim()) {
@@ -255,9 +232,8 @@ export default function CoverLetter() {
         formData.append('companyAnalysis', JSON.stringify(companyAnalysis));
       }
       
-      if (uploadedFile) {
-        formData.append('file', uploadedFile);
-      }
+      // 작성 방식 추가
+      formData.append('writingStyle', writingStyle);
 
       const response = await fetch('/api/cover-letter', {
         method: 'POST',
@@ -266,13 +242,18 @@ export default function CoverLetter() {
 
       const data = await response.json();
       
+      console.log('📡 API 응답 받음:', response.status);
+      console.log('📄 응답 데이터:', data);
+      
       if (!response.ok) {
         throw new Error(data.error || '자기소개서 생성에 실패했습니다.');
       }
       
       if (data.coverLetterContent) {
+        console.log('✅ 자기소개서 내용 설정:', data.coverLetterContent.length + '자');
         setCoverLetterContent(data.coverLetterContent);
       } else {
+        console.log('❌ 자기소개서 내용 없음');
         throw new Error('자기소개서 결과를 받지 못했습니다.');
       }
     } catch (error) {
@@ -309,12 +290,12 @@ export default function CoverLetter() {
     setKeyExperience('');
     setCoreSkills('');
     setUseSearchResults(true);
-    setUploadedFile(null);
     setCoverLetterContent(null);
     setError(null);
     setQuestions([]);
     setCompanyInfo(null);
     setCompanyAnalysis(null);
+    setWritingStyle('connected');
   };
 
   return (
@@ -640,13 +621,13 @@ export default function CoverLetter() {
                       placeholder="구체적인 상황과 성과를 중심으로 한 주요 경험을 입력해 주세요"
                       value={keyExperience}
                       onChange={(e) => setKeyExperience(e.target.value)}
-                      maxLength={300}
+                      maxLength={500}
                       className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 resize-none"
                       rows={3}
                       disabled={loading}
                     />
                     <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                      {keyExperience.length}/300
+                      {keyExperience.length}/500
                     </div>
                   </div>
                 </div>
@@ -678,70 +659,55 @@ export default function CoverLetter() {
                       placeholder="보유한 자격증, 기술 스킬, 언어 능력 등을 입력해 주세요"
                       value={coreSkills}
                       onChange={(e) => setCoreSkills(e.target.value)}
-                      maxLength={200}
+                      maxLength={500}
                       className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 resize-none"
                       rows={2}
                       disabled={loading}
                     />
                     <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                      {coreSkills.length}/200
+                      {coreSkills.length}/500
                     </div>
                   </div>
                 </div>
 
-                {/* 파일 첨부 */}
+
+
+                {/* 작성 방식 선택 */}
                 <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">파일 첨부 (선택)</h2>
-                  <p className="text-sm text-gray-600 mb-4">이력서, 생활기록부, 자기소개서, 공고 내용 등 참고할 만한 자료가 있으면 업로드해 주세요.</p>
-                  <p className="text-xs text-gray-500 mb-4">.pdf, .docx 파일 1개(10mb) 업로드 가능</p>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">작성 방식 선택</h2>
+                  <p className="text-sm text-gray-600 mb-4">자기소개서를 어떤 방식으로 작성할지 선택해주세요</p>
                   
-                  <div className="flex gap-3">
-                    <label className="flex-1">
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-all">
                       <input
-                        type="file"
-                        accept=".pdf,.docx"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        disabled={loading}
+                        type="radio"
+                        name="writingStyle"
+                        value="connected"
+                        checked={writingStyle === 'connected'}
+                        onChange={(e) => setWritingStyle(e.target.value as 'connected' | 'separated')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       />
-                      <div className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition-all">
-                        <Paperclip className="w-4 h-4 text-gray-600" />
-                        <span className="text-gray-700">파일을 업로드해 주세요</span>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">연결형</div>
+                        <div className="text-sm text-gray-600">모든 질문을 하나의 자연스러운 자기소개서로 연결</div>
                       </div>
                     </label>
-                    <button
-                      onClick={() => {
-                        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                        if (fileInput) fileInput.click();
-                      }}
-                      className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
-                      disabled={loading}
-                    >
-                      <Plus className="w-4 h-4 text-blue-600" />
-                      <span className="text-gray-700">파일 추가</span>
-                    </button>
-                  </div>
-                  
-                  {uploadedFile && (
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm text-blue-800">{uploadedFile.name}</span>
-                          <span className="text-xs text-blue-600">
-                            ({(uploadedFile.size / 1024 / 1024).toFixed(2)}MB)
-                          </span>
-                        </div>
-                        <button
-                          onClick={removeFile}
-                          className="text-red-500 hover:text-red-700"
-                          disabled={loading}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                    
+                    <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-all">
+                      <input
+                        type="radio"
+                        name="writingStyle"
+                        value="separated"
+                        checked={writingStyle === 'separated'}
+                        onChange={(e) => setWritingStyle(e.target.value as 'connected' | 'separated')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">분리형</div>
+                        <div className="text-sm text-gray-600">각 질문별로 개별 답변 작성 (CJ제일제당, 삼성웰스토리 등)</div>
                       </div>
-                    </div>
-                  )}
+                    </label>
+                  </div>
                 </div>
 
                 {/* 인터넷 검색 결과 활용 */}
@@ -828,11 +794,10 @@ export default function CoverLetter() {
                         {/* 글자 수 표시 */}
                         <div className="text-base text-gray-500 text-center mb-6">
                           공백포함 {coverLetterContent.replace(/\s/g, '').length}자
-                        </div>
                       </div>
                       
                       {/* 액션 버튼들 */}
-                      <div className="flex gap-3 flex-wrap">
+                        <div className="flex gap-3 flex-wrap justify-center">
                         <button 
                           onClick={handleDownloadCoverLetter}
                           className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg transform hover:scale-105"
@@ -854,6 +819,7 @@ export default function CoverLetter() {
                           <FileText className="w-4 h-4" />
                           새로 작성
                         </button>
+                        </div>
                       </div>
                     </div>
                   ) : (

@@ -5,7 +5,7 @@ import Header from '../../components/Header';
 import {
   Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
   ArrowLeft, Presentation, Copy, Loader2, CheckCircle, AlertCircle, FileText, Download,
-  Lightbulb, Target, Brain, Eye, Upload, Image as ImageIcon, Edit3, 
+  Lightbulb, Target, Brain, Eye, Image as ImageIcon, Edit3, 
   Plus, Minus, BookOpen, Camera
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -70,6 +70,7 @@ export default function PPTDraft() {
   const [duration, setDuration] = useState('10');
   const [keyPoints, setKeyPoints] = useState('');
   const [objectives, setObjectives] = useState('');
+  const [emphasisPoints, setEmphasisPoints] = useState('');
   
   // 결과 상태
   const [pptResult, setPptResult] = useState<PPTDraftResult | null>(null);
@@ -82,15 +83,11 @@ export default function PPTDraft() {
   const [editMode, setEditMode] = useState(false);
   const [currentSlideId, setCurrentSlideId] = useState<number | null>(null);
   const [showChapterModal, setShowChapterModal] = useState(false);
-  const [showImageUpload, setShowImageUpload] = useState(false);
-  
   // 챕터 관리
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [newChapter, setNewChapter] = useState({ title: '', description: '', color: '#3B82F6' });
   
-  // 파일 업로드
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+
   
   // 히스토리
   const [draftHistory, setDraftHistory] = useState<Array<{
@@ -125,7 +122,8 @@ export default function PPTDraft() {
           targetAudience: targetAudience.trim(),
           duration: parseInt(duration),
           keyPoints: keyPoints.trim(),
-          objectives: objectives.trim()
+          objectives: objectives.trim(),
+          emphasisPoints: emphasisPoints.trim()
         }),
       });
 
@@ -231,29 +229,9 @@ export default function PPTDraft() {
   };
 
 
-  // 파일 업로드 처리
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
-      // PPT 파일 분석 API 호출
-      // TODO: PPT 파일 분석 구현
-    }
-  };
 
-  // 이미지 업로드 처리
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      const imageUrls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const url = URL.createObjectURL(file);
-        imageUrls.push(url);
-      }
-      setUploadedImages(prev => [...prev, ...imageUrls]);
-    }
-  };
+
+
 
   // 챕터 추가
   const addChapter = () => {
@@ -293,12 +271,7 @@ export default function PPTDraft() {
     }
   };
 
-  // 슬라이드에 이미지 추가
-  const addImageToSlide = (slideId: number, imageUrl: string) => {
-    updateSlide(slideId, { 
-      images: [...(pptResult?.slides.find(s => s.id === slideId)?.images || []), imageUrl] 
-    });
-  };
+
 
   // 슬라이드 삭제
   const deleteSlide = (slideId: number) => {
@@ -406,42 +379,16 @@ export default function PPTDraft() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               {/* 입력 패널 */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-1">
                 <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                     <Lightbulb className="w-6 h-6 text-blue-500" />
                     📝 어떤 발표를 준비하시나요?
                   </h2>
 
-                  {/* 파일 업로드 옵션 */}
-                  <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                    <h3 className="font-medium text-amber-900 mb-3 flex items-center gap-2">
-                      <Upload className="w-5 h-5" />
-                      📁 기존 PPT 파일이 있으신가요?
-                    </h3>
-                    <div className="flex items-center gap-4">
-                      <label className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors cursor-pointer flex items-center gap-2">
-                        <Upload className="w-4 h-4" />
-                        PPT 파일 업로드
-                        <input
-                          type="file"
-                          accept=".ppt,.pptx"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
-                      </label>
-                      {uploadedFile && (
-                        <span className="text-sm text-amber-700">
-                          ✅ {uploadedFile.name} 업로드됨
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-amber-700 mt-2">
-                      💡 기존 PPT를 업로드하면 AI가 분석해서 개선점을 제안해드려요!
-                    </p>
-                  </div>
+
 
                   {/* 발표 주제 */}
                   <div className="mb-6">
@@ -538,6 +485,23 @@ export default function PPTDraft() {
                       rows={4}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-500 text-black"
                     />
+                  </div>
+
+                  {/* 강조 요소 */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ⭐ 강조하고 싶은 주제/슬라이드 (선택사항)
+                    </label>
+                    <textarea
+                      value={emphasisPoints}
+                      onChange={(e) => setEmphasisPoints(e.target.value)}
+                      placeholder="예: '성공사례 중심으로 설명', '결론에 시간 많이 할애', '데이터 중심으로 구성'"
+                      rows={3}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-500 text-black"
+                    />
+                    <p className="text-sm text-gray-600 mt-2">
+                      💡 어떤 내용을 특히 비중 있게 다룰지 알려주세요!
+                    </p>
                   </div>
 
                   {/* 발표 목적 */}
@@ -645,13 +609,7 @@ export default function PPTDraft() {
                           <Edit3 className="w-4 h-4" />
                           {editMode ? '편집 완료' : '편집 모드'}
                         </button>
-                        <button
-                          onClick={() => setShowImageUpload(true)}
-                          className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-600 transition-colors flex items-center gap-2"
-                        >
-                          <ImageIcon className="w-4 h-4" />
-                          이미지
-                        </button>
+
                         <button
                           onClick={() => copyText(generateDownloadText())}
                           className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center gap-2"
@@ -707,22 +665,12 @@ export default function PPTDraft() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <button
                             onClick={addNewSlide}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors flex items-center gap-2"
+                            className="bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600 transition-colors flex flex-col items-center gap-1"
                           >
-                            <Plus className="w-3 h-3" />
-                            슬라이드 추가
+                            <Plus className="w-4 h-4" />
+                            <span className="text-xs">슬라이드 추가</span>
                           </button>
-                          <label className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600 transition-colors cursor-pointer flex items-center gap-2">
-                            <Camera className="w-3 h-3" />
-                            이미지 업로드
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={handleImageUpload}
-                              className="hidden"
-                            />
-                          </label>
+
                           <div className="text-sm text-orange-700">
                             💡 슬라이드를 클릭하면 직접 편집할 수 있어요!
                           </div>
@@ -967,35 +915,7 @@ export default function PPTDraft() {
                               </div>
                             )}
 
-                            {/* 이미지 추가 버튼 */}
-                            {editMode && uploadedImages.length > 0 && (
-                              <div className="mb-3">
-                                <h6 className="text-xs font-medium text-gray-600 mb-2">📷 업로드된 이미지 추가</h6>
-                                <div className="grid grid-cols-4 gap-2">
-                                  {uploadedImages.map((imageUrl, imgIdx) => (
-                                    <button
-                                      key={imgIdx}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        addImageToSlide(slide.id, imageUrl);
-                                      }}
-                                      className="relative group"
-                                    >
-                                      <Image
-                                        src={imageUrl}
-                                        alt={`업로드된 이미지 ${imgIdx + 1}`}
-                                        width={100}
-                                        height={50}
-                                        className="w-full h-16 object-cover rounded border hover:border-blue-500 transition-colors"
-                                      />
-                                      <div className="absolute inset-0 bg-blue-500 bg-opacity-0 hover:bg-opacity-20 rounded transition-all flex items-center justify-center">
-                                        <Plus className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                                      </div>
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+
 
                             {/* 발표 노트 */}
                             {(slide.notes || editMode) && (
@@ -1054,49 +974,7 @@ export default function PPTDraft() {
                 )}
               </div>
 
-              {/* 히스토리 패널 */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
-                  <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    📚 작성한 PPT들
-                  </h3>
 
-                  {draftHistory.length === 0 ? (
-                    <div className="text-center py-6">
-                      <Presentation className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">
-                        아직 만든 PPT가 없어요!<br />
-                        🎨 첫 번째 PPT 초안을 만들어보세요!
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {draftHistory.map((item) => (
-                        <div
-                          key={item.id}
-                          className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                              {presentationTypes.find(t => t.value === item.type)?.label}
-                            </span>
-                            <span className="text-sm font-bold text-blue-600">
-                              {item.slideCount}장
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-800 mb-2 font-medium">
-                            {item.topic}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {item.timestamp.toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -1178,81 +1056,7 @@ export default function PPTDraft() {
         </div>
       )}
 
-      {/* 이미지 업로드 모달 */}
-      {showImageUpload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-purple-500" />
-              이미지 관리
-            </h3>
-            
-            <div className="space-y-4">
-              {/* 이미지 업로드 */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <label className="cursor-pointer">
-                  <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 mb-2">클릭하여 이미지를 업로드하세요</p>
-                  <p className="text-sm text-gray-500">JPG, PNG, GIF (최대 10MB)</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              
-              {/* 업로드된 이미지 목록 */}
-              {uploadedImages.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">
-                    업로드된 이미지 ({uploadedImages.length}개)
-                  </h4>
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto">
-                    {uploadedImages.map((imageUrl, idx) => (
-                      <div key={idx} className="relative group">
-                        <Image
-                          src={imageUrl}
-                          alt={`업로드된 이미지 ${idx + 1}`}
-                          width={100}
-                          height={50}
-                          className="w-full h-20 object-cover rounded border"
-                        />
-                        <button
-                          onClick={() => {
-                            const newImages = uploadedImages.filter((_, i) => i !== idx);
-                            setUploadedImages(newImages);
-                          }}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowImageUpload(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                닫기
-              </button>
-              <button
-                onClick={() => setShowImageUpload(false)}
-                className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors"
-              >
-                완료
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </>
   );
 } 
