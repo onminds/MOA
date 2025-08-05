@@ -11,12 +11,21 @@ import puppeteer from 'puppeteer';
 // @ts-ignore
 import mammoth from 'mammoth';
 import { requireAuth } from '@/lib/auth';
+<<<<<<< HEAD
 import { getConnection } from '@/lib/db';
+=======
+import { PrismaClient } from '@prisma/client';
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+<<<<<<< HEAD
+=======
+const prisma = new PrismaClient();
+
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 export async function POST(request: NextRequest) {
   try {
     // 인증 체크

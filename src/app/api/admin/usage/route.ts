@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+<<<<<<< HEAD
 import { requireAuth } from "@/lib/auth";
 import { getConnection } from "@/lib/db";
+=======
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 
 // 사용자 사용량 업데이트
 export async function PATCH(request: NextRequest) {
   try {
+<<<<<<< HEAD
     const authResult = await requireAuth();
     if ('error' in authResult) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
@@ -13,6 +22,27 @@ export async function PATCH(request: NextRequest) {
     // 관리자 권한 체크
     if (authResult.user.role !== 'ADMIN') {
       return NextResponse.json({ error: '관리자 권한이 필요합니다' }, { status: 403 });
+=======
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "인증이 필요합니다." }, 
+        { status: 401 }
+      );
+    }
+
+    // 현재 사용자가 관리자인지 확인
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email! }
+    });
+
+    if (!currentUser || currentUser.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "관리자 권한이 필요합니다." }, 
+        { status: 403 }
+      );
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
     }
 
     const { userId, action, serviceType, customLimit } = await request.json();
@@ -24,6 +54,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+<<<<<<< HEAD
     const db = await getConnection();
 
     switch (action) {
@@ -47,6 +78,22 @@ export async function PATCH(request: NextRequest) {
               WHERE user_id = @user_id
             `);
         }
+=======
+    switch (action) {
+      case "reset": {
+        // 특정 서비스 또는 모든 서비스 사용량 리셋
+        const whereClause = serviceType 
+          ? { userId, serviceType } 
+          : { userId };
+
+        await prisma.usage.updateMany({
+          where: whereClause,
+          data: {
+            usageCount: 0,
+            resetDate: new Date()
+          }
+        });
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 
         return NextResponse.json({ 
           message: serviceType 
@@ -64,6 +111,7 @@ export async function PATCH(request: NextRequest) {
           );
         }
 
+<<<<<<< HEAD
         await db.request()
           .input('user_id', userId)
           .input('service_type', serviceType)
@@ -77,6 +125,28 @@ export async function PATCH(request: NextRequest) {
               INSERT (user_id, service_type, limit_count, usage_count, reset_date, created_at, updated_at)
               VALUES (@user_id, @service_type, 9999, 0, GETDATE(), GETDATE(), GETDATE());
           `);
+=======
+        await prisma.usage.upsert({
+          where: {
+            userId_serviceType: {
+              userId,
+              serviceType
+            }
+          },
+          update: {
+            limitCount: 9999,
+            usageCount: 0,
+            resetDate: new Date()
+          },
+          create: {
+            userId,
+            serviceType,
+            limitCount: 9999,
+            usageCount: 0,
+            resetDate: new Date()
+          }
+        });
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 
         return NextResponse.json({ 
           message: `${serviceType} 서비스가 무제한으로 설정되었습니다.` 
@@ -92,6 +162,7 @@ export async function PATCH(request: NextRequest) {
           );
         }
 
+<<<<<<< HEAD
         await db.request()
           .input('user_id', userId)
           .input('service_type', serviceType)
@@ -106,6 +177,28 @@ export async function PATCH(request: NextRequest) {
               INSERT (user_id, service_type, limit_count, usage_count, reset_date, created_at, updated_at)
               VALUES (@user_id, @service_type, @custom_limit, 0, GETDATE(), GETDATE(), GETDATE());
           `);
+=======
+        await prisma.usage.upsert({
+          where: {
+            userId_serviceType: {
+              userId,
+              serviceType
+            }
+          },
+          update: {
+            limitCount: customLimit,
+            usageCount: 0,
+            resetDate: new Date()
+          },
+          create: {
+            userId,
+            serviceType,
+            limitCount: customLimit,
+            usageCount: 0,
+            resetDate: new Date()
+          }
+        });
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 
         return NextResponse.json({ 
           message: `${serviceType} 서비스 제한이 ${customLimit}회로 설정되었습니다.` 

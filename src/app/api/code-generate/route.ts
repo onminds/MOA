@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { requireAuth } from '@/lib/auth';
+<<<<<<< HEAD
 import { getConnection } from '@/lib/db';
+=======
+import { PrismaClient } from '@prisma/client';
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+<<<<<<< HEAD
+=======
+const prisma = new PrismaClient();
+
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 interface CodeGenerateRequest {
   request: string;
   language: string;

@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
+<<<<<<< HEAD
 import { getConnection } from '@/lib/db';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
+=======
+import { PrismaClient } from '@prisma/client';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+
+const prisma = new PrismaClient();
+
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
 export async function POST(request: NextRequest) {
   try {
     // 인증 체크
@@ -67,6 +76,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+<<<<<<< HEAD
     // DB 업데이트
     const db = await getConnection();
     
@@ -103,6 +113,27 @@ export async function POST(request: NextRequest) {
         image: updatedUser.avatar_url,
         role: updatedUser.role
       },
+=======
+    // 사용자 정보 업데이트
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: name.trim(),
+        ...(imageUrl && { image: imageUrl })
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      user: updatedUser,
+>>>>>>> 8d8297ec14b0c95d4fdb86cf889b0ddbfb085f4b
       message: '프로필이 성공적으로 업데이트되었습니다.'
     });
 
