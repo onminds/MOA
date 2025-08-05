@@ -1,42 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { getConnection } from "@/lib/db";
 
 // 이미지 생성 전용 사용량 체크
 async function checkImageGenerationUsage(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      payments: {
-        where: { status: 'completed' },
-        orderBy: { createdAt: 'desc' },
-        take: 1
-      }
-    }
-  });
+  const db = await getConnection();
+  
+  // 사용자 정보와 최근 결제 내역 조회
+  const userResult = await db.request()
+    .input('userId', userId)
+    .query(`
+      SELECT u.id, u.role, p.plan_type
+      FROM users u
+      LEFT JOIN (
+        SELECT user_id, plan_type, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) as rn
+        FROM payments 
+        WHERE status = 'completed'
+      ) p ON u.id = p.user_id AND p.rn = 1
+      WHERE u.id = @userId AND u.is_active = 1
+    `);
 
-  if (!user) {
+  if (userResult.recordset.length === 0) {
     return { allowed: false, error: '사용자를 찾을 수 없습니다.' };
   }
 
-  const usage = await prisma.usage.findUnique({
-    where: {
-      userId_serviceType: {
-        userId,
-        serviceType: 'image-generate'
-      }
-    }
-  });
+  const user = userResult.recordset[0];
+  
+  // 사용량 조회 (next_reset_date 포함)
+  const usageResult = await db.request()
+    .input('userId', userId)
+    .input('serviceType', 'image-generate')
+    .query(`
+      SELECT usage_count, next_reset_date 
+      FROM usage 
+      WHERE user_id = @userId AND service_type = @serviceType
+    `);
 
   let maxLimit = 2; // 기본 (로그인만)
   let planType = 'basic';
   
   // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
-  if (user.payments.length > 0) {
-    const latestPayment = user.payments[0];
-    planType = latestPayment.planType;
+  if (user.plan_type) {
+    planType = user.plan_type;
     
     switch (planType) {
       case 'standard':
@@ -55,7 +60,59 @@ async function checkImageGenerationUsage(userId: string) {
     planType = 'admin';
   }
 
-  const currentUsage = usage?.usageCount || 0;
+  let currentUsage = usageResult.recordset[0]?.usage_count || 0;
+  let nextResetDate = usageResult.recordset[0]?.next_reset_date;
+  
+  // next_reset_date가 없으면 계정 생성일 기준으로 일주일 후로 설정
+  if (!nextResetDate) {
+    const userCreatedResult = await db.request()
+      .input('userId', userId)
+      .query('SELECT created_at FROM users WHERE id = @userId');
+    
+    const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
+    if (userCreatedAt) {
+      // 계정 생성일 + 7일로 설정
+      const resetDate = new Date(userCreatedAt);
+      resetDate.setDate(resetDate.getDate() + 7);
+      nextResetDate = resetDate;
+      
+      // DB에 next_reset_date 저장
+      await db.request()
+        .input('userId', userId)
+        .input('serviceType', 'image-generate')
+        .input('nextResetDate', nextResetDate)
+        .query(`
+          UPDATE usage 
+          SET next_reset_date = @nextResetDate 
+          WHERE user_id = @userId AND service_type = @serviceType
+        `);
+    }
+  }
+  
+  const now = new Date();
+  
+  // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
+  if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
+    console.log(`사용자 ${userId}의 이미지 생성 사용량 초기화: ${currentUsage} -> 0`);
+    
+    // 다음 초기화 시간을 일주일 후로 설정
+    const nextReset = new Date(nextResetDate);
+    nextReset.setDate(nextReset.getDate() + 7);
+    
+    await db.request()
+      .input('userId', userId)
+      .input('serviceType', 'image-generate')
+      .input('nextResetDate', nextReset)
+      .query(`
+        UPDATE usage 
+        SET usage_count = 0, next_reset_date = @nextResetDate 
+        WHERE user_id = @userId AND service_type = @serviceType
+      `);
+    
+    currentUsage = 0;
+    nextResetDate = nextReset;
+  }
+
   const remainingCount = Math.max(0, maxLimit - currentUsage);
   const allowed = currentUsage < maxLimit;
 
@@ -65,43 +122,50 @@ async function checkImageGenerationUsage(userId: string) {
     limitCount: maxLimit,
     remainingCount,
     planType,
-    resetDate: new Date().toISOString() // 이미지는 총 제한이므로 리셋 없음
+    resetDate: nextResetDate ? new Date(nextResetDate).toISOString() : new Date().toISOString()
   };
 }
 
 // 영상 생성 전용 사용량 체크
 async function checkVideoGenerationUsage(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      payments: {
-        where: { status: 'completed' },
-        orderBy: { createdAt: 'desc' },
-        take: 1
-      }
-    }
-  });
+  const db = await getConnection();
+  
+  // 사용자 정보와 최근 결제 내역 조회
+  const userResult = await db.request()
+    .input('userId', userId)
+    .query(`
+      SELECT u.id, u.role, p.plan_type
+      FROM users u
+      LEFT JOIN (
+        SELECT user_id, plan_type, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) as rn
+        FROM payments 
+        WHERE status = 'completed'
+      ) p ON u.id = p.user_id AND p.rn = 1
+      WHERE u.id = @userId AND u.is_active = 1
+    `);
 
-  if (!user) {
+  if (userResult.recordset.length === 0) {
     return { allowed: false, error: '사용자를 찾을 수 없습니다.' };
   }
 
-  const usage = await prisma.usage.findUnique({
-    where: {
-      userId_serviceType: {
-        userId,
-        serviceType: 'video-generate'
-      }
-    }
-  });
+  const user = userResult.recordset[0];
+  
+  // 사용량 조회 (next_reset_date 포함)
+  const usageResult = await db.request()
+    .input('userId', userId)
+    .input('serviceType', 'video-generate')
+    .query(`
+      SELECT usage_count, next_reset_date 
+      FROM usage 
+      WHERE user_id = @userId AND service_type = @serviceType
+    `);
 
   let maxLimit = 1; // 기본 (로그인만)
   let planType = 'basic';
   
   // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
-  if (user.payments.length > 0) {
-    const latestPayment = user.payments[0];
-    planType = latestPayment.planType;
+  if (user.plan_type) {
+    planType = user.plan_type;
     
     switch (planType) {
       case 'standard':
@@ -120,7 +184,59 @@ async function checkVideoGenerationUsage(userId: string) {
     planType = 'admin';
   }
 
-  const currentUsage = usage?.usageCount || 0;
+  let currentUsage = usageResult.recordset[0]?.usage_count || 0;
+  let nextResetDate = usageResult.recordset[0]?.next_reset_date;
+  
+  // next_reset_date가 없으면 계정 생성일 기준으로 일주일 후로 설정
+  if (!nextResetDate) {
+    const userCreatedResult = await db.request()
+      .input('userId', userId)
+      .query('SELECT created_at FROM users WHERE id = @userId');
+    
+    const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
+    if (userCreatedAt) {
+      // 계정 생성일 + 7일로 설정
+      const resetDate = new Date(userCreatedAt);
+      resetDate.setDate(resetDate.getDate() + 7);
+      nextResetDate = resetDate;
+      
+      // DB에 next_reset_date 저장
+      await db.request()
+        .input('userId', userId)
+        .input('serviceType', 'video-generate')
+        .input('nextResetDate', nextResetDate)
+        .query(`
+          UPDATE usage 
+          SET next_reset_date = @nextResetDate 
+          WHERE user_id = @userId AND service_type = @serviceType
+        `);
+    }
+  }
+  
+  const now = new Date();
+  
+  // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
+  if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
+    console.log(`사용자 ${userId}의 영상 생성 사용량 초기화: ${currentUsage} -> 0`);
+    
+    // 다음 초기화 시간을 일주일 후로 설정
+    const nextReset = new Date(nextResetDate);
+    nextReset.setDate(nextReset.getDate() + 7);
+    
+    await db.request()
+      .input('userId', userId)
+      .input('serviceType', 'video-generate')
+      .input('nextResetDate', nextReset)
+      .query(`
+        UPDATE usage 
+        SET usage_count = 0, next_reset_date = @nextResetDate 
+        WHERE user_id = @userId AND service_type = @serviceType
+      `);
+    
+    currentUsage = 0;
+    nextResetDate = nextReset;
+  }
+
   const remainingCount = Math.max(0, maxLimit - currentUsage);
   const allowed = currentUsage < maxLimit;
 
@@ -130,7 +246,7 @@ async function checkVideoGenerationUsage(userId: string) {
     limitCount: maxLimit,
     remainingCount,
     planType,
-    resetDate: new Date().toISOString() // 영상은 총 제한이므로 리셋 없음
+    resetDate: nextResetDate ? new Date(nextResetDate).toISOString() : new Date().toISOString()
   };
 }
 
@@ -139,16 +255,13 @@ async function checkUsageLimit(userId: string, serviceType: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const usage = await prisma.usage.findUnique({
-    where: {
-      userId_serviceType: {
-        userId,
-        serviceType
-      }
-    }
-  });
+  const db = await getConnection();
+  const usageResult = await db.request()
+    .input('userId', userId)
+    .input('serviceType', serviceType)
+    .query('SELECT usage_count, limit_count, reset_date FROM usage WHERE user_id = @userId AND service_type = @serviceType');
 
-  if (!usage) {
+  if (usageResult.recordset.length === 0) {
     return {
       allowed: true,
       usageCount: 0,
@@ -158,20 +271,21 @@ async function checkUsageLimit(userId: string, serviceType: string) {
     };
   }
 
-  const usageDate = new Date(usage.resetDate);
+  const usage = usageResult.recordset[0];
+  const usageDate = new Date(usage.reset_date);
   usageDate.setHours(0, 0, 0, 0);
   
   if (today.getTime() !== usageDate.getTime()) {
     return {
       allowed: true,
       usageCount: 0,
-      limitCount: usage.limitCount,
+      limitCount: usage.limit_count,
       remainingCount: usage.limitCount,
       resetDate: today
     };
   }
 
-  const allowed = usage.usageCount < usage.limitCount;
+  const allowed = usage.usage_count < usage.limit_count;
   return {
     allowed,
     usageCount: usage.usageCount,

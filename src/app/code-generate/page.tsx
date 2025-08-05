@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
 import {
   Code, Copy, Download, Loader2, CheckCircle, AlertCircle, Play, FileCode,
   Zap, Brain, Lightbulb, Terminal, GitBranch, Database, Globe, Smartphone
@@ -180,251 +179,245 @@ export default function CodeGenerate() {
     <>
       <Header />
       <div className="min-h-screen bg-gray-50">
-        <div className="flex">
-          {/* 공통 사이드바 */}
-          <Sidebar currentPath="/code-generate" />
-          
-          {/* 메인 콘텐츠 */}
-          <div className="flex-1 p-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">AI 코드 생성</h1>
-                <p className="text-gray-600">요구사항을 입력하면 AI가 코드를 자동으로 생성해드립니다</p>
-              </div>
+        <div className="p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">AI 코드 생성</h1>
+              <p className="text-gray-600">요구사항을 입력하면 AI가 코드를 자동으로 생성해드립니다</p>
+            </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* 입력 영역 */}
-                <div className="lg:col-span-1">
-                  <div className="bg-white rounded-xl p-6 shadow-lg">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">코드 요청</h2>
-                    
-                    {/* 프로그래밍 언어 선택 */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">프로그래밍 언어</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {programmingLanguages.map((lang) => (
-                          <button
-                            key={lang.value}
-                            onClick={() => setLanguage(lang.value)}
-                            className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
-                              language === lang.value
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">{lang.icon}</span>
-                              <span>{lang.label}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* 입력 영역 */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-xl p-6 shadow-lg">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">코드 요청</h2>
+                  
+                  {/* 프로그래밍 언어 선택 */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">프로그래밍 언어</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {programmingLanguages.map((lang) => (
+                        <button
+                          key={lang.value}
+                          onClick={() => setLanguage(lang.value)}
+                          className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                            language === lang.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{lang.icon}</span>
+                            <span>{lang.label}</span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-
-                    {/* 코드 타입 선택 */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">코드 타입</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {codeTypes.map((type) => (
-                          <button
-                            key={type.value}
-                            onClick={() => setCodeType(type.value)}
-                            className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
-                              codeType === type.value
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              {type.icon}
-                              <span>{type.label}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 복잡도 선택 */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">복잡도</label>
-                      <div className="space-y-2">
-                        {complexityLevels.map((level) => (
-                          <button
-                            key={level.value}
-                            onClick={() => setComplexity(level.value)}
-                            className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                              complexity === level.value
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="font-medium">{level.label}</div>
-                            <div className="text-xs opacity-70">{level.description}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 요청사항 입력 */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        코드 요청사항 <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        value={request}
-                        onChange={(e) => setRequest(e.target.value)}
-                        placeholder="예: 사용자 정보를 저장하는 함수를 만들어줘"
-                        className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        disabled={loading}
-                      />
-                    </div>
-
-                    {/* 추가 요구사항 */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        추가 요구사항 (선택)
-                      </label>
-                      <textarea
-                        value={requirements}
-                        onChange={(e) => setRequirements(e.target.value)}
-                        placeholder="예: 에러 처리, 성능 최적화, 특정 라이브러리 사용 등"
-                        className="w-full h-24 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        disabled={loading}
-                      />
-                    </div>
-
-                    {/* 생성 버튼 */}
-                    <button
-                      onClick={generateCode}
-                      disabled={loading || !request.trim()}
-                      className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          생성 중...
-                        </>
-                      ) : (
-                        <>
-                          <Code className="w-5 h-5" />
-                          코드 생성
-                        </>
-                      )}
-                    </button>
-
-                    {/* 오류 메시지 */}
-                    {error && (
-                      <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" />
-                        {error}
-                      </div>
-                    )}
                   </div>
 
-                  {/* 히스토리 */}
-                  {codeHistory.length > 0 && (
-                    <div className="mt-6 bg-white rounded-xl p-6 shadow-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 생성 기록</h3>
-                      <div className="space-y-3">
-                        {codeHistory.slice(0, 5).map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => loadFromHistory(item)}
-                            className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="font-medium text-sm text-gray-900 truncate">
-                              {item.request}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {item.language} • {item.timestamp.toLocaleDateString()}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 결과 영역 */}
-                <div className="lg:col-span-2">
-                  {generatedCode ? (
-                    <div className="space-y-6">
-                      {/* 생성된 코드 */}
-                      <div className="bg-white rounded-xl p-6 shadow-lg">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">생성된 코드</h3>
+                  {/* 코드 타입 선택 */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">코드 타입</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {codeTypes.map((type) => (
+                        <button
+                          key={type.value}
+                          onClick={() => setCodeType(type.value)}
+                          className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                            codeType === type.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => copyCode(generatedCode.code)}
-                              className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                              title="코드 복사"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => downloadCode(generatedCode.code)}
-                              className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                              title="코드 다운로드"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
+                            {type.icon}
+                            <span>{type.label}</span>
                           </div>
-                        </div>
-                        <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
-                          <code>{generatedCode.code}</code>
-                        </pre>
-                      </div>
-
-                      {/* 코드 설명 */}
-                      <div className="bg-white rounded-xl p-6 shadow-lg">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">코드 설명</h3>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="text-gray-700 mb-4">{generatedCode.explanation}</p>
-                          
-                          {generatedCode.usage && (
-                            <div className="mb-4">
-                              <h4 className="font-semibold text-gray-900 mb-2">사용법</h4>
-                              <p className="text-gray-700">{generatedCode.usage}</p>
-                            </div>
-                          )}
-
-                          {generatedCode.improvements.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="font-semibold text-gray-900 mb-2">개선 사항</h4>
-                              <ul className="list-disc list-inside text-gray-700 space-y-1">
-                                {generatedCode.improvements.map((improvement, index) => (
-                                  <li key={index}>{improvement}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {generatedCode.relatedConcepts.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-gray-900 mb-2">관련 개념</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {generatedCode.relatedConcepts.map((concept, index) => (
-                                  <span
-                                    key={index}
-                                    className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                                  >
-                                    {concept}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                        </button>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="bg-white rounded-xl p-12 shadow-lg text-center">
-                      <Code className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">코드를 생성해보세요</h3>
-                      <p className="text-gray-600">왼쪽에서 요청사항을 입력하고 코드 생성을 시작하세요.</p>
+                  </div>
+
+                  {/* 복잡도 선택 */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">복잡도</label>
+                    <div className="space-y-2">
+                      {complexityLevels.map((level) => (
+                        <button
+                          key={level.value}
+                          onClick={() => setComplexity(level.value)}
+                          className={`w-full p-3 rounded-lg border text-left transition-colors ${
+                            complexity === level.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="font-medium">{level.label}</div>
+                          <div className="text-xs opacity-70">{level.description}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 요청사항 입력 */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      코드 요청사항 <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={request}
+                      onChange={(e) => setRequest(e.target.value)}
+                      placeholder="예: 사용자 정보를 저장하는 함수를 만들어줘"
+                      className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* 추가 요구사항 */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      추가 요구사항 (선택)
+                    </label>
+                    <textarea
+                      value={requirements}
+                      onChange={(e) => setRequirements(e.target.value)}
+                      placeholder="예: 에러 처리, 성능 최적화, 특정 라이브러리 사용 등"
+                      className="w-full h-24 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* 생성 버튼 */}
+                  <button
+                    onClick={generateCode}
+                    disabled={loading || !request.trim()}
+                    className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        생성 중...
+                      </>
+                    ) : (
+                      <>
+                        <Code className="w-5 h-5" />
+                        코드 생성
+                      </>
+                    )}
+                  </button>
+
+                  {/* 오류 메시지 */}
+                  {error && (
+                    <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      {error}
                     </div>
                   )}
                 </div>
+
+                {/* 히스토리 */}
+                {codeHistory.length > 0 && (
+                  <div className="mt-6 bg-white rounded-xl p-6 shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 생성 기록</h3>
+                    <div className="space-y-3">
+                      {codeHistory.slice(0, 5).map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => loadFromHistory(item)}
+                          className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="font-medium text-sm text-gray-900 truncate">
+                            {item.request}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {item.language} • {item.timestamp.toLocaleDateString()}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 결과 영역 */}
+              <div className="lg:col-span-2">
+                {generatedCode ? (
+                  <div className="space-y-6">
+                    {/* 생성된 코드 */}
+                    <div className="bg-white rounded-xl p-6 shadow-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">생성된 코드</h3>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => copyCode(generatedCode.code)}
+                            className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                            title="코드 복사"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => downloadCode(generatedCode.code)}
+                            className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                            title="코드 다운로드"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
+                        <code>{generatedCode.code}</code>
+                      </pre>
+                    </div>
+
+                    {/* 코드 설명 */}
+                    <div className="bg-white rounded-xl p-6 shadow-lg">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">코드 설명</h3>
+                      <div className="prose prose-sm max-w-none">
+                        <p className="text-gray-700 mb-4">{generatedCode.explanation}</p>
+                        
+                        {generatedCode.usage && (
+                          <div className="mb-4">
+                            <h4 className="font-semibold text-gray-900 mb-2">사용법</h4>
+                            <p className="text-gray-700">{generatedCode.usage}</p>
+                          </div>
+                        )}
+
+                        {generatedCode.improvements.length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="font-semibold text-gray-900 mb-2">개선 사항</h4>
+                            <ul className="list-disc list-inside text-gray-700 space-y-1">
+                              {generatedCode.improvements.map((improvement, index) => (
+                                <li key={index}>{improvement}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {generatedCode.relatedConcepts.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2">관련 개념</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {generatedCode.relatedConcepts.map((concept, index) => (
+                                <span
+                                  key={index}
+                                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                                >
+                                  {concept}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl p-12 shadow-lg text-center">
+                    <Code className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">코드를 생성해보세요</h3>
+                    <p className="text-gray-600">왼쪽에서 요청사항을 입력하고 코드 생성을 시작하세요.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

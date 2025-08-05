@@ -11,13 +11,11 @@ import puppeteer from 'puppeteer';
 // @ts-ignore
 import mammoth from 'mammoth';
 import { requireAuth } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { getConnection } from '@/lib/db';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {

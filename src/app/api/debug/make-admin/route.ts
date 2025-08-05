@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { getConnection } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,17 +14,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 현재 로그인한 사용자를 관리자로 만들기
-    const currentUser = await prisma.user.findUnique({
-      where: { email: session.user.email! }
-    });
+    const db = await getConnection();
 
-    if (!currentUser) {
+    // 현재 로그인한 사용자를 관리자로 만들기
+    const currentUserResult = await db.request().query(`
+      SELECT * FROM users WHERE email = '${session.user.email}'
+    `);
+
+    if (currentUserResult.recordset.length === 0) {
       return NextResponse.json(
         { error: "사용자를 찾을 수 없습니다." }, 
         { status: 404 }
       );
     }
+
+    const currentUser = currentUserResult.recordset[0];
 
     if (currentUser.role === 'ADMIN') {
       return NextResponse.json({
@@ -36,10 +38,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 관리자로 업데이트
-    const updatedUser = await prisma.user.update({
-      where: { email: session.user.email! },
-      data: { role: 'ADMIN' }
-    });
+    const updatedUserResult = await db.request().query(`
+      UPDATE users 
+      SET role = 'ADMIN' 
+      OUTPUT INSERTED.id, INSERTED.email, INSERTED.name, INSERTED.role
+      WHERE email = '${session.user.email}'
+    `);
+
+    const updatedUser = updatedUserResult.recordset[0];
 
     return NextResponse.json({
       message: "관리자 권한이 설정되었습니다. 페이지를 새로고침하세요.",

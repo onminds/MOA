@@ -663,18 +663,23 @@ export default function SNSPost() {
       <Header />
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto p-6">
-          {/* 헤더 */}
-          <div className="flex items-center gap-4 mb-8">
+          {/* 뒤로가기 버튼 */}
+          <div className="mb-6">
             <button
               onClick={() => router.push('/productivity')}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
             >
-              <ArrowLeft className="w-6 h-6 text-gray-600" />
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              생산성 도구로 돌아가기
             </button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">SNS 게시물 생성</h1>
-              <p className="text-gray-600 mt-2">SNS 플랫폼별 최적화된 게시물을 AI가 자동으로 생성해드립니다</p>
-            </div>
+          </div>
+
+          {/* 헤더 */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">SNS 게시물 생성</h1>
+            <p className="text-gray-600 text-lg mt-2">
+              SNS 플랫폼별 최적화된 게시물을 AI가 자동으로 생성해드립니다.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

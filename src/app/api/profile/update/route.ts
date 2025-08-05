@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { getConnection } from '@/lib/db';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,25 +67,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 사용자 정보 업데이트
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        name: name.trim(),
-        ...(imageUrl && { image: imageUrl })
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        role: true
-      }
-    });
+    // DB 업데이트
+    const db = await getConnection();
+    
+    // 카카오 사용자 ID 처리 (문자열을 BIGINT로 변환)
+    const userId = typeof user.id === 'string' ? BigInt(user.id) : user.id;
+    
+    let updateQuery = 'UPDATE users SET display_name = @display_name';
+    if (imageUrl) {
+      updateQuery += ', avatar_url = @avatar_url';
+    }
+    updateQuery += ', updated_at = GETDATE() WHERE id = @id';
+    
+    const requestDb = db.request()
+      .input('display_name', name.trim())
+      .input('id', userId);
+    if (imageUrl) {
+      requestDb.input('avatar_url', imageUrl);
+    }
+    
+    await requestDb.query(updateQuery);
+
+    // 업데이트된 정보 반환
+    const result = await db.request()
+      .input('id', userId)
+      .query('SELECT id, email, display_name, avatar_url, role FROM users WHERE id = @id');
+    const updatedUser = result.recordset[0];
 
     return NextResponse.json({
       success: true,
-      user: updatedUser,
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.display_name, // 프론트엔드 호환을 위해 name으로 반환
+        email: updatedUser.email,
+        image: updatedUser.avatar_url,
+        role: updatedUser.role
+      },
       message: '프로필이 성공적으로 업데이트되었습니다.'
     });
 

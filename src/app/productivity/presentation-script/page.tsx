@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
 import Header from '../../components/Header';
-import { Presentation, Clock, Users, Target, Lightbulb, FileText, Download, Copy, RefreshCw, Upload, X, Plus, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { Presentation, Clock, Users, Target, Lightbulb, FileText, Download, Copy, RefreshCw, Upload, X, Plus, CheckCircle, AlertCircle, Info, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function PresentationScript() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     topic: '',
     duration: '10',
@@ -784,6 +786,17 @@ export default function PresentationScript() {
         setShowDurationInfoPopup(false);
       }}>
         <div className="max-w-7xl mx-auto px-4">
+          {/* 뒤로가기 버튼 */}
+          <div className="mb-6">
+            <button
+              onClick={() => router.push('/productivity')}
+              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              생산성 도구로 돌아가기
+            </button>
+          </div>
+
           {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
+
 import {
   FileText, Presentation, Code, Star, Briefcase, FileVideo, MessageSquare, Newspaper
 } from 'lucide-react';
@@ -11,18 +11,18 @@ const categories = [
   {
     id: 'writing',
     name: 'AI 글쓰기',
-    description: '요약, 이메일, 레포트, 블로그, 자기소개서 등',
+    description: '요약, 레포트, 자기소개서 등',
     icon: <FileText className="w-8 h-8" />,
     iconBg: 'bg-blue-500',
-    toolCount: 5
+    toolCount: 3
   },
   {
     id: 'content',
     name: 'AI 컨텐츠 제작',
-    description: 'SNS 게시물, 강의 녹음 노트, 면접 준비 등',
+    description: '강의 녹음 노트, 면접 준비 등',
     icon: <MessageSquare className="w-8 h-8" />,
     iconBg: 'bg-purple-500',
-    toolCount: 3
+    toolCount: 2
   },
   {
     id: 'presentation',
@@ -53,17 +53,9 @@ const productivityTools = [
     category: 'writing',
     favorite: false
   },
+
   {
     id: 2,
-    title: '이메일보조',
-    description: '상황과 목적에 맞는 전문적이고 정중한 이메일을 작성하는 기능',
-    icon: <MessageSquare className="w-8 h-8" />,
-    iconBg: 'bg-blue-500',
-    category: 'writing',
-    favorite: false
-  },
-  {
-    id: 3,
     title: '레포트작성',
     description: '과제, 레포트, 문서 등 긴 텍스트를 쉽게 완성하는 기능',
     icon: <FileText className="w-8 h-8" />,
@@ -71,17 +63,9 @@ const productivityTools = [
     category: 'writing',
     favorite: false
   },
+
   {
-    id: 4,
-    title: '블로그',
-    description: '주제와 키워드에 맞는 SEO 최적화된 블로그 글을 작성하는 기능',
-    icon: <Newspaper className="w-8 h-8" />,
-    iconBg: 'bg-orange-500',
-    category: 'writing',
-    favorite: false
-  },
-  {
-    id: 5,
+    id: 3,
     title: '자기소개서',
     description: '지원 직무와 경력에 맞는 매력적인 자기소개서를 작성하는 기능',
     icon: <Briefcase className="w-8 h-8" />,
@@ -91,17 +75,9 @@ const productivityTools = [
   },
 
   // AI 컨텐츠 제작
+
   {
-    id: 6,
-    title: 'SNS 게시물',
-    description: 'SNS 유형에 따라 자동으로 SNS 게시물을 완성하는 기능',
-    icon: <MessageSquare className="w-8 h-8" />,
-    iconBg: 'bg-purple-500',
-    category: 'content',
-    favorite: false
-  },
-  {
-    id: 7,
+    id: 4,
     title: '강의 녹음 노트',
     description: '대화를 녹음하고 실시간 요약과 최종 요약을 작성하는 기능',
     icon: <FileVideo className="w-8 h-8" />,
@@ -110,7 +86,7 @@ const productivityTools = [
     favorite: false
   },
   {
-    id: 8,
+    id: 5,
     title: '면접 준비',
     description: '예상 면접 질문과 답변을 자동으로 완성하는 기능',
     icon: <Briefcase className="w-8 h-8" />,
@@ -121,7 +97,7 @@ const productivityTools = [
 
   // AI 발표자료
   {
-    id: 9,
+    id: 6,
     title: 'PPT 초안',
     description: 'AI가 PPT의 목차와 초안을 자동으로 작성하는 기능',
     icon: <Presentation className="w-8 h-8" />,
@@ -130,7 +106,7 @@ const productivityTools = [
     favorite: false
   },
   {
-    id: 10,
+    id: 7,
     title: '발표 대본',
     description: '발표 자료, 시간, 주제를 입력하면 대본을 완성하는 기능',
     icon: <FileVideo className="w-8 h-8" />,
@@ -141,7 +117,7 @@ const productivityTools = [
 
   // AI 코딩
   {
-    id: 11,
+    id: 8,
     title: '코드 생성',
     description: '요구사항을 입력하면 AI가 코드를 자동으로 생성하는 기능',
     icon: <Code className="w-8 h-8" />,
@@ -150,7 +126,7 @@ const productivityTools = [
     favorite: false
   },
   {
-    id: 12,
+    id: 9,
     title: '코드 리뷰',
     description: '작성된 코드를 분석하고 개선점을 제안하는 기능',
     icon: <Code className="w-8 h-8" />,
@@ -185,48 +161,36 @@ export default function Productivity() {
       router.push('/productivity/ai-summary');
     }
     // 레포트 작성 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 3) {
+    else if (toolId === 2) {
       router.push('/productivity/report-writer');
     }
-    // 블로그 작성 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 4) {
-      router.push('/productivity/blog-writer');
-    }
-    // SNS 게시물 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 6) {
-      router.push('/productivity/sns-post');
-    }
-    // 코드 생성 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 11) {
-      router.push('/productivity/code-generate');
-    }
-    // 코드 리뷰 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 12) {
-      router.push('/productivity/code-review');
-    }
-    // 이메일 보조 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 2) {
-      router.push('/productivity/email-assistant');
-    }
-    // PPT 초안 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 9) {
-      router.push('/productivity/ppt-draft');
-    }
-    // 발표 대본 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 10) {
-      router.push('/productivity/presentation-script');
+    // 자기소개서 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 3) {
+      router.push('/productivity/cover-letter');
     }
     // 강의 녹음 노트 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 7) {
+    else if (toolId === 4) {
       router.push('/productivity/lecture-notes');
     }
     // 면접 준비 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 8) {
+    else if (toolId === 5) {
       router.push('/productivity/interview-prep');
     }
-    // 자기소개서 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 5) {
-      router.push('/productivity/cover-letter');
+    // PPT 초안 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 6) {
+      router.push('/productivity/ppt-draft');
+    }
+    // 발표 대본 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 7) {
+      router.push('/productivity/presentation-script');
+    }
+    // 코드 생성 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 8) {
+      router.push('/productivity/code-generate');
+    }
+    // 코드 리뷰 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 9) {
+      router.push('/productivity/code-review');
     }
   };
 
@@ -235,9 +199,6 @@ export default function Productivity() {
       <Header />
       <div className="min-h-screen bg-gray-50">
         <div className="flex">
-          {/* 공통 사이드바 */}
-          <Sidebar currentPath="/productivity" />
-          
           {/* 메인 콘텐츠 */}
           <div className="flex-1 p-8">
             <div className="max-w-7xl mx-auto">
@@ -313,4 +274,4 @@ export default function Productivity() {
       </div>
     </>
   );
-} 
+}

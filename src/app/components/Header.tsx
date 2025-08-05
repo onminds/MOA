@@ -1,21 +1,54 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Menu, ChevronDown, Settings, User, LogOut, Code } from 'lucide-react';
+import { ChevronDown, Settings, User, LogOut, Crown, Star, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
 
+interface PlanInfo {
+  planType: string;
+  planInfo: {
+    name: string;
+    displayName: string;
+    color: string;
+    features: string[];
+  };
+}
+
 export default function Header() {
   const router = useRouter();
-  const [, setSidebarOpen] = useState(false);
+
   const [mounted, setMounted] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const { data: session, status } = useSession();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetchPlanInfo();
+    }
+  }, [session]);
+
+  const fetchPlanInfo = async () => {
+    setPlanLoading(true);
+    try {
+      const response = await fetch('/api/user/plan');
+      if (response.ok) {
+        const data = await response.json();
+        setPlanInfo(data);
+      }
+    } catch (error) {
+      console.error('플랜 정보 로딩 실패:', error);
+    } finally {
+      setPlanLoading(false);
+    }
+  };
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' });
@@ -38,35 +71,60 @@ export default function Header() {
     return 'U';
   };
 
+  const getPlanIcon = (planType: string) => {
+    switch (planType) {
+      case 'basic':
+        return <Zap className="w-3 h-3" />;
+      case 'standard':
+        return <Star className="w-3 h-3" />;
+      case 'pro':
+        return <Crown className="w-3 h-3" />;
+      default:
+        return <Zap className="w-3 h-3" />;
+    }
+  };
+
+  const getPlanColor = (planType: string) => {
+    switch (planType) {
+      case 'basic':
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+      case 'standard':
+        return 'bg-blue-100 text-blue-700 border-blue-300';
+      case 'pro':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+    }
+  };
+
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            {/* 햄버거 메뉴 (모바일) */}
-            <button
-              className="mr-3 md:hidden p-2 rounded hover:bg-gray-100"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="사이드바 열기"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <span
-              className="text-2xl font-bold text-gray-900 cursor-pointer"
+            <div
+              className="flex items-center cursor-pointer"
               onClick={() => router.push('/')}
             >
-              MOA
-            </span>
+              <Image
+                src="/images/Moa_Logo.png"
+                alt="MOA 로고"
+                width={32}
+                height={32}
+                className="w-8 h-8 mr-2"
+              />
+              <span className="text-2xl font-bold text-gray-900">
+                MOA
+              </span>
+            </div>
           </div>
           <nav className="hidden md:flex space-x-8">
             <Link href="/" className="text-gray-700 hover:text-gray-900">홈</Link>
-            <Link href="#" className="text-gray-700 hover:text-gray-900">AI 목록</Link>
-            <Link href="#" className="text-gray-700 hover:text-gray-900">추천</Link>
+            <Link href="/ai-list" className="text-gray-700 hover:text-gray-900">AI 목록</Link>
+            <Link href="/usage" className="text-gray-700 hover:text-gray-900">사용량 확인</Link>
+            <Link href="/plan" className="text-gray-700 hover:text-gray-900">플랜</Link>
             <Link href="/community" className="text-gray-700 hover:text-gray-900">커뮤니티</Link>
-            <Link href="/code-review/project" className="text-gray-700 hover:text-gray-900 flex items-center">
-              <Code className="w-4 h-4 mr-1" />
-              코드리뷰
-            </Link>
+            <Link href="#" className="text-gray-700 hover:text-gray-900">문의하기</Link>
           </nav>
           <div className="flex items-center space-x-4">
             {!mounted ? (
@@ -82,6 +140,14 @@ export default function Header() {
                   >
                     관리자
                   </Link>
+                )}
+                
+                {/* 플랜 표시 */}
+                {planInfo && (
+                  <div className={`hidden sm:flex items-center space-x-1 px-2 py-1 rounded-full border text-xs font-medium ${getPlanColor(planInfo.planType)}`}>
+                    {getPlanIcon(planInfo.planType)}
+                    <span>{planInfo.planInfo.displayName}</span>
+                  </div>
                 )}
                 
                 {/* 프로필 드롭다운 */}
@@ -121,6 +187,14 @@ export default function Header() {
                         <div className="text-xs text-gray-500">
                           {session.user?.email}
                         </div>
+                        {planInfo && (
+                          <div className="mt-2 flex items-center space-x-1">
+                            {getPlanIcon(planInfo.planType)}
+                            <span className="text-xs font-medium text-gray-700">
+                              {planInfo.planInfo.displayName} 플랜
+                            </span>
+                          </div>
+                        )}
                       </div>
                       
                       <Link

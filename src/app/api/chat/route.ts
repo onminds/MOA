@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
-import { PrismaClient } from "@prisma/client";
+import { getConnection } from "@/lib/db";
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const prisma = new PrismaClient();
 
 // AI 티어 타입 정의
 type AITier = {
@@ -57,26 +55,33 @@ export async function POST(request: NextRequest) {
 
     if (session?.user?.email) {
       // 로그인한 사용자 - 결제 상태 확인
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        include: {
-          payments: {
-            where: { status: 'completed' },
-            orderBy: { createdAt: 'desc' },
-            take: 1
-          }
-        }
-      });
+      const db = await getConnection();
+      const userResult = await db.request()
+        .input('email', session.user.email)
+        .query(`
+          SELECT u.id, p.plan_type
+          FROM users u
+          LEFT JOIN (
+            SELECT user_id, plan_type, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) as rn
+            FROM payments 
+            WHERE status = 'completed'
+          ) p ON u.id = p.user_id AND p.rn = 1
+          WHERE u.email = @email AND u.is_active = 1
+        `);
 
-      if (user) {
+      if (userResult.recordset.length > 0) {
+        const user = userResult.recordset[0];
         userId = user.id;
         // 최근 결제 내역이 있으면 프리미엄
-        isPremium = user.payments.length > 0;
+        isPremium = !!user.plan_type;
         userTier = isPremium ? AI_TIERS.PREMIUM : AI_TIERS.USER;
       }
     }
 
-    console.log(`AI 채팅 요청 - 티어: ${userTier.name}, 모델: ${userTier.model}`);
+    // OpenAI API 호출
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // AI 응답 생성
     const completion = await openai.chat.completions.create({
@@ -118,21 +123,16 @@ export async function POST(request: NextRequest) {
     
     // OpenAI API 할당량 초과 에러 처리
     if (error instanceof Error) {
-      if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('insufficient_quota')) {
+      if (error.message.includes('quota') || error.message.includes('rate limit')) {
         return NextResponse.json(
-          { error: 'OpenAI API 사용량 한도에 도달했습니다. 잠시 후 다시 시도해주세요.' },
+          { error: '서비스 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.' },
           { status: 429 }
-        );
-      } else if (error.message.includes('billing') || error.message.includes('limit')) {
-        return NextResponse.json(
-          { error: 'OpenAI API 결제 한도에 도달했습니다. 잠시 후 다시 시도해주세요.' },
-          { status: 402 }
         );
       }
     }
     
     return NextResponse.json(
-      { error: '서버 오류가 발생했습니다.' },
+      { error: 'AI 응답 생성 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }
