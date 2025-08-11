@@ -6,7 +6,7 @@ import sql from 'mssql';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 사용자 세션 확인
@@ -15,7 +15,8 @@ export async function DELETE(
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
 
-    const videoId = parseInt(params.id);
+    const { id } = await params;
+    const videoId = parseInt(id);
     if (isNaN(videoId)) {
       return NextResponse.json({ error: '유효하지 않은 영상 ID입니다.' }, { status: 400 });
     }

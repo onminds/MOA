@@ -19,7 +19,11 @@ interface PlanInfo {
   };
 }
 
-export default function Header() {
+interface HeaderProps {
+  forceWhiteBackground?: boolean;
+}
+
+export default function Header({ forceWhiteBackground = false }: HeaderProps) {
   const router = useRouter();
   const { t, currentBackground } = useLanguage();
 
@@ -127,10 +131,10 @@ export default function Header() {
   };
 
   // 배경에 따른 드롭다운 스타일 결정
-  const isCustomBackground = currentBackground !== 'default';
-  const isSpaceBackground = currentBackground === 'space';
-  const isNatureBackground = currentBackground === 'nature';
-  const isGeometricBackground = currentBackground === 'geometric';
+  const isCustomBackground = currentBackground !== 'default' && !forceWhiteBackground;
+  const isSpaceBackground = currentBackground === 'space' && !forceWhiteBackground;
+  const isNatureBackground = currentBackground === 'nature' && !forceWhiteBackground;
+  const isGeometricBackground = currentBackground === 'geometric' && !forceWhiteBackground;
   
   const dropdownClasses = isCustomBackground 
     ? 'bg-white/90 backdrop-blur-md border border-white/20 shadow-lg' 
