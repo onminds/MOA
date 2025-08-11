@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+
+
+// global 타입 확장
+declare global {
+  var pptDataCache: { [key: string]: any } | undefined;
+}
+
 interface PPTFileRequest {
   title: string;
   subtitle: string;
@@ -29,40 +36,62 @@ export async function POST(request: NextRequest) {
   try {
     const data: PPTFileRequest = await request.json();
 
-    console.log('PPT 파일 생성 요청:', {
+    console.log('🔍 PPT 파일 생성 요청:', {
       title: data.title,
       slideCount: data.slides.length,
       chapterCount: data.chapters.length
     });
+    
+    // 디버깅: 받은 데이터 상세 확인
+    console.log('🔍 받은 슬라이드 데이터:', data.slides);
+    console.log('🔍 디자인 옵션:', data.designOptions);
 
-    // 실제 PPT 생성 API 호출 (여기서는 시뮬레이션)
-    const pptFile = await generatePPTWithExternalAPI(data);
+    // ✅ 직접 PPT 바이너리 생성 및 반환
+    const pptBuffer = await generateRealPPTContent(data.title, data);
+    const fileName = createSafePPTFileName(data.title);
+    
+    // 🧪 디버깅: pptBuffer 타입 확인
+    console.log('🔍 pptBuffer 타입 확인:', {
+      type: typeof pptBuffer,
+      isBuffer: Buffer.isBuffer(pptBuffer),
+      isArrayBuffer: pptBuffer instanceof ArrayBuffer,
+      isUint8Array: pptBuffer instanceof Uint8Array,
+      byteLength: pptBuffer.byteLength
+    });
+    
+    console.log('✅ PPT 파일 생성 완료:', {
+      fileName,
+      fileSize: `${Math.round(pptBuffer.byteLength / 1024)}KB`,
+      slideCount: data.slides.length
+    });
 
-    if (pptFile.success) {
-      return NextResponse.json({
-        success: true,
-        downloadUrl: pptFile.downloadUrl,
-        fileName: pptFile.fileName,
-        message: 'PPT 파일이 성공적으로 생성되었습니다.'
-      });
-    } else {
-      throw new Error('PPT 생성 API에서 오류가 발생했습니다.');
-    }
+    // 💡 pptBuffer를 반드시 Buffer로 변환
+    const binaryBody = Buffer.from(pptBuffer);
+
+    // PPT 바이너리를 직접 반환
+    return new NextResponse(binaryBody, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Cache-Control': 'no-cache'
+      }
+    });
 
   } catch (error) {
     console.error('PPT 파일 생성 오류:', error);
     
     return NextResponse.json({ 
       success: false,
-      error: '외부 PPT 생성 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' 
+      error: 'PPT 파일 생성 중 오류가 발생했습니다. 다시 시도해주세요.' 
     }, { status: 500 });
   }
 }
 
-// 파일명 정규화 함수 (안전한 파일명 생성)
+// 파일명 정규화 함수 (안전한 파일명 생성 - 영문만)
 function normalizeFileName(title: string): string {
   return title
-    .replace(/[^a-zA-Z0-9가-힣]/g, '_') // 특수문자 제거
+    .replace(/[^a-zA-Z0-9]/g, '_') // 영문, 숫자만 허용
     .replace(/_+/g, '_') // 연속 언더스코어 제거
     .substring(0, 50); // 길이 제한
 }
@@ -73,47 +102,10 @@ function createSafePPTFileName(title: string): string {
   return `${normalizedTitle}_AI_Presentation.pptx`;
 }
 
-// 실제 PPT 생성 함수 (PptxGenJS 사용)
-async function generatePPTWithExternalAPI(data: PPTFileRequest) {
-  try {
-    console.log('PPT 생성 시작:', {
-      title: data.title,
-      slideCount: data.slides.length,
-      chapterCount: data.chapters.length
-    });
 
-    // 실제 PPT 파일 생성
-    const pptContent = await generateRealPPTContent(data.title, data);
-    
-    // 파일명 생성
-    const fileName = createSafePPTFileName(data.title);
-    
-    // 파일을 임시 저장 (실제 구현에서는 파일 시스템이나 클라우드 스토리지 사용)
-    // 여기서는 메모리에 저장하고 download-ppt API에서 직접 생성하도록 함
-    
-    // 다운로드 URL 생성 (파일명과 데이터를 함께 전달)
-    const downloadUrl = `/api/download-ppt/${encodeURIComponent(fileName)}?data=${encodeURIComponent(JSON.stringify(data))}`;
-    
-    return {
-      success: true,
-      downloadUrl: downloadUrl,
-      fileName: fileName,
-      fileSize: `${Math.round(pptContent.byteLength / 1024)}KB`,
-      slideCount: data.slides.length,
-      // 실제 파일 데이터를 세션에 저장하거나 다른 방법으로 전달
-      pptData: data
-    };
-  } catch (error) {
-    console.error('PPT 생성 오류:', error);
-    return {
-      success: false,
-      error: 'PPT 생성 중 오류가 발생했습니다.'
-    };
-  }
-}
 
 // 실제 PPT 파일 생성 함수 (download-ppt API와 동일)
-async function generateRealPPTContent(filename: string, pptData: any): Promise<ArrayBuffer> {
+async function generateRealPPTContent(filename: string, pptData: any): Promise<Buffer> {
   try {
     const PptxGenJS = (await import('pptxgenjs')).default;
     const pptx = new PptxGenJS();
@@ -124,17 +116,50 @@ async function generateRealPPTContent(filename: string, pptData: any): Promise<A
     pptx.title = filename.replace('.pptx', '');
     pptx.subject = 'AI Generated Presentation';
     
-    // 전문적인 색상 팔레트 정의
-    const colors = {
-      primary: '3B82F6',
-      secondary: 'F59E0B',
-      accent: '10B981',
-      text: '1F2937',
-      lightText: '6B7280',
-      background: 'F9FAFB',
-      white: 'FFFFFF',
-      border: 'E5E7EB'
+    // 웹 프리뷰와 동일한 템플릿 색상 사용 (안전한 색상 처리)
+    // 슬라이드별 개별 색상 값 사용
+    const firstSlide = pptData.slides?.[0];
+    const templateColors = {
+      primary: firstSlide?.primaryColor || pptData.designOptions?.colors?.primary || '3B82F6',
+      secondary: firstSlide?.secondaryColor || pptData.designOptions?.colors?.secondary || '8B5CF6',
+      accent: firstSlide?.accentColor || pptData.designOptions?.colors?.accent || 'F59E0B'
     };
+    
+    console.log('템플릿 색상 데이터:', templateColors);
+    
+    // ✅ 안전한 색상 처리 함수
+    const sanitizeColor = (color: unknown, fallback = '3B82F6'): string => {
+      if (typeof color === 'string') {
+        const cleanColor = color.trim();
+        if (cleanColor === '') { return fallback; }
+        return cleanColor.replace('#', '');
+      }
+      if (typeof color === 'object' && color !== null && 'hex' in color) {
+        return String((color as any).hex).replace('#', '');
+      }
+      return fallback;
+    };
+    
+    // ✅ 안전한 색상 배열 처리 함수 (간결한 버전)
+    const processColorArray = (colors: unknown[]): string[] => {
+      if (!Array.isArray(colors)) {
+        return ['3B82F6', '8B5CF6', 'F59E0B'];
+      }
+      return colors.map(color => sanitizeColor(color));
+    };
+    
+    const colors = {
+      primary: sanitizeColor(templateColors.primary || '3B82F6'),
+      secondary: sanitizeColor(templateColors.secondary || '8B5CF6'),
+      accent: sanitizeColor(templateColors.accent || 'F59E0B'),
+      text: sanitizeColor('1F2937'),
+      lightText: sanitizeColor('6B7280'),
+      background: sanitizeColor('F9FAFB'),
+      white: sanitizeColor('FFFFFF'),
+      border: sanitizeColor('E5E7EB')
+    };
+    
+    console.log('처리된 색상:', colors);
     
     const fonts = {
       title: 28,
@@ -152,87 +177,68 @@ async function generateRealPPTContent(filename: string, pptData: any): Promise<A
       slides: pptData.slides?.map((s: any) => ({ title: s.title, contentLength: s.content?.length }))
     });
     
-    // 실제 슬라이드들 생성
+    // 실제 슬라이드들 생성 (안전한 색상 처리)
     if (pptData.slides && pptData.slides.length > 0) {
       pptData.slides.forEach((slideData: any, index: number) => {
         console.log(`슬라이드 ${index + 1} 생성:`, { title: slideData.title, content: slideData.content });
         const slide = pptx.addSlide();
         
-        // 배경 설정
-        slide.background = { fill: colors.background };
+        // ✅ 슬라이드별 색상 처리
+        const slideColors = {
+          primary: sanitizeColor(slideData?.primaryColor, colors.primary),
+          secondary: sanitizeColor(slideData?.secondaryColor, colors.secondary),
+          accent: sanitizeColor(slideData?.accentColor, colors.accent)
+        };
         
-        // 상단 헤더 바
-        slide.addShape('rect', {
-          x: 0, y: 0, w: 10, h: 0.6,
-          fill: { color: colors.primary },
-          line: { color: colors.primary }
-        });
-        
-        // 슬라이드 번호
-        slide.addText(`${index + 1}`, {
-          x: 0.2, y: 0.1, w: 0.6, h: 0.4,
-          fontSize: fonts.caption, color: colors.white, fontFace: 'Arial'
-        });
+        // 기본 배경 설정
+        slide.background = { color: `#${slideColors.primary}` };
         
         // 슬라이드 제목
         slide.addText(slideData.title, {
-          x: 0.5, y: 0.1, w: 8.5, h: 0.4,
-          fontSize: fonts.heading, bold: true, color: colors.white, fontFace: 'Arial'
+          x: 0.5, y: 0.5, w: 9, h: 1,
+          fontSize: fonts.title, bold: true, color: '#FFFFFF', fontFace: 'Arial',
+          align: 'center', valign: 'middle'
         });
         
-        // 좌측 콘텐츠 영역
-        slide.addShape('rect', {
-          x: 0.5, y: 1, w: 4.5, h: 3.5,
-          fill: { color: colors.white }, line: { color: colors.border }
-        });
-        
-        // 슬라이드 내용 (bullet points)
+        // 슬라이드 내용
         if (slideData.content && slideData.content.length > 0) {
-          const bulletPoints = slideData.content.map((item: string) => `• ${item}`);
-          slide.addText(bulletPoints.join('\n'), {
-            x: 0.8, y: 1.2, w: 3.9, h: 3.1,
-            fontSize: fonts.body, color: colors.text, lineSpacingMultiple: 1.2,
-            fontFace: 'Arial', align: 'left'
-          });
-        }
-        
-        // 우측 이미지/차트 영역
-        slide.addShape('rect', {
-          x: 5.5, y: 1, w: 4, h: 3.5,
-          fill: { color: colors.background }, line: { color: colors.border }
-        });
-        
-        slide.addText('📊 차트/이미지 영역', {
-          x: 5.7, y: 2.5, w: 3.6, h: 0.5,
-          fontSize: fonts.caption, color: colors.lightText, align: 'center', fontFace: 'Arial'
-        });
-        
-        // 발표 노트 (하단에 작게 표시)
-        if (slideData.notes) {
-          slide.addShape('rect', {
-            x: 0.5, y: 4.8, w: 9, h: 0.8,
-            fill: { color: colors.white }, line: { color: colors.border }
-          });
+          const layout = slideData.layout || 'content';
           
-          slide.addText(`💡 발표 노트: ${slideData.notes}`, {
-            x: 0.6, y: 4.9, w: 8.8, h: 0.6,
-            fontSize: fonts.caption, color: colors.lightText, fontFace: 'Arial'
-          });
+          if (layout === 'title') {
+            slide.addText(slideData.content.join('\n'), {
+              x: 0.5, y: 2, w: 9, h: 2,
+              fontSize: fonts.title, color: `#${colors.text}`, lineSpacingMultiple: 1.3,
+              fontFace: 'Arial', align: 'center', bold: true
+            });
+          } else if (layout === 'timeline') {
+            const timelineItems = slideData.content.map((item: string, idx: number) => 
+              `${idx + 1} ${item}`
+            );
+            slide.addText(timelineItems.join('\n'), {
+              x: 1, y: 1.5, w: 8, h: 3,
+              fontSize: fonts.body, color: `#${colors.white}`, lineSpacingMultiple: 1.4,
+              fontFace: 'Arial', align: 'left'
+            });
+          } else {
+            slideData.content.forEach((item: string, idx: number) => {
+              slide.addText(`• ${item}`, {
+                x: 1, y: 1.5 + (idx * 0.5), w: 8, h: 0.4,
+                fontSize: fonts.body, color: `#${colors.white}`, lineSpacingMultiple: 1.2,
+                fontFace: 'Arial', align: 'left'
+              });
+            });
+          }
         }
         
-        // 하단 장식선
-        slide.addShape('rect', {
-          x: 0.5, y: 5.5, w: 9, h: 0.05,
-          fill: { color: colors.secondary }, line: { color: colors.secondary }
-        });
+
       });
     }
     
     console.log('PPT 생성 완료. 총 슬라이드 수:', pptData.slides.length);
     
-    // PPT 파일을 ArrayBuffer로 변환
+    // PPT 파일을 Buffer로 변환 (더 안전한 방법)
     const pptxBuffer = await pptx.write({ outputType: 'nodebuffer' });
-    return pptxBuffer as ArrayBuffer;
+    return pptxBuffer as Buffer;
     
   } catch (error) {
     console.error('PPT 생성 오류:', error);

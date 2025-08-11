@@ -22,23 +22,11 @@ const audioGaugeStyles = `
   }
 `;
 import {
-  Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
   ArrowLeft, Briefcase, Building2, User, Clock, Lightbulb, CheckCircle, 
   Play, Pause, RotateCcw, Download, Copy, FileText, Loader2, AlertCircle, Star,
-  Mic, MicOff, Volume2, TrendingUp, BarChart3, Globe, Target
+  Mic, MicOff, Volume2, TrendingUp, BarChart3, Globe, Target, Check
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-const sideMenus = [
-  { name: '홈', icon: <HomeIcon className="w-5 h-5 mr-2" />, href: '/' },
-  { name: '검색', icon: <Search className="w-5 h-5 mr-2" />, href: '#' },
-  { name: 'AI 목록', icon: <List className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '순위', icon: <BarChart className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '광고', icon: <Megaphone className="w-5 h-5 mr-2" />, href: '#' },
-  { name: 'AI 뉴스', icon: <Newspaper className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '문의하기', icon: <MessageCircle className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '설정', icon: <Settings className="w-5 h-5 mr-2" />, href: '#' },
-];
 
 type InterviewStep = 'input' | 'questions' | 'practice' | 'feedback';
 
@@ -106,6 +94,7 @@ export default function InterviewPrep() {
   const [experience, setExperience] = useState('');
   const [skills, setSkills] = useState('');
   const [careerLevel, setCareerLevel] = useState('junior'); // junior, mid, senior
+  const [manualInputMode, setManualInputMode] = useState(false);
   
   // 면접 질문 및 답변
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
@@ -170,7 +159,7 @@ export default function InterviewPrep() {
         timerRef.current = null;
       }
     }
-
+    
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -230,13 +219,13 @@ export default function InterviewPrep() {
 
       const data = await response.json();
       
-      if (data.success && data.companyAnalysis) {
+      if (data.success) {
         setCompanyAnalysis({
           ...data.companyAnalysis,
           originalCompanyName: companyName.trim()
         });
       } else {
-        throw new Error('회사 분석 결과를 받지 못했습니다.');
+        throw new Error(data.error || '회사 분석 결과를 받지 못했습니다.');
       }
     } catch (error) {
       console.error('회사 분석 오류:', error);
@@ -273,9 +262,17 @@ export default function InterviewPrep() {
 
   // 면접 질문 생성
   const generateQuestions = async () => {
-    if (!companyName.trim() || !jobTitle.trim()) {
-      setError('회사명과 직무를 입력해주세요.');
-      return;
+    // 입력 유효성 검사
+    if (manualInputMode) {
+      if (!companyName.trim() || !jobTitle.trim()) {
+        setError('회사명과 직무를 모두 입력해주세요.');
+        return;
+      }
+    } else {
+      if (!companyAnalysis) {
+        setError('먼저 회사 분석을 진행해주세요.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -289,7 +286,7 @@ export default function InterviewPrep() {
       tipsGeneration: false
     });
     simulateLoadingProgress();
-    
+
     try {
       const response = await fetch('/api/interview-prep/generate-questions', {
         method: 'POST',
@@ -451,6 +448,9 @@ export default function InterviewPrep() {
 
   // 연습 모드 시작
   const startPractice = () => {
+    if (isRecording) {
+      stopVoiceRecording(); // 기존 녹음이 있다면 정지
+    }
     setPracticeMode(true);
     setCurrentQuestionIndex(0);
     setCurrentStep('practice');
@@ -474,6 +474,9 @@ export default function InterviewPrep() {
       resetTimer();
     } else {
       // 모든 질문 완료
+      if (isRecording) {
+        stopVoiceRecording(); // 녹음 중이면 정지
+      }
       setCurrentStep('feedback');
       setPracticeMode(false);
     }
@@ -489,6 +492,9 @@ export default function InterviewPrep() {
 
   // 처음부터 다시 시작
   const restartInterview = () => {
+    if (isRecording) {
+      stopVoiceRecording(); // 녹음 중이면 정지
+    }
     setCurrentStep('input');
     setQuestions([]);
     setCurrentQuestionIndex(0);
@@ -512,14 +518,55 @@ export default function InterviewPrep() {
   // 음성 녹음 시작
   const startVoiceRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100,
-          channelCount: 1 // 모노로 설정하여 더 안정적인 감지
-        } 
+      // 먼저 브라우저 지원 여부 확인
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('이 브라우저는 마이크 접근을 지원하지 않습니다.');
+      }
+
+      // 권한 상태 확인 (선택적)
+      if (navigator.permissions) {
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          console.log('마이크 권한 상태:', permissionStatus.state);
+          
+          // 권한이 거부된 경우에도 getUserMedia를 시도해보기 위해 주석 처리
+          // if (permissionStatus.state === 'denied') {
+          //   throw new Error('마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해주세요.');
+          // }
+        } catch (permissionError) {
+          console.log('권한 확인 중 오류 (무시하고 진행):', permissionError);
+        }
+      }
+
+      console.log('🎙️ 마이크 접근 시도 중...');
+      console.log('브라우저 정보:', {
+        userAgent: navigator.userAgent,
+        mediaDevices: !!navigator.mediaDevices,
+        getUserMedia: !!navigator.mediaDevices?.getUserMedia,
+        permissions: !!navigator.permissions,
+        isSecureContext: window.isSecureContext,
+        location: window.location.href
       });
+      
+      // 마이크 접근 시도 (더 안전한 방법)
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+      } catch (firstError) {
+        console.log('첫 번째 시도 실패, 기본 설정으로 재시도:', firstError);
+        // 첫 번째 시도가 실패하면 더 간단한 설정으로 재시도
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: true
+        });
+      }
+      
+      console.log('✅ 마이크 접근 성공:', stream.getTracks().map(track => track.label));
       
       streamRef.current = stream;
       
@@ -545,8 +592,12 @@ export default function InterviewPrep() {
       });
       
       // MediaRecorder 설정 - 녹음 데이터 수집
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : 'audio/webm';
+        
       mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: mimeType
       });
       
       const audioChunks: BlobPart[] = [];
@@ -558,7 +609,7 @@ export default function InterviewPrep() {
       };
       
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
         setRecordedAudio(audioBlob);
       };
       
@@ -589,7 +640,33 @@ export default function InterviewPrep() {
       
     } catch (error) {
       console.error('마이크 접근 오류:', error);
-      setError('마이크에 접근할 수 없습니다. 브라우저 설정을 확인해주세요.');
+      
+      // 더 구체적인 오류 메시지 제공
+      let errorMessage = '마이크에 접근할 수 없습니다.';
+      
+      if (error instanceof Error) {
+        console.log('오류 상세 정보:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+        
+        if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
+          errorMessage = '마이크 권한이 거부되었습니다. 브라우저 주소창의 자물쇠 아이콘을 클릭하여 마이크 권한을 허용해주세요.';
+        } else if (error.name === 'NotFoundError' || error.message.includes('device')) {
+          errorMessage = '마이크 장치를 찾을 수 없습니다. 마이크가 연결되어 있는지 확인해주세요.';
+        } else if (error.name === 'NotSupportedError' || error.message.includes('support')) {
+          errorMessage = '이 브라우저는 마이크 접근을 지원하지 않습니다. Chrome, Firefox, Safari를 사용해주세요.';
+        } else if (error.message.includes('HTTPS')) {
+          errorMessage = '마이크 접근은 HTTPS 환경에서만 가능합니다.';
+        } else if (error.message.includes('getUserMedia')) {
+          errorMessage = '마이크 접근에 실패했습니다. 브라우저를 새로고침하고 다시 시도해주세요.';
+        } else {
+          errorMessage = `마이크 접근 오류: ${error.message}`;
+        }
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -602,20 +679,46 @@ export default function InterviewPrep() {
       hasAudioContext: !!audioContextRef.current
     });
     
-    if (mediaRecorderRef.current && isRecording) {
-      console.log('🛑 MediaRecorder 정지');
-      mediaRecorderRef.current.stop();
+    // MediaRecorder 정지
+    if (mediaRecorderRef.current) {
+      try {
+        if (mediaRecorderRef.current.state === 'recording') {
+          console.log('🛑 MediaRecorder 정지');
+          mediaRecorderRef.current.stop();
+        }
+      } catch (error) {
+        console.error('MediaRecorder 정지 중 오류:', error);
+      }
     }
     
+    // Stream 트랙 정지
     if (streamRef.current) {
-      console.log('🛑 Stream 트랙 정지');
-      streamRef.current.getTracks().forEach(track => track.stop());
+      try {
+        console.log('🛑 Stream 트랙 정지');
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('🛑 트랙 정지됨:', track.kind, track.label);
+        });
+      } catch (error) {
+        console.error('Stream 정지 중 오류:', error);
+      }
     }
     
+    // AudioContext 정지
     if (audioContextRef.current) {
-      console.log('🛑 AudioContext 정지');
-      audioContextRef.current.close();
+      try {
+        console.log('🛑 AudioContext 정지');
+        audioContextRef.current.close();
+      } catch (error) {
+        console.error('AudioContext 정지 중 오류:', error);
+      }
     }
+    
+    // 참조 정리
+    mediaRecorderRef.current = null;
+    streamRef.current = null;
+    audioContextRef.current = null;
+    analyserRef.current = null;
     
     console.log('🛑 상태 초기화');
     setIsRecording(false);
@@ -715,7 +818,7 @@ export default function InterviewPrep() {
         } else {
           console.log('⏹️ MediaRecorder가 중단되어 모니터링 중단');
         }
-      } catch (error) {
+    } catch (error) {
         console.error('음성 레벨 업데이트 오류:', error);
       }
     };
@@ -798,28 +901,28 @@ export default function InterviewPrep() {
     setError(null);
 
     try {
-      const formData = new FormData();
+        const formData = new FormData();
       formData.append('audio', recordedAudio, 'recording.webm');
       formData.append('question', questions[currentQuestionIndex].question);
       formData.append('category', questions[currentQuestionIndex].category);
 
-      const response = await fetch('/api/interview-prep/evaluate-voice', {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch('/api/interview-prep/evaluate-voice', {
+          method: 'POST',
+          body: formData,
+        });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || '음성 평가에 실패했습니다.');
       }
 
-      const data = await response.json();
-      
+        const data = await response.json();
+        
       if (data.success && data.evaluation) {
         setVoiceEvaluation(data.evaluation);
-      } else {
+        } else {
         throw new Error('음성 평가 결과를 받지 못했습니다.');
-      }
+        }
     } catch (error) {
       console.error('음성 평가 오류:', error);
       const errorMessage = error instanceof Error ? error.message : '음성 평가 중 오류가 발생했습니다.';
@@ -868,239 +971,333 @@ export default function InterviewPrep() {
   return (
     <>
       <Header />
-      <div className="flex min-h-screen bg-gray-50">
-        {/* 사이드바 */}
-        <div className="w-64 bg-white shadow-lg">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">메뉴</h2>
-            <nav>
-              {sideMenus.map((menu, index) => (
-                <a
-                  key={index}
-                  href={menu.href}
-                  className="flex items-center py-2 px-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors mb-1"
-                >
-                  {menu.icon}
-                  {menu.name}
-                </a>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        {/* 메인 컨텐츠 */}
-        <div className="flex-1 p-8">
-          <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
+        <div className="max-w-6xl mx-auto">
             {/* 헤더 */}
             <div className="mb-8">
-              <button
-                onClick={() => router.push('/productivity')}
+            <button
+              onClick={() => router.push('/productivity')}
                 className="flex items-center text-gray-600 hover:text-gray-800 transition-colors mb-4"
-              >
+            >
                 <ArrowLeft className="w-5 h-5 mr-2" />
-                생산성 도구로 돌아가기
-              </button>
+              생산성 도구로 돌아가기
+            </button>
               
               <div className="flex items-center gap-4 mb-4">
                 <div className="bg-pink-500 p-3 rounded-xl">
                   <Briefcase className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">면접 준비</h1>
+            <h1 className="text-3xl font-bold text-gray-900">면접 준비</h1>
                   <p className="text-gray-800 mt-1">AI가 생성한 맞춤형 면접 질문으로 완벽하게 준비하세요</p>
                 </div>
-              </div>
+          </div>
 
-              {/* 진행 단계 표시 */}
-              <div className="flex items-center gap-4 bg-white rounded-xl p-4 shadow-sm">
+                            {/* 진행 단계 표시 */}
+              <div className="w-full flex items-center justify-between bg-white rounded-xl p-4 shadow-sm">
                 <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                  currentStep === 'input' ? 'bg-pink-100 text-pink-700' : 
-                  ['questions', 'practice', 'feedback'].includes(currentStep) ? 'bg-green-100 text-green-700' : 
-                  'bg-gray-100 text-gray-500'
-                }`}>
-                  <User className="w-4 h-4" />
+              currentStep === 'input' ? 'bg-pink-100 text-pink-700' : 
+              ['questions', 'practice', 'feedback'].includes(currentStep) ? 'bg-green-100 text-green-700' : 
+              'bg-gray-100 text-gray-500'
+            }`}>
+              <User className="w-4 h-4" />
                   정보 입력
-                </div>
-                <div className="w-8 h-0.5 bg-gray-200"></div>
+            </div>
+                <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
+                currentStep === 'questions' ? 'bg-pink-100 text-pink-700' : 
+                ['practice', 'feedback'].includes(currentStep) ? 'bg-green-100 text-green-700' : 
+                'bg-gray-100 text-gray-500'
+              }`}>
+                {['practice', 'feedback'].includes(currentStep) ? <Check className="w-4 h-4" /> : <Lightbulb className="w-4 h-4" />}
+                질문 답변
+              </div>
+              <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
                 <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                  currentStep === 'questions' ? 'bg-pink-100 text-pink-700' : 
-                  ['practice', 'feedback'].includes(currentStep) ? 'bg-green-100 text-green-700' : 
-                  'bg-gray-100 text-gray-500'
-                }`}>
-                  <Lightbulb className="w-4 h-4" />
-                  질문 생성
-                </div>
-                <div className="w-8 h-0.5 bg-gray-200"></div>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                  currentStep === 'practice' ? 'bg-pink-100 text-pink-700' : 
-                  currentStep === 'feedback' ? 'bg-green-100 text-green-700' : 
-                  'bg-gray-100 text-gray-500'
-                }`}>
+              currentStep === 'practice' ? 'bg-pink-100 text-pink-700' : 
+              currentStep === 'feedback' ? 'bg-green-100 text-green-700' : 
+              'bg-gray-100 text-gray-500'
+            }`}>
                   <Play className="w-4 h-4" />
                   연습 모드
-                </div>
-                <div className="w-8 h-0.5 bg-gray-200"></div>
+            </div>
+                <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
                 <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                  currentStep === 'feedback' ? 'bg-pink-100 text-pink-700' : 'bg-gray-100 text-gray-500'
-                }`}>
+              currentStep === 'feedback' ? 'bg-pink-100 text-pink-700' : 'bg-gray-100 text-gray-500'
+            }`}>
                   <CheckCircle className="w-4 h-4" />
                   피드백
-                </div>
+            </div>
+              </div>
+          </div>
+
+          {/* 에러 메시지 */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-center gap-3 mb-2">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <span className="text-red-700 font-medium">오류가 발생했습니다</span>
+              </div>
+              <p className="text-red-700 text-sm">{error}</p>
+              <div className="mt-3 p-3 bg-red-100 rounded-lg">
+                <p className="text-red-800 text-xs">
+                  💡 해결 방법:
+                </p>
+                <ul className="text-red-700 text-xs mt-1 space-y-1">
+                  {error.includes('마이크') || error.includes('권한') ? (
+                    <>
+                      <li>• 브라우저 주소창 왼쪽의 자물쇠 아이콘을 클릭하여 마이크 권한을 허용해주세요</li>
+                      <li>• 브라우저 설정에서 사이트 권한 → 마이크 → 허용으로 설정해주세요</li>
+                      <li>• Chrome, Firefox, Safari 등 최신 브라우저를 사용해주세요</li>
+                      <li>• 마이크가 연결되어 있고 정상 작동하는지 확인해주세요</li>
+                      <li>• 페이지를 새로고침한 후 다시 시도해주세요</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>• 잠시 후 다시 시도해주세요</li>
+                      <li>• 회사명을 정확히 입력했는지 확인해주세요</li>
+                      <li>• 인터넷 연결 상태를 확인해주세요</li>
+                      <li>• 문제가 지속되면 다른 회사명으로 시도해보세요</li>
+                    </>
+                  )}
+                </ul>
               </div>
             </div>
+          )}
 
-            {/* 에러 메시지 */}
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <div className="flex items-center gap-3 mb-2">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                  <span className="text-red-700 font-medium">오류가 발생했습니다</span>
+          {/* 1단계: 정보 입력 */}
+          {currentStep === 'input' && (
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Building2 className="w-6 h-6" />
+                지원 정보 입력
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* 회사명 */}
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    회사명 *
+                  </label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="예: 네이버, 카카오, 삼성전자"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder:text-gray-500 text-black"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">💡 정확한 회사명을 작성하지 않으면 확실하지 않은 정보가 나올 수 있습니다.</p>
                 </div>
-                <p className="text-red-700 text-sm">{error}</p>
-                <div className="mt-3 p-3 bg-red-100 rounded-lg">
-                  <p className="text-red-800 text-xs">
-                    💡 해결 방법:
-                  </p>
-                  <ul className="text-red-700 text-xs mt-1 space-y-1">
-                    <li>• 잠시 후 다시 시도해주세요</li>
-                    <li>• 회사명을 정확히 입력했는지 확인해주세요</li>
-                    <li>• 인터넷 연결 상태를 확인해주세요</li>
-                    <li>• 문제가 지속되면 다른 회사명으로 시도해보세요</li>
-                  </ul>
+
+                {/* 직무명 */}
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    지원 직무 *
+                  </label>
+                  <input
+                    type="text"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="예: 사무직, 영업직, 마케팅, 인사, 회계, 고객서비스"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder:text-gray-500 text-black"
+                  />
+                </div>
+                
+                {/* 회사 분석 버튼 - 그리드 안으로 이동 */}
+                <div className="md:col-span-2 flex items-center gap-4">
+                  <button
+                    onClick={analyzeCompany}
+                    disabled={isAnalyzingCompany || !companyName.trim()}
+                    className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isAnalyzingCompany ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        분석 중...
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="w-5 h-5" />
+                        {companyAnalysis && !manualInputMode ? '재분석' : 'AI 분석'}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setManualInputMode(prev => {
+                        const nextMode = !prev;
+                        if (nextMode && !companyAnalysis) {
+                          setCompanyAnalysis({
+                            coreValues: [],
+                            idealCandidate: '',
+                            vision: '',
+                            businessAreas: [],
+                            companyCulture: '',
+                            keyCompetencies: [],
+                            originalCompanyName: companyName,
+                          });
+                        }
+                        return nextMode;
+                      });
+                    }}
+                    className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center gap-2"
+                  >
+                    <FileText className="w-5 h-5" />
+                    {manualInputMode ? '입력 창 닫기' : '직접 입력'}
+                  </button>
                 </div>
               </div>
-            )}
 
-            {/* 1단계: 정보 입력 */}
-            {currentStep === 'input' && (
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                  <Building2 className="w-6 h-6" />
-                  지원 정보 입력
-                </h2>
+                {/* --- 회사 정보 표시 영역 --- */}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  {/* 회사명 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      회사명 *
-                    </label>
-                    <input
-                      type="text"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="예: 네이버, 카카오, 삼성전자"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder:text-gray-500 text-black"
-                    />
-                  </div>
-
-                  {/* 직무명 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      지원 직무 *
-                    </label>
-                    <input
-                      type="text"
-                      value={jobTitle}
-                      onChange={(e) => setJobTitle(e.target.value)}
-                      placeholder="예: 사무직, 영업직, 마케팅, 인사, 회계, 고객서비스"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder:text-gray-500 text-black"
-                    />
-                  </div>
-                </div>
-
-                {/* 회사 분석 버튼 */}
-                {(companyName.trim() || companyAnalysis) && (
-                  <div className="mb-6">
-                    <button
-                      onClick={analyzeCompany}
-                      disabled={isAnalyzingCompany || !companyName.trim()}
-                      className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {isAnalyzingCompany ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          회사 공식 사이트 분석 중...
-                        </>
-                      ) : (
-                        <>
-                          <Globe className="w-5 h-5" />
-                          {companyAnalysis ? '회사 정보 재분석' : '회사 공식 사이트 분석'}
-                        </>
-                      )}
-                    </button>
-                    {!companyName.trim() && companyAnalysis && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        💡 회사명을 입력하면 새로운 회사를 분석할 수 있습니다.
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* 회사 분석 결과 */}
-                {companyAnalysis && (
+                {/* Case 1: AI 분석 결과 표시 */}
+                {companyAnalysis && !manualInputMode && (
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-6 border border-blue-200">
                     <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
                       <Globe className="w-5 h-5" />
-                      {companyAnalysis.originalCompanyName || companyName || '분석된 회사'} 공식 사이트 분석 결과
+                      {`${companyAnalysis.originalCompanyName || companyName || '분석된 회사'} 분석 결과`}
                     </h3>
                     
+                    <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg mb-4">
+                      <div className="flex">
+                        <div className="py-1"><AlertCircle className="h-5 w-5 text-yellow-500 mr-3" /></div>
+                        <div>
+                          <p className="font-bold">주의</p>
+                          <p className="text-sm">이 정보는 AI로 분석한 것이며, 중요한 내용은 공식 홈페이지 등에서 재차 확인해주세요.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 분석 내용 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div className="bg-white rounded-lg p-4 border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-2">🎯 핵심가치</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {companyAnalysis.coreValues.map((value, idx) => (
-                            <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-                              {value}
-                            </span>
-                          ))}
+                        {/* 핵심가치, 인재상 등 기존 UI */}
+                          <div className="bg-white rounded-lg p-4 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-2">🎯 핵심가치</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {companyAnalysis.coreValues.map((value, idx) => (
+                                <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
+                                  {value}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-2">👤 인재상</h4>
+                            <p className="text-sm text-blue-800">{companyAnalysis.idealCandidate}</p>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-2">🌟 비전/미션</h4>
+                            <p className="text-sm text-blue-800">{companyAnalysis.vision}</p>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-2">🏢 회사 문화</h4>
+                            <p className="text-sm text-blue-800">{companyAnalysis.companyCulture}</p>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="bg-white rounded-lg p-4 border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-2">👤 인재상</h4>
-                        <p className="text-sm text-blue-800">{companyAnalysis.idealCandidate}</p>
-                      </div>
-
-                      <div className="bg-white rounded-lg p-4 border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-2">🌟 비전/미션</h4>
-                        <p className="text-sm text-blue-800">{companyAnalysis.vision}</p>
-                      </div>
-
-                      <div className="bg-white rounded-lg p-4 border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-2">🏢 회사 문화</h4>
-                        <p className="text-sm text-blue-800">{companyAnalysis.companyCulture}</p>
-                      </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div className="bg-white rounded-lg p-4 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-2">💼 주요 사업분야</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {companyAnalysis.businessAreas.map((area, idx) => (
+                                <span key={idx} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
+                                  {area}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-2">💪 중요 역량</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {companyAnalysis.keyCompetencies.map((competency, idx) => (
+                                <span key={idx} className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">
+                                  {competency}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white rounded-lg p-4 border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-2">💼 주요 사업분야</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {companyAnalysis.businessAreas.map((area, idx) => (
-                            <span key={idx} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
-                              {area}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-lg p-4 border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-2">💪 중요 역량</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {companyAnalysis.keyCompetencies.map((competency, idx) => (
-                            <span key={idx} className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">
-                              {competency}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                    {/* 편집 버튼 */}
+                    <div className="flex justify-end mt-4">
+                      <button 
+                        onClick={() => setManualInputMode(true)}
+                        className="text-sm text-gray-600 underline hover:text-blue-600 transition-colors"
+                      >
+                        편집하기
+                      </button>
                     </div>
+                  </div>
+                )}
 
-                    <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
-                      <p className="text-sm text-blue-700">
-                        ✨ 이 정보를 바탕으로 더욱 정확하고 맞춤형인 면접 질문을 생성해드립니다!
-                      </p>
+                {/* Case 2: 직접 입력 폼 표시 */}
+                {companyAnalysis && manualInputMode && (
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      {`${companyName || '회사'} 정보 직접 입력`}
+                    </h3>
+                    <div className="space-y-4">
+                      {/* 핵심가치, 인재상 등 기존 폼 */}
+                       <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">🎯 핵심가치</label>
+                          <input
+                            type="text"
+                            placeholder="쉼표(,)로 구분하여 입력 (예: 도전, 성장, 협업)"
+                            value={companyAnalysis.coreValues.join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, coreValues: e.target.value.split(',').map(s => s.trim()) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">👤 인재상</label>
+                          <textarea
+                            placeholder="회사가 원하는 인재상에 대해 설명해주세요."
+                            value={companyAnalysis.idealCandidate}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, idealCandidate: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">🌟 비전/미션</label>
+                          <input
+                            type="text"
+                            placeholder="회사의 비전이나 미션을 입력해주세요."
+                            value={companyAnalysis.vision}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, vision: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                          />
+                        </div>
+                         <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">🏢 회사 문화</label>
+                          <input
+                            type="text"
+                            placeholder="회사의 전반적인 문화나 분위기를 설명해주세요."
+                            value={companyAnalysis.companyCulture}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, companyCulture: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">💼 주요 사업분야</label>
+                           <input
+                            type="text"
+                            placeholder="쉼표(,)로 구분하여 입력 (예: AI, 클라우드, 자율주행)"
+                            value={companyAnalysis.businessAreas.join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, businessAreas: e.target.value.split(',').map(s => s.trim()) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">💪 중요 역량</label>
+                          <input
+                            type="text"
+                            placeholder="쉼표(,)로 구분하여 입력 (예: 문제해결능력, 소통능력)"
+                            value={companyAnalysis.keyCompetencies.join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, keyCompetencies: e.target.value.split(',').map(s => s.trim()) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                          />
+                        </div>
                     </div>
                   </div>
                 )}
@@ -1117,8 +1314,8 @@ export default function InterviewPrep() {
                       { value: 'senior', label: '시니어 (8년+)' }
                     ].map((level) => (
                       <label key={level.value} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
+                      <input
+                        type="radio"
                           name="careerLevel"
                           value={level.value}
                           checked={careerLevel === level.value}
@@ -1126,7 +1323,7 @@ export default function InterviewPrep() {
                           className="w-4 h-4 text-pink-600 focus:ring-pink-500"
                         />
                         <span className="text-sm text-gray-900">{level.label}</span>
-                      </label>
+                    </label>
                     ))}
                   </div>
                 </div>
@@ -1172,16 +1369,20 @@ export default function InterviewPrep() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder:text-gray-500 text-black"
                   />
                   <p className="text-sm text-gray-800 mt-1">쉼표(,)로 구분해서 입력해주세요</p>
-                </div>
+              </div>
 
                 {/* 질문 생성 버튼 */}
                 <div className="text-center">
-                  <button
-                    onClick={generateQuestions}
-                    disabled={loading || !companyName.trim() || !jobTitle.trim()}
+                <button
+                  onClick={generateQuestions}
+                    disabled={
+                      loading ||
+                      (!manualInputMode && !companyAnalysis) ||
+                      (manualInputMode && (!companyName.trim() || !jobTitle.trim()))
+                    }
                     className="bg-pink-500 text-white px-8 py-4 rounded-xl hover:bg-pink-600 transition-colors font-semibold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-3 mx-auto"
-                  >
-                    {loading ? (
+                >
+                  {loading ? (
                       <>
                         <Loader2 className="w-6 h-6 animate-spin" />
                         AI 면접 질문 생성 중...
@@ -1193,8 +1394,8 @@ export default function InterviewPrep() {
                           ? `${companyName} 맞춤형 AI 면접 질문 생성하기` 
                           : 'AI 면접 질문 생성하기'}
                       </>
-                    )}
-                  </button>
+                  )}
+                </button>
                   
                   {/* 로딩 게이지 바 */}
                   {loading && (
@@ -1357,14 +1558,14 @@ export default function InterviewPrep() {
                       </div>
                     </div>
                   )}
-                </div>
               </div>
-            )}
+            </div>
+          )}
 
             {/* 2단계: 생성된 질문 목록 */}
             {currentStep === 'questions' && (
               <div className="space-y-6">
-                <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                       <Lightbulb className="w-6 h-6" />
@@ -1385,13 +1586,13 @@ export default function InterviewPrep() {
                         <Download className="w-5 h-5" />
                       </button>
                     </div>
-                  </div>
+              </div>
 
-                  <div className="space-y-4">
-                    {questions.map((question, index) => (
+              <div className="space-y-4">
+                {questions.map((question, index) => (
                       <div key={question.id} className="border border-gray-200 rounded-xl p-6">
                         <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                             <span className="bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-sm font-medium">
                               Q{index + 1}
                             </span>
@@ -1403,7 +1604,7 @@ export default function InterviewPrep() {
                               question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
                               'bg-red-100 text-red-700'
                             }`}>
-                              {question.difficulty === 'easy' ? '쉬움' : 
+                              {question.difficulty === 'easy' ? '쉬움' :
                                question.difficulty === 'medium' ? '보통' : '어려움'}
                             </span>
                           </div>
@@ -1413,7 +1614,7 @@ export default function InterviewPrep() {
                           >
                             <Copy className="w-5 h-5" />
                           </button>
-                        </div>
+                    </div>
 
                         <h3 className="text-lg font-medium text-gray-900 mb-4">
                           {question.question}
@@ -1426,7 +1627,7 @@ export default function InterviewPrep() {
                             답변 팁
                           </h4>
                           <ul className="list-disc list-inside space-y-1">
-                            {question.tips.map((tip, tipIndex) => (
+                          {question.tips.map((tip, tipIndex) => (
                               <li key={tipIndex} className="text-sm text-blue-800">{tip}</li>
                             ))}
                             {companyAnalysis && (
@@ -1442,8 +1643,8 @@ export default function InterviewPrep() {
                                 </li>
                               </>
                             )}
-                          </ul>
-                        </div>
+                        </ul>
+                      </div>
 
                         {/* 답변 작성 영역 */}
                         <div>
@@ -1474,7 +1675,7 @@ export default function InterviewPrep() {
                                     companyAnalysis.idealCandidate.substring(0, 15) + '...' : 
                                     companyAnalysis.idealCandidate}
                                 </span>
-                              </div>
+              </div>
                               <p className="text-xs text-blue-700 mt-2">
                                 💡 이 키워드들을 답변에 자연스럽게 포함해보세요!
                               </p>
@@ -1489,12 +1690,12 @@ export default function InterviewPrep() {
                               "답변을 작성해보세요..."
                             }
                             rows={4}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder:text-gray-800 text-black mb-3"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder:text-gray-400 text-black mb-3"
                           />
                           
                           {/* 평가 버튼 */}
                             <div className="flex items-center gap-2 mb-4">
-                              <button
+                <button
                                 onClick={() => evaluateAnswer(question.id)}
                               disabled={question.evaluating || !question.answer || question.answer.trim().length < 50}
                               className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
@@ -1514,7 +1715,7 @@ export default function InterviewPrep() {
                                   AI에게 분석하기
                                   </>
                                 )}
-                              </button>
+                </button>
                               {question.evaluation && (
                                 <span className="text-lg font-bold text-blue-600">
                                   점수: {question.evaluation.totalScore}/10
@@ -1608,25 +1809,25 @@ export default function InterviewPrep() {
                       </div>
                     ))}
                   </div>
-                </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* 3단계: 연습 모드 */}
-            {currentStep === 'practice' && questions.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <div className="flex items-center justify-between mb-6">
+          {/* 3단계: 연습 모드 */}
+          {currentStep === 'practice' && questions.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                     <Play className="w-6 h-6" />
                     연습 모드 ({currentQuestionIndex + 1}/{questions.length})
                   </h2>
                   
                   {/* 타이머 및 음성 분석 */}
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg">
                       <Clock className="w-5 h-5 text-gray-800" />
                       <span className="font-mono text-lg text-gray-900 font-semibold">{formatTime(answerTime)}</span>
-                    </div>
+                  </div>
                     
                     {/* 음성 분석 컨트롤 */}
                     <div className="flex items-center gap-2">
@@ -1687,7 +1888,7 @@ export default function InterviewPrep() {
                     <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
                       {questions[currentQuestionIndex].category}
                     </span>
-                  </div>
+              </div>
 
                   <h3 className="text-xl font-medium text-gray-900 mb-6">
                     {questions[currentQuestionIndex].question}
@@ -1717,14 +1918,14 @@ export default function InterviewPrep() {
                           {companyAnalysis.idealCandidate.length > 15 ? 
                             companyAnalysis.idealCandidate.substring(0, 15) + '...' : 
                             companyAnalysis.idealCandidate}
-                        </span>
-                      </div>
+                    </span>
+                  </div>
                       <p className="text-xs text-blue-700 mt-2">
                         💡 이 키워드들을 답변에 자연스럽게 포함해보세요!
                       </p>
-                    </div>
-                  )}
-                  
+                </div>
+              )}
+
                   <textarea
                     value={questions[currentQuestionIndex].answer || ''}
                     onChange={(e) => saveAnswer(questions[currentQuestionIndex].id, e.target.value)}
@@ -1757,7 +1958,7 @@ export default function InterviewPrep() {
                                 validation.isValid ? 'text-green-800' : 'text-red-800'
                               }`}>
                                 {validation.isValid ? '답변이 적절합니다' : validation.message}
-                              </span>
+                  </span>
                             </div>
                           </div>
                         );
@@ -1812,7 +2013,7 @@ export default function InterviewPrep() {
                           실시간 볼륨 레벨
                         </h5>
                         <div className="text-2xl font-bold text-blue-600">{voiceAnalysis.volumeLevel}%</div>
-                      </div>
+                    </div>
                       <div className="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden border">
                         <div 
                           className="bg-gradient-to-r from-blue-500 to-blue-600 h-6 rounded-full audio-gauge-smooth"
@@ -1832,16 +2033,16 @@ export default function InterviewPrep() {
                                 }}
                               />
                             ))}
-                          </div>
+                      </div>
                         </div>
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
                         {voiceAnalysis.volumeLevel > 80 ? '🔊 매우 큰 소리' :
                          voiceAnalysis.volumeLevel > 60 ? '🔉 적절한 소리' :
                          voiceAnalysis.volumeLevel > 30 ? '🔈 작은 소리' : '🔇 너무 작은 소리'}
-                      </div>
                     </div>
-                    
+                  </div>
+
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                       {/* 자신감 */}
                       <div className="text-center">
@@ -1852,7 +2053,7 @@ export default function InterviewPrep() {
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${voiceAnalysis.confidence}%` }}
                           />
-                        </div>
+                    </div>
                       </div>
                       
                       {/* 말하기 속도 */}
@@ -1864,9 +2065,9 @@ export default function InterviewPrep() {
                             className="bg-green-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${voiceAnalysis.pace}%` }}
                           />
-                        </div>
-                      </div>
-                      
+                </div>
+              </div>
+
                       {/* 음량 */}
                       <div className="text-center">
                         <div className="text-2xl font-bold text-purple-600">{voiceAnalysis.volume}%</div>
@@ -1876,8 +2077,8 @@ export default function InterviewPrep() {
                             className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${voiceAnalysis.volume}%` }}
                           />
-                        </div>
-                      </div>
+              </div>
+            </div>
                       
                       {/* 명료도 */}
                       <div className="text-center">
@@ -1889,8 +2090,8 @@ export default function InterviewPrep() {
                             style={{ width: `${voiceAnalysis.clarity}%` }}
                           />
                         </div>
-                      </div>
-                      
+              </div>
+
                       {/* 톤 분석 */}
                       <div className="text-center">
                         <div className={`text-2xl font-bold ${
@@ -1934,12 +2135,12 @@ export default function InterviewPrep() {
                 {/* AI 음성 평가 */}
                 {recordedAudio && !isRecording && (
                   <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 mb-6 border border-purple-200">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4">
                       <h4 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
                         <Mic className="w-5 h-5" />
                         AI 음성 평가
                       </h4>
-                      <button
+                  <button
                         onClick={evaluateVoiceWithAI}
                         disabled={isEvaluatingVoice}
                         className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
@@ -1947,16 +2148,16 @@ export default function InterviewPrep() {
                         {isEvaluatingVoice ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            분석 중...
-                          </>
-                        ) : (
-                          <>
+                        분석 중...
+                      </>
+                    ) : (
+                      <>
                             <Star className="w-4 h-4" />
                             AI 평가받기
-                          </>
-                        )}
-                      </button>
-                    </div>
+                      </>
+                    )}
+                  </button>
+                </div>
 
                     {!voiceEvaluation && !isEvaluatingVoice && (
                       <p className="text-purple-700 text-sm">
@@ -1966,17 +2167,17 @@ export default function InterviewPrep() {
 
                     {/* AI 평가 결과 */}
                     {voiceEvaluation && (
-                      <div className="space-y-4">
+                    <div className="space-y-4">
                         {/* 종합 점수 */}
                         <div className="text-center bg-white rounded-lg p-4 border border-purple-200">
                           <div className="text-3xl font-bold text-purple-600 mb-2">
                             {voiceEvaluation.overallScore}/10
-                          </div>
+                            </div>
                           <div className="text-lg text-purple-800">종합 음성 점수</div>
                         </div>
 
                         {/* 세부 평가 */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="bg-white rounded-lg p-4 border border-purple-200">
                             <h5 className="font-medium text-purple-900 mb-3">📊 세부 평가</h5>
                             <div className="space-y-3 text-sm">
@@ -2008,9 +2209,9 @@ export default function InterviewPrep() {
                                 <div className="font-medium text-purple-900 mb-1">구조화:</div>
                                 <div className="text-purple-700">{voiceEvaluation.structure}</div>
                               </div>
-                            </div>
-                          </div>
-
+                                </div>
+                              </div>
+                              
                           {/* 요약 키워드 */}
                           <div className="bg-white rounded-lg p-4 border border-purple-200">
                             <h5 className="font-medium text-purple-900 mb-3">🔑 요약 키워드</h5>
@@ -2041,9 +2242,9 @@ export default function InterviewPrep() {
                                     ? '양호한 수준이지만 일부 개선이 필요합니다.' 
                                     : '음성 표현력 개선이 필요합니다.'}
                                 </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
                           <div className="bg-white rounded-lg p-4 border-2 border-green-200 bg-green-50">
                             <h5 className="font-bold text-green-900 mb-3 flex items-center gap-2">
@@ -2054,12 +2255,12 @@ export default function InterviewPrep() {
                               {voiceEvaluation.strengths.map((strength, idx) => (
                                 <li key={idx} className="text-green-800 font-medium bg-green-100 p-2 rounded border-l-4 border-green-400">
                                   {strength}
-                                </li>
-                              ))}
-                            </ul>
+                                    </li>
+                                  ))}
+                                </ul>
                           </div>
-                        </div>
-
+                              </div>
+                              
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="bg-white rounded-lg p-4 border-2 border-red-200 bg-red-50">
                             <h5 className="font-bold text-red-900 mb-3 flex items-center gap-2">
@@ -2084,11 +2285,11 @@ export default function InterviewPrep() {
                               {voiceEvaluation.recommendations.map((recommendation, idx) => (
                                 <li key={idx} className="text-blue-800 font-medium bg-blue-100 p-2 rounded border-l-4 border-blue-400">
                                   {recommendation}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
 
                         {/* 상세 분석 */}
                         {voiceEvaluation.detailedAnalysis && (
@@ -2100,12 +2301,12 @@ export default function InterviewPrep() {
                             <div className="text-purple-800 font-medium bg-purple-100 p-3 rounded border-l-4 border-purple-400">
                               {voiceEvaluation.detailedAnalysis}
                             </div>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
                     )}
-                  </div>
-                )}
+                    </div>
+                  )}
 
                 {/* 답변 팁 */}
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -2137,19 +2338,19 @@ export default function InterviewPrep() {
                       <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                         <Star className="w-6 h-6" />
                         전체 평가 요약
-                      </h3>
+                  </h3>
                       
                       <div className="text-center mb-6">
                         <div className="text-4xl font-bold text-blue-600 mb-2">
                           {totalAverage.toFixed(1)}/10
-                        </div>
+                    </div>
                         <div className="text-lg text-gray-900">
                           전체 평균 점수
-                        </div>
+                    </div>
                         <div className="text-sm text-gray-800 mt-1">
                           {evaluatedQuestions.length}개 질문 평가 완료
-                        </div>
-                      </div>
+                  </div>
+                </div>
 
                       {/* 카테고리별 점수 */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2161,11 +2362,11 @@ export default function InterviewPrep() {
                             <div key={category} className="bg-gray-50 rounded-lg p-4 text-center">
                               <div className="text-2xl font-bold text-gray-800">{categoryAverage.toFixed(1)}</div>
                               <div className="text-sm text-gray-800">{category}</div>
-                            </div>
+                  </div>
                           );
                         })}
-                      </div>
-                    </div>
+                </div>
+              </div>
                   );
                 })()}
 
@@ -2179,19 +2380,19 @@ export default function InterviewPrep() {
                   </p>
 
                   <div className="flex items-center justify-center gap-4">
-                    <button
+                <button
                       onClick={downloadAnswers}
                       className="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition-colors font-medium flex items-center gap-2"
-                    >
+                >
                       <Download className="w-5 h-5" />
                       답변 다운로드
-                    </button>
-                    <button
+                </button>
+                <button
                       onClick={restartInterview}
                       className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium"
-                    >
+                >
                       새로 시작하기
-                    </button>
+                </button>
                   </div>
                 </div>
 
@@ -2216,10 +2417,9 @@ export default function InterviewPrep() {
                       </div>
                     ))}
                   </div>
-                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </>

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { getConnection } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,12 +14,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 관리자 권한 확인
-    const currentUser = await prisma.user.findUnique({
-      where: { email: session.user.email! }
-    });
+    const db = await getConnection();
 
-    if (!currentUser || currentUser.role !== "ADMIN") {
+    // 관리자 권한 확인
+    const currentUserResult = await db.request().query(`
+      SELECT * FROM users WHERE email = '${session.user.email}'
+    `);
+
+    if (currentUserResult.recordset.length === 0 || currentUserResult.recordset[0].role !== "ADMIN") {
       return NextResponse.json(
         { error: "관리자 권한이 필요합니다." }, 
         { status: 403 }
@@ -30,9 +30,15 @@ export async function POST(request: NextRequest) {
 
     // planType 컬럼 추가 마이그레이션 실행
     try {
-      await prisma.$executeRaw`
-        ALTER TABLE "payments" ADD COLUMN IF NOT EXISTS "planType" TEXT NOT NULL DEFAULT 'basic';
-      `;
+      await db.request().query(`
+        IF NOT EXISTS (
+          SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_NAME = 'payments' AND COLUMN_NAME = 'planType'
+        )
+        BEGIN
+          ALTER TABLE payments ADD planType NVARCHAR(50) NOT NULL DEFAULT 'basic';
+        END
+      `);
 
       return NextResponse.json({
         message: "데이터베이스 마이그레이션이 완료되었습니다.",

@@ -421,63 +421,47 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`회사 분석 시작: ${companyName}`);
-    
-    // 업계 추측
-    const industry = guessIndustryFromCompanyName(companyName);
-    console.log(`추측된 업계: ${industry}`);
-
-    // 1. 회사별 URL 또는 검색 URL 준비
-    const urlsToAnalyze = COMPANY_URLS[companyName] || getCompanySearchUrls(companyName);
-    
-    // 2. 웹 내용 수집
     const webContents: string[] = [];
-    let successfulUrls = 0;
-    
-    console.log(`${companyName} 분석할 URL 목록:`, urlsToAnalyze);
-    
-    for (const url of urlsToAnalyze.slice(0, 4)) { // 최대 4개 URL 분석
-      try {
-        console.log(`URL 시도 중: ${url}`);
-        const content = await fetchWebContent(url);
-        if (content && content.length > 50) { // 최소 50자 이상의 내용만 사용
-          webContents.push(content);
-          successfulUrls++;
-          console.log(`✅ URL 성공: ${url} (${content.length}자)`);
+    let content: string | null = null;
+
+    // 1. 사람인을 최우선으로 정보 수집
+    console.log(`[1순위] 사람인(Saramin)에서 정보 수집 시도...`);
+    const saraminUrl = `https://www.saramin.co.kr/zf_user/search?search_area=main&search_done=y&search_optional_item=y&searchType=company&searchword=${encodeURIComponent(companyName)}`;
+    content = await fetchWebContent(saraminUrl);
+
+    if (content && content.length > 50) {
+        console.log(`✅ 사람인 정보 수집 성공 (${content.length}자)`);
+        webContents.push(content);
+    } else {
+        console.log(`❌ 사람인 정보 수집 실패 또는 내용 부족. 다음 소스를 시도합니다.`);
+        
+        // 2. 잡코리아에서 정보 수집 (차선책)
+        console.log(`[2순위] 잡코리아(JobKorea)에서 정보 수집 시도...`);
+        const jobKoreaUrl = `https://www.jobkorea.co.kr/Search/?stext=${encodeURIComponent(companyName)}`;
+        content = await fetchWebContent(jobKoreaUrl);
+        if (content && content.length > 50) {
+            console.log(`✅ 잡코리아 정보 수집 성공 (${content.length}자)`);
+            webContents.push(content);
         } else {
-          console.log(`❌ URL 실패: ${url} (내용 부족)`);
+            console.log(`❌ 잡코리아 정보 수집 실패 또는 내용 부족. 다음 소스를 시도합니다.`);
+            
+            // 3. 공식 웹사이트 등 기존 방식으로 정보 수집
+            console.log(`[3순위] 공식 웹사이트에서 정보 수집 시도...`);
+            const otherUrls = COMPANY_URLS[companyName] || getCompanySearchUrls(companyName);
+            for (const url of otherUrls.slice(0, 2)) { // Try up to 2 official sites
+                content = await fetchWebContent(url);
+                if (content && content.length > 50) {
+                    console.log(`✅ 공식 웹사이트 정보 수집 성공: ${url} (${content.length}자)`);
+                    webContents.push(content);
+                    // If we get one good result from the official site, that's probably enough.
+                    break; 
+                }
+            }
         }
-      } catch (error) {
-        console.warn(`❌ URL 분석 실패 (${url}):`, error instanceof Error ? error.message : '알 수 없는 오류');
-      }
     }
 
-    // 웹사이트 정보가 없어도 AI 분석 진행
-    console.log(`${companyName} 웹사이트 정보 수집 완료: ${successfulUrls}/${urlsToAnalyze.length}개 URL에서 정보 수집`);
-    
     if (webContents.length === 0) {
-      console.log(`⚠️ ${companyName}에 대한 웹사이트 정보를 찾을 수 없어 대체 방법을 시도합니다.`);
-      
-      // 대체 방법으로 정보 수집 시도
-      const alternativeUrls = await getAlternativeCompanyInfo(companyName);
-      console.log(`대체 정보 소스 시도: ${alternativeUrls.length}개 URL`);
-      
-      for (const url of alternativeUrls.slice(0, 3)) { // 최대 3개 대체 URL 시도
-        try {
-          console.log(`대체 URL 시도 중: ${url}`);
-          const content = await fetchWebContent(url);
-          if (content && content.length > 30) { // 대체 소스는 30자 이상도 허용
-            webContents.push(content);
-            console.log(`✅ 대체 URL 성공: ${url} (${content.length}자)`);
-            break; // 하나라도 성공하면 중단
-          }
-        } catch (error) {
-          console.warn(`❌ 대체 URL 실패 (${url}):`, error instanceof Error ? error.message : '알 수 없는 오류');
-        }
-      }
-      
-      if (webContents.length === 0) {
-        console.log(`⚠️ 대체 방법도 실패하여 AI가 회사명과 업계 특성만을 바탕으로 분석합니다.`);
-      }
+      console.log(`⚠️ 모든 소스에서 ${companyName}에 대한 유의미한 정보를 찾지 못했습니다. 회사명만으로 분석을 시도합니다.`);
     }
 
     // 3. 회사 정보 분석
@@ -497,7 +481,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('회사 분석 오류:', error);
+    console.error('회사 정보 분석 오류:', error);
     
     let errorMessage = '회사 분석 중 오류가 발생했습니다.';
     let statusCode = 500;
@@ -533,4 +517,4 @@ export async function POST(request: NextRequest) {
       { status: statusCode }
     );
   }
-} 
+}

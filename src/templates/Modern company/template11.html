@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>{{TITLE}}</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .slide-container {
+      width: 1280px;
+      height: 720px;
+      background-color: #FFFFFF;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      padding: 15px 40px;
+      color: #1E3A8A;
+      border-bottom: 1px solid rgba(30, 58, 138, 0.2);
+    }
+
+    .content {
+      display: flex;
+      height: calc(100% - 60px);
+      padding: 40px;
+    }
+
+    .left-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-right: 40px;
+    }
+
+    .right-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .title {
+      font-size: 4.5rem;
+      font-weight: bold;
+      color: #1E3A8A;
+      margin-bottom: 20px;
+      font-family: 'Noto Serif KR', serif;
+    }
+
+    .subtitle {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #3B82F6;
+      margin-bottom: 30px;
+      font-family: 'Noto Serif KR', serif;
+    }
+
+    .description {
+      font-size: 1.1rem;
+      color: #6B7280;
+      line-height: 1.6;
+      margin-bottom: 40px;
+      max-width: 500px;
+    }
+
+    .priority-circle {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+      border-left: 6px solid #1E3A8A;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .priority-circle:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.15);
+    }
+
+    .priority-circle::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #1E3A8A, #3B82F6, #10B981);
+    }
+
+    .priority-1 {
+      border-left-color: #1E3A8A;
+    }
+
+    .priority-2 {
+      border-left-color: #3B82F6;
+    }
+
+    .priority-3 {
+      border-left-color: #10B981;
+    }
+
+    .priority-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1E3A8A;
+      margin-bottom: 12px;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .priority-text {
+      font-size: 1.1rem;
+      color: #374151;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      background-color: rgba(191, 219, 254, 0.3);
+      z-index: -1;
+    }
+
+    .circle-1 {
+      width: 600px;
+      height: 600px;
+      top: -150px;
+      left: -150px;
+    }
+
+    .circle-2 {
+      width: 400px;
+      height: 400px;
+      bottom: -100px;
+      right: -100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <!-- Background Circles -->
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">{{HEADER_LEFT}}</div>
+      <div class="header-center text-center">{{HEADER_CENTER}}</div>
+      <div class="header-right text-right">{{HEADER_RIGHT}}</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="left-content">
+        <h1 class="title">{{TITLE}}</h1>
+        <h2 class="subtitle">{{SUBTITLE}}</h2>
+        <p class="description">{{DESCRIPTION}}</p>
+      </div>
+      <div class="right-content">
+        {{PRIORITY_CIRCLES}}
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

@@ -1,14 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
+
 import {
-  Download, X, RotateCcw, User, Palette, Ruler, Paperclip, ChevronDown, MoreVertical, Save, RefreshCw
+  Download, X, RotateCcw, User, Palette, Ruler, Paperclip, ChevronDown, MoreVertical, Save, RefreshCw, History, FileImage, Trash2, Clock, Loader2
 } from 'lucide-react';
-import Image from 'next/image';
 import RemixMode from './RemixMode';
 
 export default function ImageCreate() {
+  const router = useRouter();
   const [userInput, setUserInput] = useState("");
   const [selectedModel, setSelectedModel] = useState("Stable Diffusion XL");
   const [selectedStyle, setSelectedStyle] = useState("자동 스타일");
@@ -44,6 +45,10 @@ export default function ImageCreate() {
   const [isPreviewMode, setIsPreviewMode] = useState(false); // 미리보기 모드 상태
   const [showBeforeAfter, setShowBeforeAfter] = useState(false); // 전후 비교 모드 상태
   const [isImageLoading, setIsImageLoading] = useState(false); // 이미지 로딩 상태
+  
+  // 이미지 히스토리 관련 상태
+  const [dbHistory, setDbHistory] = useState<ImageHistoryItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const models = [
     { name: "DALL-E 3", description: "가장 정확한 이미지 생성", image: "/images/models/dalle3.jpg" },
@@ -79,6 +84,20 @@ export default function ImageCreate() {
     const size = getSelectedSize();
     return size.width / size.height;
   };
+
+  // 이미지 히스토리 인터페이스 정의
+  interface ImageHistoryItem {
+    id: number;
+    prompt: string;
+    generatedImageUrl: string;
+    model: string;
+    size: string;
+    style: string;
+    quality: string;
+    title: string;
+    createdAt: string;
+    status: string;
+  }
 
   const getContainerStyle = () => {
     const aspectRatio = getAspectRatio();
@@ -236,6 +255,96 @@ export default function ImageCreate() {
     setAttachedFiles([]);
   };
 
+  // 이미지 히스토리 로드 함수
+  const loadHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      console.log('🔄 이미지 히스토리 로드 시작...');
+      
+      // 현재 사용자 정보 확인
+      const userResponse = await fetch('/api/auth/session');
+      const userData = await userResponse.json();
+      console.log('👤 현재 사용자 정보:', userData);
+      
+      const response = await fetch('/api/image-generate/history');
+      const data = await response.json();
+      console.log('📡 API 응답:', { response: response.status, data });
+      
+      if (response.ok && data.success) {
+        console.log('✅ 히스토리 데이터:', data.history);
+        console.log('📊 히스토리 개수:', data.count);
+        setDbHistory(data.history);
+      } else {
+        console.error('❌ 이미지 히스토리 로드 실패:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ 이미지 히스토리 로드 중 오류:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // 이미지 히스토리 삭제 함수
+  const deleteHistoryItem = async (id: number) => {
+    try {
+      const response = await fetch(`/api/image-generate/${id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setDbHistory(prev => prev.filter(item => item.id !== id));
+      } else {
+        console.error('❌ 이미지 히스토리 삭제 실패');
+      }
+    } catch (error) {
+      console.error('❌ 이미지 히스토리 삭제 중 오류:', error);
+    }
+  };
+
+  // 이미지 히스토리 항목을 메인 화면에 로드하는 함수
+  const loadHistoryItem = (item: ImageHistoryItem) => {
+    setUserInput(item.title); // item.prompt 대신 item.title 사용 (사용자 원본 입력)
+    setSelectedModel(item.model !== 'unknown' ? item.model : 'Stable Diffusion XL');
+    setSelectedSize(item.size !== 'unknown' ? item.size : '1024x1024');
+    setSelectedStyle(item.style !== 'unknown' ? item.style : '자동 스타일');
+    setGeneratedImage(item.generatedImageUrl);
+    
+    // 결과 영역으로 스크롤
+    setTimeout(() => {
+      const resultElement = document.querySelector('.generated-image-container');
+      if (resultElement) {
+        resultElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }, 100);
+  };
+
+  // 이미지를 영상으로 변환 페이지로 이동하는 함수
+  const handleImageToVideo = () => {
+    console.log('🎬 이미지를 영상으로 변환 시작');
+    console.log('📸 현재 생성된 이미지:', generatedImage);
+    
+    if (generatedImage) {
+      // 현재 이미지를 File 객체로 변환하여 영상 생성 페이지로 전달
+      // URL을 쿼리 파라미터로 전달
+      const videoCreateUrl = `/video-create?imageUrl=${encodeURIComponent(generatedImage)}`;
+      console.log('🔗 이동할 URL:', videoCreateUrl);
+      
+      try {
+        // Next.js router를 사용하여 페이지 이동
+        router.push(videoCreateUrl);
+        console.log('✅ 페이지 이동 시도 완료');
+      } catch (error) {
+        console.error('❌ 페이지 이동 실패:', error);
+        // fallback으로 window.location 사용
+        window.location.href = videoCreateUrl;
+      }
+    } else {
+      console.log('❌ 생성된 이미지가 없습니다');
+    }
+  };
+
   const handleGenerate = async () => {
     if (!userInput.trim()) return;
     
@@ -285,6 +394,7 @@ export default function ImageCreate() {
       }
       
       formData.append('prompt', finalPrompt);
+      formData.append('originalPrompt', userInput); // 사용자 원본 입력 추가
       formData.append('style', selectedStyle);
       formData.append('size', selectedSize);
       formData.append('width', selectedSizeObj.width.toString());
@@ -309,22 +419,72 @@ export default function ImageCreate() {
       });
       
       if (!res.ok) {
-        throw new Error('이미지 생성에 실패했습니다.');
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.error || '이미지 생성에 실패했습니다.';
+        
+        // 상태 코드별 에러 처리
+        if (res.status === 429) {
+          const errorMessage = errorData.error || '사용량 한도에 도달했습니다.';
+          const upgradeMessage = errorData.upgradeMessage || '';
+          const currentUsage = errorData.currentUsage || 0;
+          const maxLimit = errorData.maxLimit || 0;
+          const planType = errorData.planType || 'basic';
+          
+          let detailedMessage = errorMessage;
+          if (currentUsage && maxLimit) {
+            detailedMessage += ` (현재: ${currentUsage}/${maxLimit})`;
+          }
+          if (upgradeMessage) {
+            detailedMessage += ` ${upgradeMessage}`;
+          }
+          
+          throw new Error(detailedMessage);
+        } else if (res.status === 401) {
+          throw new Error(errorMessage || '인증에 실패했습니다. 다시 로그인해주세요.');
+        } else if (res.status === 400) {
+          throw new Error(errorMessage || '잘못된 요청입니다. 입력값을 확인해주세요.');
+        } else if (res.status === 500) {
+          throw new Error(errorMessage || '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          throw new Error(errorMessage);
+        }
       }
       
       const data = await res.json();
-      setGeneratedImage(data.url || null);
-    } catch (err) {
-      console.error('이미지 생성 에러:', err);
+      console.log('API 응답 데이터:', data);
+      console.log('응답 상태:', res.status, res.statusText);
+      console.log('URL 존재 여부:', !!data.url);
+      console.log('URL 타입:', typeof data.url);
+      console.log('URL 내용:', data.url);
       
+      // URL이 유효한지 확인
+      if (data.url && typeof data.url === 'string' && data.url.trim() !== '') {
+        console.log('유효한 URL 확인됨, 이미지 설정 중:', data.url);
+        setGeneratedImage(data.url);
+        console.log('이미지 상태 업데이트 완료');
+        
+        // 이미지 생성 성공 후 히스토리 새로고침
+        loadHistory();
+      } else {
+        console.error('API에서 유효하지 않은 URL을 받았습니다:', data);
+        throw new Error('이미지 생성에 실패했습니다. 유효한 URL을 받지 못했습니다.');
+      }
+    } catch (err) {
+      // 사용자에게는 에러 메시지 표시하되, 콘솔에는 한 번만 로그
       if (err instanceof Error) {
-        if (err.message.includes('billing') || err.message.includes('limit') || err.message.includes('400')) {
-          setError('OpenAI API 사용량 한도에 도달했습니다. 잠시 후 다시 시도해주세요.');
-        } else {
+        // 구체적인 에러 메시지가 있으면 그대로 사용
+        if (err.message && err.message !== '이미지 생성에 실패했습니다.') {
           setError(err.message);
+          // 콘솔에는 간단한 로그만
+          console.log('이미지 생성 실패:', err.message);
+        } else {
+          // 일반적인 에러 메시지
+          setError('이미지 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+          console.log('이미지 생성 중 오류 발생');
         }
       } else {
         setError("서버 오류가 발생했습니다.");
+        console.log('서버 오류 발생');
       }
     } finally {
       setLoading(false);
@@ -860,6 +1020,17 @@ export default function ImageCreate() {
     console.log('Loading 상태 변경:', loading);
   }, [loading]);
 
+  // 컴포넌트 마운트 시 히스토리 로드
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  // dbHistory 상태 변경 감지
+  useEffect(() => {
+    console.log('🔄 dbHistory 상태 변경:', dbHistory);
+    console.log('📊 dbHistory 길이:', dbHistory.length);
+  }, [dbHistory]);
+
   // inpaint 카테고리 변경 시 캔버스 초기화
   useEffect(() => {
     if (remixCategory === 'inpaint') {
@@ -875,8 +1046,6 @@ export default function ImageCreate() {
       <Header />
       <div className="min-h-screen bg-white">
         <div className="flex">
-          <Sidebar currentPath="/image-create" />
-          
           <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-8">
             {!loading && !generatedImage && (
               <div className="text-center mb-12">
@@ -946,15 +1115,24 @@ export default function ImageCreate() {
                           </div>
                         </div>
                       </div>
-                    ) : generatedImage ? (
+                    ) : generatedImage && generatedImage.trim() !== '' ? (
                       <div className="text-center w-full h-full relative group">
                         <div className="w-full h-full rounded-xl overflow-hidden" style={getContainerStyle()}>
-                          <Image
+                          <img
                             src={generatedImage}
                             alt="생성된 이미지"
                             width={getSelectedSize().width}
                             height={getSelectedSize().height}
                             className="w-full h-full object-cover"
+                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                              console.error('이미지 로드 실패:', generatedImage);
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500">이미지를 불러올 수 없습니다</div>';
+                              }
+                            }}
                           />
                           
                           <div className="absolute top-4 right-4 z-10 image-menu-container opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -1027,10 +1205,7 @@ export default function ImageCreate() {
                         )}
                       </button>
                       <button
-                        onClick={() => {
-                          // 이미지를 영상으로 변환 기능 (나중에 구현)
-                          console.log('이미지를 영상으로 변환 클릭');
-                        }}
+                        onClick={handleImageToVideo}
                         className="px-6 py-3 bg-gradient-to-r from-gray-800 to-black text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                       >
                         이미지를 영상으로
@@ -1047,16 +1222,16 @@ export default function ImageCreate() {
                         /* 리믹스 모드에서는 모델 고정 표시 */
                         <div className="flex items-center gap-2 px-3 py-2 border-2 border-gray-400 rounded-lg bg-gray-100 text-sm w-[200px]">
                           <div className="w-8 h-8 rounded overflow-hidden">
-                            <Image
+                            <img
                               src="/images/models/sdxl.jpg"
                               alt="Stable Diffusion XL"
-                              width={512}
-                              height={512}
+                              width={32}
+                              height={32}
                               className="w-full h-full object-cover"
                               style={{
                                 imageRendering: 'crisp-edges'
                               }}
-                              onError={(e) => {
+                              onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
                                 const parent = target.parentElement;
@@ -1082,16 +1257,16 @@ export default function ImageCreate() {
                             {(() => {
                               const selectedModelData = models.find(model => model.name === selectedModel);
                               return selectedModelData?.image ? (
-                                <Image
+                                <img
                                   src={selectedModelData.image}
                                   alt={selectedModel}
-                                  width={512}
-                                  height={512}
+                                  width={32}
+                                  height={32}
                                   className="w-full h-full object-cover"
                                   style={{
                                     imageRendering: 'crisp-edges'
                                   }}
-                                  onError={(e) => {
+                                  onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
                                     const parent = target.parentElement;
@@ -1131,16 +1306,16 @@ export default function ImageCreate() {
                               </div>
                               <div className="w-10 h-10 rounded-lg overflow-hidden">
                                 {model.image ? (
-                                  <Image
+                                  <img
                                     src={model.image}
                                     alt={model.name}
-                                    width={512}
-                                    height={512}
+                                    width={40}
+                                    height={40}
                                     className="w-full h-full object-cover"
                                     style={{
                                       imageRendering: 'crisp-edges'
                                     }}
-                                    onError={(e) => {
+                                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                                       const target = e.target as HTMLImageElement;
                                       target.style.display = 'none';
                                       const parent = target.parentElement;
@@ -1210,14 +1385,14 @@ export default function ImageCreate() {
                                     </div>
                                   ) : style.image ? (
                                     <div className="w-full h-full p-0">
-                                      <Image
+                                      <img
                                         src={style.image}
                                         alt={style.name}
                                         width={80}
                                         height={80}
                                         className="w-full h-full object-cover"
                                         style={{ objectPosition: 'center 30%' }}
-                                        onError={(e) => {
+                                        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                                           // 이미지 로드 실패 시 기본 아이콘 표시
                                           const target = e.target as HTMLImageElement;
                                           target.style.display = 'none';
@@ -1306,17 +1481,22 @@ export default function ImageCreate() {
                                 handleGenerate();
                               }
                             }}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
+                            onDragOver={(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") ? undefined : handleDragOver}
+                            onDragLeave={(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") ? undefined : handleDragLeave}
+                            onDrop={(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") ? undefined : handleDrop}
                           />
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                            <label className="cursor-pointer p-1 text-gray-500 hover:text-gray-700 transition-colors" title="파일 첨부">
+                            <label className={`cursor-pointer p-1 transition-colors ${
+                              (selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") 
+                                ? 'text-gray-300 cursor-not-allowed' 
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`} title="파일 첨부">
                               <input
                                 type="file"
                                 accept="image/*"
                                 onChange={handleFileAttach}
                                 multiple
+                                disabled={selectedModel === "Kandinsky" || selectedModel === "Realistic Vision"}
                                 className="hidden"
                               />
                               <Paperclip className="w-4 h-4" />
@@ -1330,13 +1510,13 @@ export default function ImageCreate() {
                                 {attachedFiles.map((file, index) => (
                                   <div key={index} className="relative w-[100px] h-[100px] rounded-lg overflow-hidden shadow border border-gray-200 bg-white flex-shrink-0">
                                     {file.type.startsWith('image/') ? (
-                                      <Image
+                                      <img
                                         src={URL.createObjectURL(file)}
                                         alt={file.name}
                                         width={100}
                                         height={100}
                                         className="w-full h-full object-contain mx-auto"
-                                        onError={(e) => {
+                                        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                                           const target = e.target as HTMLImageElement;
                                           target.style.display = 'none';
                                           const parent = target.parentElement;
@@ -1366,6 +1546,13 @@ export default function ImageCreate() {
                             </div>
                           )}
                         </div>
+                        
+                        {/* 모델별 안내문구 */}
+                        {(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            <strong>{selectedModel}</strong> 모델은 이미지 첨부 기능을 지원하지 않습니다.
+                          </div>
+                        )}
                       </div>
                       <button
                         onClick={() => {
@@ -1400,6 +1587,86 @@ export default function ImageCreate() {
                         )}
                       </button>
                     </div>
+                  </div>
+
+                  {/* 이미지 히스토리 섹션 */}
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <History className="w-5 h-5 text-blue-600" />
+                        최근 생성된 이미지
+                      </h3>
+                      <button
+                        onClick={loadHistory}
+                        disabled={loadingHistory}
+                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 transition-colors bg-transparent border-none p-2 rounded-md hover:bg-blue-50"
+                      >
+                        {loadingHistory ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                        새로고침
+                      </button>
+                    </div>
+                    
+                    {loadingHistory ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                      </div>
+                    ) : dbHistory.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {dbHistory.map((item) => (
+                          <div key={item.id} className="group relative bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-all duration-200">
+                            <div className="aspect-square mb-3 relative overflow-hidden rounded-md">
+                              <img
+                                src={item.generatedImageUrl}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200" />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-medium text-gray-800 line-clamp-2 leading-tight">
+                                {item.title}
+                              </h4>
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <FileImage className="w-3 h-3" />
+                                {item.model}
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <Clock className="w-3 h-3" />
+                                {new Date(item.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                            
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <button
+                                onClick={() => deleteHistoryItem(item.id)}
+                                className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                title="삭제"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            
+                            <button
+                              onClick={() => loadHistoryItem(item)}
+                              className="w-full mt-2 text-xs bg-blue-100 text-blue-800 py-1 rounded hover:bg-blue-200 transition-colors"
+                            >
+                              불러오기
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <FileImage className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p>아직 생성된 이미지가 없습니다.</p>
+                        <p className="text-sm">이미지를 생성하면 여기에 표시됩니다.</p>
+                      </div>
+                    )}
                   </div>
 
                   {error && (

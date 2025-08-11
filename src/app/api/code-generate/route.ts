@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { requireAuth } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { getConnection } from '@/lib/db';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const prisma = new PrismaClient();
 
 interface CodeGenerateRequest {
   request: string;
@@ -90,6 +88,18 @@ const languageConfigs = {
     conventions: 'null safety, 확장 함수, 코루틴',
     commonLibraries: 'Retrofit, Room, Ktor',
     bestPractices: 'null 안전성, 불변성, 함수형 프로그래밍'
+  },
+  html: {
+    name: 'HTML',
+    conventions: '시맨틱 마크업, 접근성, 반응형 디자인',
+    commonLibraries: 'CSS, JavaScript, Bootstrap',
+    bestPractices: '시맨틱 태그 사용, 접근성 고려, SEO 최적화'
+  },
+  css: {
+    name: 'CSS',
+    conventions: 'BEM 방법론, CSS Grid, Flexbox',
+    commonLibraries: 'Sass, Less, PostCSS',
+    bestPractices: '모듈화, 성능 최적화, 브라우저 호환성'
   }
 };
 
@@ -172,16 +182,33 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('코드 생성 오류:', error);
     
-    if (error instanceof Error && error.message.includes('insufficient_quota')) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'OpenAI API 할당량이 부족합니다.' 
-      }, { status: 500 });
+    // OpenAI API 관련 에러 처리
+    if (error instanceof Error) {
+      if (error.message.includes('insufficient_quota') || error.message.includes('quota_exceeded')) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'OpenAI API 할당량이 부족합니다. 잠시 후 다시 시도해주세요.' 
+        }, { status: 500 });
+      }
+      
+      if (error.message.includes('billing_not_active') || error.message.includes('account_not_active')) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'OpenAI API 계정이 비활성화되었습니다. 결제 정보를 확인해주세요.' 
+        }, { status: 500 });
+      }
+      
+      if (error.message.includes('rate_limit') || error.message.includes('429')) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'API 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' 
+        }, { status: 500 });
+      }
     }
-
+    
     return NextResponse.json({ 
       success: false,
-      error: '코드 생성 중 오류가 발생했습니다.' 
+      error: '코드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' 
     }, { status: 500 });
   }
 }
@@ -193,8 +220,17 @@ async function generateCode({
   complexity,
   requirements
 }: CodeGenerateRequest) {
-  const langConfig = languageConfigs[language as keyof typeof languageConfigs];
-  const typeConfig = codeTypeConfigs[codeType as keyof typeof codeTypeConfigs];
+  const langConfig = languageConfigs[language as keyof typeof languageConfigs] || {
+    name: language || 'Unknown',
+    conventions: '일반적인 코딩 컨벤션',
+    commonLibraries: '표준 라이브러리',
+    bestPractices: '코드 가독성과 유지보수성'
+  };
+  
+  const typeConfig = codeTypeConfigs[codeType as keyof typeof codeTypeConfigs] || {
+    focus: '기본적인 구현',
+    structure: '표준 구조'
+  };
   
   const complexityDescriptions = {
     simple: '기본적인 구현에 집중하고, 핵심 기능만 포함합니다.',

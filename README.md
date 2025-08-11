@@ -1,58 +1,162 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MOA - AI 도구 검색 및 커뮤니티 플랫폼
 
-## Getting Started
+MOA는 AI 도구 검색, 커뮤니티, 그리고 다양한 AI 서비스를 제공하는 종합 플랫폼입니다.
 
-First, create a `.env.local` file in the root directory and add your API keys:
+## 🚀 주요 기능
+
+### 🤖 AI 서비스
+- **AI 채팅**: GPT-3.5/4o 모델을 활용한 지능형 대화
+- **이미지 생성**: DALL-E, Stable Diffusion 등 다양한 AI 모델 지원
+- **AI 도구 검색**: 500+ AI 도구 데이터베이스
+- **리뷰 시스템**: AI 도구에 대한 사용자 리뷰 및 평가
+
+### 💳 결제 시스템
+- **Bootpay 연동**: 안전한 결제 처리
+- **플랜 시스템**: Basic(무료), Standard(15,900원), Pro(29,000원)
+- **사용량 관리**: 플랜별 AI 서비스 사용량 제한 및 추적
+
+### 👥 커뮤니티
+- **게시글 작성**: 자유로운 커뮤니티 활동
+- **댓글 시스템**: 게시글에 대한 댓글 및 대화
+- **좋아요 기능**: 게시글 및 댓글 좋아요
+- **카테고리 분류**: 주제별 게시글 분류
+
+### 🔐 인증 시스템
+- **소셜 로그인**: Google, Kakao OAuth 지원
+- **자체 로그인**: 이메일/비밀번호 회원가입
+- **프로필 관리**: 사용자 정보 및 아바타 업데이트
+
+### 👨‍💼 관리자 기능
+- **사용자 관리**: 회원 목록 및 권한 관리
+- **플랜 관리**: 사용자 플랜 수동 변경
+- **사용량 관리**: AI 서비스 사용량 초기화 및 제한 설정
+
+## 🛠 기술 스택
+
+### Frontend
+- **Next.js 15** (App Router)
+- **React 19**
+- **TypeScript**
+- **Tailwind CSS**
+
+### Backend
+- **Next.js API Routes**
+- **SQL Server** (Microsoft SQL Server)
+- **NextAuth.js** (인증)
+
+### AI & 외부 서비스
+- **OpenAI API** (GPT, DALL-E)
+- **Replicate API** (Stable Diffusion 등)
+- **Bootpay** (결제)
+
+## 📦 설치 및 실행
+
+### 1. 환경 설정
+
+`.env.local` 파일을 생성하고 다음 환경 변수를 설정하세요:
 
 ```bash
-# OpenAI API Key
-OPENAI_API_KEY=your_openai_api_key_here
+# 데이터베이스
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_SERVER=your_db_server
+DB_PORT=your_db_port
+DB_NAME=your_db_name
 
-# Runway API Key (for video generation)
-RUNWAY_API_KEY=your_runway_api_key_here
+# 인증
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
+
+# OAuth (Google)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# OAuth (Kakao)
+KAKAO_CLIENT_ID=your_kakao_client_id
+KAKAO_CLIENT_SECRET=your_kakao_client_secret
+
+# AI 서비스
+OPENAI_API_KEY=your_openai_api_key
+REPLICATE_API_TOKEN=your_replicate_token
+
+# 결제
+BOOTPAY_APPLICATION_ID=your_bootpay_app_id
+BOOTPAY_PRIVATE_KEY=your_bootpay_private_key
 ```
 
-Then, run the development server:
+### 2. 의존성 설치
+
+```bash
+npm install
+```
+
+### 3. 개발 서버 실행
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🗄 데이터베이스 스키마
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 주요 테이블
+- `users`: 사용자 정보
+- `payments`: 결제 내역
+- `usage`: AI 서비스 사용량
+- `posts`: 커뮤니티 게시글
+- `comments`: 댓글
+- `likes`: 좋아요
+- `ai_reviews`: AI 도구 리뷰
+- `review_votes`: 리뷰 투표
 
-## API Keys Setup
+## 🔄 마이그레이션 완료 사항
 
-### OpenAI API Key
-1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Create a new API key
-3. Add it to your `.env.local` file
+### ✅ 완료된 작업
+1. **Prisma → SQL Server 마이그레이션**
+   - 모든 데이터베이스 쿼리를 SQL Server로 변경
+   - Prisma 의존성 완전 제거
+   - 직접 SQL 쿼리 사용
 
-### Runway API Key (Optional - for video generation)
-1. Go to [Runway ML](https://runwayml.com/)
-2. Sign up and get your API key
-3. Add it to your `.env.local` file
+2. **결제 시스템 통합**
+   - Bootpay 결제 게이트웨이 연동
+   - 플랜별 사용량 제한 시스템
+   - 결제 내역 관리
 
-## Learn More
+3. **인증 시스템 개선**
+   - Google, Kakao 소셜 로그인 완전 통합
+   - 세션 관리 최적화
+   - 사용자 권한 시스템
 
-To learn more about Next.js, take a look at the following resources:
+4. **커뮤니티 기능**
+   - 게시글, 댓글, 좋아요 시스템
+   - 실시간 업데이트
+   - 권한 기반 삭제 기능
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. **AI 서비스**
+   - 다중 AI 모델 지원
+   - 사용량 기반 제한
+   - 실시간 사용량 추적
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🚀 배포
 
-## Deploy on Vercel
+### Vercel 배포
+```bash
+npm run build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 환경 변수 설정
+배포 시 모든 환경 변수를 Vercel 대시보드에서 설정하세요.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📝 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 배포됩니다.
+
+## 🤝 기여
+
+버그 리포트나 기능 제안은 이슈를 통해 해주세요.
+Pull Request도 환영합니다!
+
+---
+
+**MOA Team** - AI 도구 검색의 새로운 기준

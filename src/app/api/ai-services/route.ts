@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getConnection } from '@/lib/db';
 
 // 확장된 AI 서비스 데이터 (AI_Tools_Website 500+ 데이터 기반)
 const sample_ai_services = [
@@ -8051,5 +8052,52 @@ const sample_ai_services = [
             ];
 
 export async function GET() {
+  try {
+    const pool = await getConnection();
+    
+    // 각 AI 도구의 평균 평점 계산
+    const ratingResult = await pool.request().query(`
+      SELECT 
+        tool_id,
+        AVG(CAST(rating AS FLOAT)) as avg_rating,
+        COUNT(*) as review_count
+      FROM ai_reviews 
+      WHERE is_deleted = 0
+      GROUP BY tool_id
+    `);
+    
+    // 평점 데이터를 맵으로 변환
+    const ratingMap = new Map();
+    ratingResult.recordset.forEach((row: any) => {
+      ratingMap.set(row.tool_id, {
+        avgRating: Math.round(row.avg_rating * 10) / 10, // 소수점 첫째자리까지
+        reviewCount: row.review_count
+      });
+    });
+    
+    // AI 서비스 데이터에 실제 평점 적용
+    const servicesWithRealRatings = sample_ai_services.map(service => {
+      const ratingData = ratingMap.get(service.id);
+      if (ratingData && ratingData.reviewCount > 0) {
+        return {
+          ...service,
+          rating: ratingData.avgRating,
+          reviewCount: ratingData.reviewCount
+        };
+      } else {
+        // 리뷰가 없는 경우 기본값
+        return {
+          ...service,
+          rating: 0,
+          reviewCount: 0
+        };
+      }
+    });
+    
+    return NextResponse.json({ services: servicesWithRealRatings });
+  } catch (error) {
+    console.error('AI 서비스 평점 계산 오류:', error);
+    // 오류 시 기본 데이터 반환
   return NextResponse.json({ services: sample_ai_services });
+  }
 } 

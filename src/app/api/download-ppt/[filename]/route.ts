@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import PptxGenJS from 'pptxgenjs';
 
+// global 타입 확장
+declare global {
+  var pptDataCache: { [key: string]: any } | undefined;
+}
+
 interface RouteParams {
   params: Promise<{
     filename: string;
@@ -39,22 +44,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     
     console.log('PPT 파일 다운로드 요청:', decodedFilename);
 
-    // URL 파라미터에서 PPT 데이터 추출
-    const url = new URL(request.url);
-    const dataParam = url.searchParams.get('data');
-    
+    // 전역 캐시에서 PPT 데이터 추출
     let pptData = null;
     
-    if (dataParam) {
-      try {
-        // URL 파라미터에서 전달된 실제 PPT 데이터 사용
-        pptData = JSON.parse(decodeURIComponent(dataParam));
-        console.log('실제 PPT 데이터 사용:', pptData.title);
-      } catch (error) {
-        console.error('PPT 데이터 파싱 오류:', error);
-        // 파싱 실패 시 기본 데이터 사용
-        const title = decodedFilename.replace('_AI_Presentation.pptx', '').replace(/_/g, ' ');
-        pptData = {
+    // 전역 캐시에서 데이터 찾기
+    if (global.pptDataCache && global.pptDataCache[decodedFilename]) {
+      pptData = global.pptDataCache[decodedFilename];
+      console.log('캐시에서 PPT 데이터 사용:', pptData.title);
+    } else {
+      // 캐시에 없으면 기본 데이터 사용
+      const title = decodedFilename.replace('_AI_Presentation.pptx', '').replace(/_/g, ' ');
+      pptData = {
           title: title,
           subtitle: "AI가 생성한 프레젠테이션",
           slides: [
@@ -115,70 +115,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           ]
         };
       }
-    } else {
-      // URL 파라미터가 없는 경우 기본 데이터 사용
-      const title = decodedFilename.replace('_AI_Presentation.pptx', '').replace(/_/g, ' ');
-      pptData = {
-        title: title,
-        subtitle: "AI가 생성한 프레젠테이션",
-        slides: [
-          {
-            id: 1,
-            title: title,
-            content: ["AI 기반 프레젠테이션 생성", "발표자: [이름]", "날짜: [날짜]"],
-            notes: "청중에게 인사하고 발표 주제를 소개합니다.",
-            chapterId: 1,
-            layout: "title"
-          },
-          {
-            id: 2,
-            title: "목차",
-            content: ["발표 개요", "주요 내용", "결론", "Q&A"],
-            notes: "발표의 전체 구성을 설명합니다.",
-            chapterId: 1,
-            layout: "content"
-          },
-          {
-            id: 3,
-            title: "AI 시장 동향",
-            content: ["글로벌 AI 시장 규모", "중소기업 AI 도입률", "AI 도입 성공률", "예상 시장 성장률"],
-            notes: "AI 시장의 전반적인 동향을 살펴보겠습니다.",
-            chapterId: 1,
-            layout: "content"
-          },
-          {
-            id: 4,
-            title: "중소기업의 현실",
-            content: ["중소기업 매출 성장률", "AI 도입 중소기업", "기존 방식의 한계", "AI 도입 필요성"],
-            notes: "현재 중소기업들이 직면한 현실을 구체적으로 분석해보겠습니다.",
-            chapterId: 1,
-            layout: "content"
-          },
-          {
-            id: 5,
-            title: "성공 사례 분석",
-            content: ["A사: 매출 20% 증가", "B사: 비용 15% 절감", "C사: 고객 만족도 향상", "D사: 업무 효율성 개선"],
-            notes: "실제 도입 사례를 통해 구체적인 효과를 확인해보겠습니다.",
-            chapterId: 2,
-            layout: "content"
-          },
-          {
-            id: 6,
-            title: "Q&A",
-            content: ["도입 비용은 얼마나 드나요?", "기존 인력과의 충돌은 어떻게 조정하나요?", "실패 위험을 줄이는 방법은 무엇인가요?"],
-            notes: "질문을 받아드리겠습니다.",
-            chapterId: 4,
-            layout: "content"
-          }
-        ],
-        chapters: [
-          { id: 1, title: "서론", description: "주제 소개 및 배경", slideCount: 2, color: "#3B82F6" },
-          { id: 2, title: "본론", description: "핵심 내용 및 분석", slideCount: 3, color: "#10B981" },
-          { id: 3, title: "결론", description: "요약 및 제안", slideCount: 1, color: "#F59E0B" },
-          { id: 4, title: "Q&A", description: "질문 및 답변", slideCount: 1, color: "#8B5CF6" }
-        ]
-      };
-    }
+
 
     console.log('PPT 데이터 생성:', pptData.title);
 

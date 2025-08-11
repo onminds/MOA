@@ -176,10 +176,10 @@ function getDefaultEvaluation(answer: string) {
       '답변의 길이를 조금 더 늘려보세요'
     ],
     recommendations: [
-      'Situation, Task, Action, Result 순서로 답변을 구성해보세요',
+      'Situation, Task, Action, Result 순서대로 답변을 구성해보세요',
       '구체적인 성과나 수치를 포함하여 신뢰성을 높이세요',
       '지원 직무와의 연관성을 더 명확히 표현해보세요'
     ],
     improvedExample: '답변을 개선하려면 구체적인 상황, 맡은 업무, 취한 행동, 그리고 결과를 순서대로 설명하는 STAR 기법을 활용해보세요. 또한 구체적인 수치나 성과를 포함하여 더욱 설득력 있는 답변을 만들 수 있습니다.'
   };
-} 
+}

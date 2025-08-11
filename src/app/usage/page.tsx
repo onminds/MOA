@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
+
 import { useRouter } from 'next/navigation';
 import { 
   ImageIcon, 
@@ -21,6 +21,26 @@ interface UsageInfo {
   remainingCount: number;
   planType?: string;
   resetDate: string;
+}
+
+// UTC 시간을 한국 시간으로 변환하는 함수
+function convertToKoreanTime(utcDateString: string): string {
+  try {
+    const date = new Date(utcDateString);
+    return date.toLocaleString('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  } catch (error) {
+    console.error('시간 변환 오류:', error);
+    return utcDateString; // 변환 실패 시 원본 반환
+  }
 }
 
 export default function UsagePage() {
@@ -173,9 +193,6 @@ export default function UsagePage() {
       <Header />
       <div className="min-h-screen bg-gray-50">
         <div className="flex">
-          {/* 공통 사이드바 */}
-          <Sidebar currentPath="/usage" />
-          
           {/* 메인 콘텐츠 */}
           <div className="flex-1 p-8">
             <div className="mb-8">
@@ -248,7 +265,7 @@ export default function UsagePage() {
                             <Clock className="w-4 h-4" />
                             <span>다음 초기화</span>
                           </div>
-                          <span>{usage.resetDate}</span>
+                          <span>{convertToKoreanTime(usage.resetDate)}</span>
                         </div>
                       </div>
                     </div>

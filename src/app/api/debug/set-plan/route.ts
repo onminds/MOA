@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { getConnection } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,22 +23,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const currentUser = await prisma.user.findUnique({
-      where: { email: session.user.email! }
-    });
+    const db = await getConnection();
 
-    if (!currentUser) {
+    const currentUserResult = await db.request().query(`
+      SELECT * FROM users WHERE email = '${session.user.email}'
+    `);
+
+    if (currentUserResult.recordset.length === 0) {
       return NextResponse.json(
         { error: "사용자를 찾을 수 없습니다." }, 
         { status: 404 }
       );
     }
 
+    const currentUser = currentUserResult.recordset[0];
+
     if (planType === 'basic') {
       // 기본 플랜으로 변경 (결제 내역 삭제)
-      await prisma.payment.deleteMany({
-        where: { userId: currentUser.id }
-      });
+      await db.request().query(`
+        DELETE FROM payments WHERE userId = '${currentUser.id}'
+      `);
       
       return NextResponse.json({
         message: "기본 플랜으로 변경되었습니다. (이미지 생성 2회)",
@@ -53,21 +55,14 @@ export async function POST(request: NextRequest) {
       const creditsAdded = planType === 'standard' ? 120 : 300;
 
       // 기존 결제 내역 삭제 후 새로 추가
-      await prisma.payment.deleteMany({
-        where: { userId: currentUser.id }
-      });
+      await db.request().query(`
+        DELETE FROM payments WHERE userId = '${currentUser.id}'
+      `);
 
-      await prisma.payment.create({
-        data: {
-          userId: currentUser.id,
-          planType: planType,
-          amount: amount,
-          creditsAdded: creditsAdded,
-          paymentMethod: "test",
-          status: "completed",
-          transactionId: `test_${Date.now()}`
-        }
-      });
+      await db.request().query(`
+        INSERT INTO payments (userId, planType, amount, creditsAdded, paymentMethod, status, transactionId, createdAt)
+        VALUES ('${currentUser.id}', '${planType}', ${amount}, ${creditsAdded}, 'test', 'completed', 'test_${Date.now()}', GETDATE())
+      `);
 
       return NextResponse.json({
         message: `${planType.toUpperCase()} 플랜으로 변경되었습니다.`,

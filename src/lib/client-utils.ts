@@ -1,5 +1,7 @@
 // 안전한 JSON fetch 함수
 export async function safeFetchJson(url: string, options?: RequestInit): Promise<any> {
+  const startTime = Date.now();
+  
   try {
     const response = await fetch(url, {
       headers: {
@@ -9,15 +11,73 @@ export async function safeFetchJson(url: string, options?: RequestInit): Promise
       ...options,
     });
 
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+    
+    // 응답 시간 로깅 (개발 환경에서만)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📊 API 응답 시간: ${responseTime}ms - ${url}`);
+      
+      // 느린 응답 경고 (3초 이상)
+      if (responseTime > 3000) {
+        console.warn(`⚠️ 느린 API 응답: ${responseTime}ms - ${url}`);
+      }
+    }
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Fetch error:', error);
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+    
+    console.error(`❌ API 오류 (${responseTime}ms):`, error);
     throw error;
   }
+}
+
+// 캐시된 fetch 함수
+export async function cachedFetchJson(
+  url: string, 
+  cacheKey: string, 
+  options?: RequestInit,
+  cacheDuration: number = 5 * 60 * 1000 // 5분 기본
+): Promise<any> {
+  const cache = localStorage.getItem(cacheKey);
+  
+  if (cache) {
+    try {
+      const cachedData = JSON.parse(cache);
+      const now = Date.now();
+      
+      // 캐시가 유효한지 확인
+      if (cachedData.timestamp && (now - cachedData.timestamp) < cacheDuration) {
+        console.log(`📦 캐시된 데이터 사용: ${cacheKey}`);
+        return cachedData.data;
+      }
+    } catch (error) {
+      console.warn('캐시 파싱 오류:', error);
+    }
+  }
+  
+  // 캐시가 없거나 만료된 경우 새로 요청
+  const data = await safeFetchJson(url, options);
+  
+  // 캐시에 저장
+  try {
+    const cacheData = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    console.log(`💾 데이터 캐시 저장: ${cacheKey}`);
+  } catch (error) {
+    console.warn('캐시 저장 오류:', error);
+  }
+  
+  return data;
 }
 
 // 파일 업로드 함수

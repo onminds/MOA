@@ -1,52 +1,79 @@
-const { PrismaClient } = require('@prisma/client');
+const sql = require('mssql');
 
-const prisma = new PrismaClient();
+const config = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER || 'localhost',
+  port: parseInt(process.env.DB_PORT || '1433'),
+  database: process.env.DB_NAME,
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+    enableArithAbort: true,
+  },
+};
 
 async function fixImageLimits() {
+  let pool;
   try {
-    console.log('이미지 생성 제한 수정 시작...');
-
+    console.log('🔧 이미지 생성 제한 수정 중...');
+    
+    pool = await sql.connect(config);
+    
     // 모든 사용자 조회
-    const users = await prisma.user.findMany({
-      include: {
-        usage: true
-      }
-    });
-
-    for (const user of users) {
-      console.log(`\n사용자: ${user.email} (${user.name})`);
+    const usersResult = await pool.request().query(`
+      SELECT id, username, email, role 
+      FROM users 
+      WHERE is_active = 1
+      ORDER BY created_at DESC
+    `);
+    
+    console.log(`\n📊 총 ${usersResult.recordset.length}명의 사용자를 처리합니다.`);
+    
+    for (const user of usersResult.recordset) {
+      console.log(`\n👤 처리 중: ${user.username} (${user.email})`);
       
-      // 이미지 생성 사용량 찾기
-      const imageUsage = user.usage.find(u => u.serviceType === 'image-generate');
+      // 해당 사용자의 이미지 생성 사용량 조회
+      const usageResult = await pool.request()
+        .input('userId', user.id)
+        .input('serviceType', 'image-generate')
+        .query('SELECT * FROM usage WHERE user_id = @userId AND service_type = @serviceType');
       
-      if (imageUsage) {
-        console.log(`현재 이미지 제한: ${imageUsage.limitCount}`);
+      if (usageResult.recordset.length === 0) {
+        // 사용량 레코드가 없으면 생성
+        await pool.request()
+          .input('userId', user.id)
+          .input('serviceType', 'image-generate')
+          .input('limitCount', 1)
+          .query(`
+            INSERT INTO usage (user_id, service_type, usage_count, limit_count, created_at, updated_at)
+            VALUES (@userId, @serviceType, 0, @limitCount, GETDATE(), GETDATE())
+          `);
         
-        // 일반 사용자는 2회, 관리자는 9999회로 설정
-        let newLimit = 2; // 기본값
-        if (user.role === 'ADMIN') {
-          newLimit = 9999; // 관리자는 무제한
-        }
-        
-        if (imageUsage.limitCount !== newLimit) {
-          await prisma.usage.update({
-            where: { id: imageUsage.id },
-            data: { limitCount: newLimit }
-          });
-          console.log(`이미지 제한 변경: ${imageUsage.limitCount} → ${newLimit}`);
-        } else {
-          console.log(`이미지 제한 유지: ${newLimit}`);
-        }
+        console.log(`   ✅ 이미지 생성 제한 생성: 1회`);
       } else {
-        console.log('이미지 생성 사용량이 없습니다.');
+        // 기존 사용량 레코드 업데이트
+        const usage = usageResult.recordset[0];
+        const newLimit = user.role === 'admin' ? 999 : 1;
+        
+        await pool.request()
+          .input('userId', user.id)
+          .input('serviceType', 'image-generate')
+          .input('limitCount', newLimit)
+          .query('UPDATE usage SET limit_count = @limitCount WHERE user_id = @userId AND service_type = @serviceType');
+        
+        console.log(`   ✅ 이미지 생성 제한 업데이트: ${newLimit}회`);
       }
     }
-
-    console.log('\n이미지 생성 제한 수정 완료!');
+    
+    console.log('\n🎉 모든 사용자의 이미지 생성 제한이 수정되었습니다!');
+    
   } catch (error) {
-    console.error('수정 중 오류 발생:', error);
+    console.error('❌ 오류 발생:', error);
   } finally {
-    await prisma.$disconnect();
+    if (pool) {
+      await pool.close();
+    }
   }
 }
 

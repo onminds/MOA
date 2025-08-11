@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     if (prompt.length > 4000) {
       console.warn('⚠️ 프롬프트가 너무 깁니다. 참고 자료를 더 줄입니다.');
       if (referenceContent) {
-        referenceContent = await summarizeText(referenceContent, 1000);
+        referenceContent = await summarizeText(referenceContent);
         console.log('📝 수정된 프롬프트 길이:', prompt.length);
       }
     }

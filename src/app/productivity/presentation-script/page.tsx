@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
 import Header from '../../components/Header';
-import { Presentation, Clock, Users, Target, Lightbulb, FileText, Download, Copy, RefreshCw, Upload, X, Plus, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { Presentation, Clock, Users, Target, Lightbulb, FileText, Download, Copy, RefreshCw, Upload, X, Plus, CheckCircle, AlertCircle, Info, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function PresentationScript() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     topic: '',
     duration: '10',
@@ -551,11 +553,13 @@ export default function PresentationScript() {
       return;
     }
     
-    // 참고 자료 이미지 필수 체크 추가
+    // 참고 자료 확인 (파일 업로드 또는 텍스트 입력 중 하나만 있으면 됨)
     const hasValidImages = uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0);
-    if (!hasValidImages) {
-      console.error('❌ 참고 자료 이미지가 없음');
-      setError('참고 자료 이미지를 필수로 업로드해주세요. 발표 대본 생성을 위해 PDF나 이미지 파일을 붙여넣거나 업로드해주세요.');
+    const hasAdditionalInfo = formData.additionalInfo && formData.additionalInfo.trim().length > 0;
+    
+    if (!hasValidImages && !hasAdditionalInfo) {
+      console.error('❌ 참고 자료가 없음');
+      setError('참고 자료를 입력해주세요. PDF/이미지 파일을 업로드하거나 "참고 자료 및 추가 정보"에 내용을 입력해주세요.');
       return;
     }
 
@@ -563,13 +567,22 @@ export default function PresentationScript() {
     setError('');
 
     try {
+      // 파일에서 추출된 텍스트
       const allImageText = uploadedImages
         .filter(img => img.status === 'success')
         .map(img => img.text)
         .join('\n\n');
       
+      // 추가 정보 텍스트
+      const additionalInfoText = formData.additionalInfo || '';
+      
+      // 전체 참고 자료 텍스트 (파일 + 추가 정보)
+      const allReferenceText = [allImageText, additionalInfoText]
+        .filter(text => text.trim().length > 0)
+        .join('\n\n');
+      
       // 파일 내용 추적
-      setUsedFileContent(allImageText);
+      setUsedFileContent(allReferenceText);
       
       console.log('📊 대본 생성 정보:', {
         mode: '새 생성',
@@ -577,23 +590,22 @@ export default function PresentationScript() {
         audience: formData.audience,
         purpose: formData.purpose,
         imageTextLength: allImageText.length,
+        additionalInfoLength: additionalInfoText.length,
+        totalReferenceLength: allReferenceText.length,
         uploadedImagesCount: uploadedImages.length,
         successImagesCount: uploadedImages.filter(img => img.status === 'success').length,
         errorImagesCount: uploadedImages.filter(img => img.status === 'error').length,
-        fileContentPreview: allImageText.substring(0, 200) + (allImageText.length > 200 ? '...' : '')
+        fileContentPreview: allReferenceText.substring(0, 200) + (allReferenceText.length > 200 ? '...' : '')
       });
       
-      console.log('📄 추출된 파일 텍스트 전체 내용:', allImageText);
-      console.log('📄 성공한 이미지들:', uploadedImages.filter(img => img.status === 'success').map(img => ({
-        id: img.id,
-        textLength: img.text?.length || 0,
-        textPreview: img.text?.substring(0, 100) + (img.text?.length > 100 ? '...' : '')
-      })));
+      console.log('📄 추출된 파일 텍스트:', allImageText);
+      console.log('📄 추가 정보 텍스트:', additionalInfoText);
+      console.log('📄 전체 참고 자료:', allReferenceText);
       
       const body = { 
             ...formData, 
-            imageText: allImageText || '', 
-            fileContent: allImageText || '',
+            imageText: allReferenceText || '', 
+            fileContent: allReferenceText || '',
             audience: formData.audience === 'custom' ? formData.customAudience : formData.audience,
             purpose: formData.purpose === 'custom' ? formData.customPurpose : formData.purpose
           };
@@ -784,6 +796,17 @@ export default function PresentationScript() {
         setShowDurationInfoPopup(false);
       }}>
         <div className="max-w-7xl mx-auto px-4">
+          {/* 뒤로가기 버튼 */}
+          <div className="mb-6">
+            <button
+              onClick={() => router.push('/productivity')}
+              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              생산성 도구로 돌아가기
+            </button>
+          </div>
+
           {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
@@ -1264,14 +1287,14 @@ export default function PresentationScript() {
                 <div className="relative">
                   <button
                     onClick={generateScript}
-                    disabled={isLoading || !uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0)}
+                    disabled={isLoading || (!uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0) && !formData.additionalInfo?.trim())}
                     className={`w-full py-3 px-6 rounded-lg font-medium flex items-center justify-center transition-colors ${
-                      isLoading || !uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0)
+                      isLoading || (!uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0) && !formData.additionalInfo?.trim())
                         ? 'bg-gray-400 text-white cursor-not-allowed'
                         : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
-                    title={!uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0) 
-                      ? '참고 자료 이미지를 필수로 업로드해주세요' 
+                    title={(!uploadedImages.some(img => img.status === 'success' && img.text && img.text.trim().length > 0) && !formData.additionalInfo?.trim()) 
+                      ? '참고 자료를 입력해주세요 (파일 업로드 또는 텍스트 입력)' 
                       : ''
                     }
                   >

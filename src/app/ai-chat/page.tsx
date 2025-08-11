@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Plus, MessageSquare, Settings, Crown, Star, Zap } from "lucide-react";
 import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
+
 
 type Message = { 
   role: 'user' | 'assistant'; 
@@ -43,6 +43,17 @@ export default function AIChat() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // URL 쿼리 파라미터에서 메시지 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const messageParam = urlParams.get('message');
+    
+    if (messageParam && messageParam.trim()) {
+      // 메시지가 있으면 즉시 전송 (input 상태 업데이트 없이)
+      handleSendWithMessage(messageParam);
+      // URL에서 파라미터 제거 (브라우저 히스토리 정리)
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   useEffect(() => {
@@ -88,7 +99,63 @@ export default function AIChat() {
     }
   };
 
-  // 메시지 전송
+  // 메시지 전송 (URL 파라미터용)
+  const handleSendWithMessage = async (message: string) => {
+    if (!message.trim()) return;
+    
+    const userMsg: Message = { role: "user", content: message };
+    
+    // 대화에 메시지 추가
+    const newConvs = [...conversations];
+    newConvs[currentConv].messages = [...newConvs[currentConv].messages, userMsg];
+    setConversations(newConvs);
+    setInput("");
+    setLoading(true);
+    
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message }),
+      });
+      const data = await res.json();
+      
+      const assistantMsg: Message = { 
+        role: "assistant", 
+        content: data.response,
+        tier: data.tier,
+        premium: data.premium,
+        authenticated: data.authenticated
+      };
+      
+      // 현재 티어 정보 업데이트
+      if (data.tier) {
+        setCurrentTier(data.tier);
+        setIsPremium(data.premium || false);
+        setIsAuthenticated(data.authenticated || false);
+      }
+      
+      newConvs[currentConv].messages = [
+        ...newConvs[currentConv].messages,
+        assistantMsg,
+      ];
+      setConversations([...newConvs]);
+    } catch {
+      const assistantMsg: Message = { 
+        role: "assistant", 
+        content: "오류가 발생했습니다. 다시 시도해 주세요." 
+      };
+      newConvs[currentConv].messages = [
+        ...newConvs[currentConv].messages,
+        assistantMsg,
+      ];
+      setConversations([...newConvs]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 메시지 전송 (일반용)
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim()) return;
@@ -208,9 +275,6 @@ export default function AIChat() {
       <Header />
       <div className="min-h-screen bg-white">
         <div className="flex">
-          {/* 공통 사이드바 */}
-          <Sidebar currentPath="/ai-chat" />
-          
           {/* 메인 콘텐츠 */}
           <div className="flex-1 flex flex-col">
             {/* 상단 헤더 */}

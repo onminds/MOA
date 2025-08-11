@@ -1,44 +1,112 @@
-const { PrismaClient } = require('@prisma/client');
+const sql = require('mssql');
 
-const prisma = new PrismaClient();
+const config = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER || 'localhost',
+  port: parseInt(process.env.DB_PORT || '1433'),
+  database: process.env.DB_NAME,
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+    enableArithAbort: true,
+  },
+};
 
 async function debugUsage() {
+  let pool;
   try {
-    console.log('=== 사용량 디버그 ===');
+    console.log('🔍 사용량 정보 디버깅 중...');
+    
+    pool = await sql.connect(config);
     
     // 모든 사용자 조회
-    const users = await prisma.user.findMany();
-    console.log(`총 사용자 수: ${users.length}`);
+    const usersResult = await pool.request().query(`
+      SELECT id, username, email, role, is_active 
+      FROM users 
+      ORDER BY created_at DESC
+    `);
     
-    for (const user of users) {
-      console.log(`\n사용자: ${user.email} (${user.name})`);
-      console.log(`역할: ${user.role}`);
-      
-      // 사용량 조회
-      const usage = await prisma.usage.findMany({
-        where: { userId: user.id }
+    console.log('\n📊 전체 사용자 목록:');
+    console.log('='.repeat(80));
+    
+    usersResult.recordset.forEach((user, index) => {
+      const status = user.is_active ? '✅ 활성' : '❌ 비활성';
+      const role = user.role || 'user';
+      console.log(`${index + 1}. ${user.username} (${user.email}) - ${role} ${status}`);
+    });
+    
+    // 사용량 정보 조회
+    const usageResult = await pool.request().query(`
+      SELECT 
+        u.username,
+        u.email,
+        us.service_type,
+        us.usage_count,
+        us.limit_count,
+        us.created_at,
+        us.updated_at
+      FROM usage us
+      JOIN users u ON us.user_id = u.id
+      ORDER BY u.username, us.service_type
+    `);
+    
+    console.log('\n📈 사용량 정보:');
+    console.log('='.repeat(80));
+    
+    if (usageResult.recordset.length === 0) {
+      console.log('❌ 사용량 정보가 없습니다.');
+    } else {
+      usageResult.recordset.forEach((usage, index) => {
+        const remaining = usage.limit_count - usage.usage_count;
+        const status = remaining > 0 ? '✅' : '❌';
+        console.log(`${index + 1}. ${usage.username} (${usage.email})`);
+        console.log(`   서비스: ${usage.service_type}`);
+        console.log(`   사용량: ${usage.usage_count}/${usage.limit_count} (남은 횟수: ${remaining}) ${status}`);
+        console.log(`   생성일: ${usage.created_at}`);
+        console.log(`   업데이트: ${usage.updated_at}`);
+        console.log('');
       });
-      
-      console.log(`사용량 레코드 수: ${usage.length}`);
-      usage.forEach(u => {
-        console.log(`  ${u.serviceType}: ${u.usageCount}/${u.limitCount}`);
-      });
-      
-      // 결제 내역 조회
-      const payments = await prisma.payment.findMany({
-        where: { userId: user.id }
-      });
-      
-      console.log(`결제 내역 수: ${payments.length}`);
-      payments.forEach(p => {
-        console.log(`  플랜: ${p.planType}, 상태: ${p.status}`);
+    }
+    
+    // 결제 정보 조회
+    const paymentsResult = await pool.request().query(`
+      SELECT 
+        u.username,
+        u.email,
+        p.plan_type,
+        p.amount,
+        p.status,
+        p.payment_date,
+        p.created_at
+      FROM payments p
+      JOIN users u ON p.user_id = u.id
+      ORDER BY p.created_at DESC
+    `);
+    
+    console.log('\n💳 결제 정보:');
+    console.log('='.repeat(80));
+    
+    if (paymentsResult.recordset.length === 0) {
+      console.log('❌ 결제 정보가 없습니다.');
+    } else {
+      paymentsResult.recordset.forEach((payment, index) => {
+        console.log(`${index + 1}. ${payment.username} (${payment.email})`);
+        console.log(`   플랜: ${payment.plan_type}`);
+        console.log(`   금액: ${payment.amount}원`);
+        console.log(`   상태: ${payment.status}`);
+        console.log(`   결제일: ${payment.payment_date}`);
+        console.log(`   생성일: ${payment.created_at}`);
+        console.log('');
       });
     }
     
   } catch (error) {
-    console.error('디버그 중 오류:', error);
+    console.error('❌ 오류 발생:', error);
   } finally {
-    await prisma.$disconnect();
+    if (pool) {
+      await pool.close();
+    }
   }
 }
 

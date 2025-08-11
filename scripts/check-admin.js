@@ -1,59 +1,86 @@
-const { PrismaClient } = require('@prisma/client');
+const sql = require('mssql');
 
-const prisma = new PrismaClient();
+const config = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER || 'localhost',
+  port: parseInt(process.env.DB_PORT || '1433'),
+  database: process.env.DB_NAME,
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+    enableArithAbort: true,
+  },
+};
 
 async function checkAdmin() {
+  let pool;
   try {
-    console.log('관리자 계정 상태 확인...');
-
+    console.log('🔍 관리자 권한 확인 중...');
+    
+    pool = await sql.connect(config);
+    
     // 모든 사용자 조회
-    const users = await prisma.user.findMany({
-      include: {
-        usage: true
-      }
+    const usersResult = await pool.request().query(`
+      SELECT id, username, email, role, is_active 
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+    
+    console.log('\n📊 전체 사용자 목록:');
+    console.log('='.repeat(80));
+    
+    usersResult.recordset.forEach((user, index) => {
+      const status = user.is_active ? '✅ 활성' : '❌ 비활성';
+      const role = user.role || 'user';
+      console.log(`${index + 1}. ${user.username} (${user.email}) - ${role} ${status}`);
     });
-
-    console.log(`총 사용자 수: ${users.length}`);
-
-    users.forEach(user => {
-      console.log(`- ${user.email} (${user.name}): ${user.role}`);
-      console.log(`  사용량: ${user.usage.length}개`);
-      user.usage.forEach(usage => {
-        console.log(`    ${usage.serviceType}: ${usage.usageCount}/${usage.limitCount}`);
-      });
-    });
-
-    // admin@moa.com 계정 특별 확인
-    const adminUser = await prisma.user.findUnique({
-      where: { email: 'admin@moa.com' },
-      include: { usage: true }
-    });
-
-    if (adminUser) {
-      console.log('\n=== 관리자 계정 상세 정보 ===');
-      console.log(`이메일: ${adminUser.email}`);
-      console.log(`이름: ${adminUser.name}`);
-      console.log(`역할: ${adminUser.role}`);
-      console.log(`사용량 개수: ${adminUser.usage.length}`);
-      
-      if (adminUser.role !== 'ADMIN') {
-        console.log('⚠️  관리자 역할이 아닙니다! ADMIN으로 변경합니다...');
-        await prisma.user.update({
-          where: { id: adminUser.id },
-          data: { role: 'ADMIN' }
-        });
-        console.log('✅ 관리자 역할로 변경되었습니다.');
-      } else {
-        console.log('✅ 이미 관리자 역할입니다.');
-      }
+    
+    // 관리자 권한을 가진 사용자 찾기
+    const adminResult = await pool.request().query(`
+      SELECT id, username, email, role 
+      FROM users 
+      WHERE role = 'admin' AND is_active = 1
+    `);
+    
+    console.log('\n👑 관리자 권한을 가진 사용자:');
+    console.log('='.repeat(80));
+    
+    if (adminResult.recordset.length === 0) {
+      console.log('❌ 관리자 권한을 가진 사용자가 없습니다.');
     } else {
-      console.log('❌ admin@moa.com 계정을 찾을 수 없습니다.');
+      adminResult.recordset.forEach((admin, index) => {
+        console.log(`${index + 1}. ${admin.username} (${admin.email})`);
+      });
     }
-
+    
+    // 특정 사용자 상세 정보
+    const targetEmail = 'admin@moa.com';
+    const targetUserResult = await pool.request()
+      .input('email', targetEmail)
+      .query('SELECT * FROM users WHERE email = @email');
+    
+    console.log(`\n🎯 대상 사용자 (${targetEmail}) 상세 정보:`);
+    console.log('='.repeat(80));
+    
+    if (targetUserResult.recordset.length === 0) {
+      console.log('❌ 해당 이메일의 사용자를 찾을 수 없습니다.');
+    } else {
+      const user = targetUserResult.recordset[0];
+      console.log(`ID: ${user.id}`);
+      console.log(`이름: ${user.username}`);
+      console.log(`이메일: ${user.email}`);
+      console.log(`권한: ${user.role || 'user'}`);
+      console.log(`활성 상태: ${user.is_active ? '활성' : '비활성'}`);
+      console.log(`생성일: ${user.created_at}`);
+    }
+    
   } catch (error) {
-    console.error('확인 중 오류 발생:', error);
+    console.error('❌ 오류 발생:', error);
   } finally {
-    await prisma.$disconnect();
+    if (pool) {
+      await pool.close();
+    }
   }
 }
 

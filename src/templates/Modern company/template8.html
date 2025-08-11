@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>{{TITLE}}</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --secondary-color: #1e40af;
+      --accent-color: #3b82f6;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --border-color: #e5e7eb;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Serif KR', serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .slide-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+      overflow: hidden;
+    }
+
+    /* Background Circles */
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.1;
+      z-index: 0;
+    }
+
+    .circle-1 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(45deg, var(--danger-color), var(--warning-color));
+      top: -150px;
+      right: -150px;
+    }
+
+    .circle-2 {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(45deg, var(--warning-color), var(--danger-color));
+      bottom: -100px;
+      left: -100px;
+    }
+
+    .circle-3 {
+      width: 150px;
+      height: 150px;
+      background: linear-gradient(45deg, var(--danger-color), var(--primary-color));
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 10;
+      position: relative;
+    }
+
+    .header-left, .header-center, .header-right {
+      font-family: 'Nanum Gothic Coding', monospace;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Content */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2rem;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    /* Metrics Container */
+    .metrics-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex: 1;
+    }
+
+    /* Metric Section */
+    .metric-section {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--danger-color), var(--warning-color));
+    }
+
+    .metric-section:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+    }
+
+    .icon-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--danger-color), var(--warning-color));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      color: white;
+      font-size: 2rem;
+    }
+
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--danger-color);
+      margin-bottom: 1rem;
+      line-height: 1;
+    }
+
+    .metric-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+
+    .metric-description {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    /* Result Container */
+    .result-container {
+      background: linear-gradient(135deg, var(--danger-color), var(--warning-color));
+      border-radius: 16px;
+      padding: 2rem;
+      color: white;
+      text-align: center;
+      margin-top: auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .arrow-container {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .result-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      line-height: 1;
+    }
+
+    .result-text {
+      font-size: 1.125rem;
+      opacity: 0.9;
+      line-height: 1.5;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .metrics-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+      }
+
+      .title {
+        font-size: 2rem;
+      }
+
+      .metric-value {
+        font-size: 2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .content {
+        padding: 1rem;
+      }
+
+      .title {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .metrics-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .metric-section {
+        padding: 1.5rem;
+      }
+
+      .icon-circle {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+      }
+
+      .metric-value {
+        font-size: 1.75rem;
+      }
+
+      .result-title {
+        font-size: 1.25rem;
+      }
+
+      .result-container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .arrow-container {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <!-- Background Circles -->
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">{{HEADER_LEFT}}</div>
+      <div class="header-center text-center">{{HEADER_CENTER}}</div>
+      <div class="header-right text-right">{{HEADER_RIGHT}}</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <h1 class="title">{{TITLE}}</h1>
+      
+      <div class="metrics-container">
+        {{CASES}}
+      </div>
+
+      <div class="result-container">
+        <div class="arrow-container">
+          <i class="fas fa-lightbulb"></i>
+        </div>
+        {{SUMMARY}}
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

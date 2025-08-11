@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
 
     console.log('면접 질문 생성 시작:', { companyName, jobTitle, careerLevel });
 
-    // 경력 수준별 맞춤 질문 생성
     const questions = await generateInterviewQuestions({
       companyName,
       jobTitle,
@@ -60,7 +59,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('면접 질문 생성 오류:', error);
     
-    // OpenAI API 에러 처리
     if (error instanceof Error && error.message.includes('insufficient_quota')) {
       return NextResponse.json({ 
         error: 'OpenAI API 할당량이 부족합니다.' 
@@ -89,8 +87,7 @@ async function generateInterviewQuestions({
   };
 
   const companyInfoSection = companyAnalysis ? `
-
-회사 분석 정보 (공식 사이트 조사 결과):
+회사 분석 정보:
 - 핵심가치: ${companyAnalysis.coreValues.join(', ')}
 - 인재상: ${companyAnalysis.idealCandidate}
 - 비전/미션: ${companyAnalysis.vision}
@@ -98,7 +95,7 @@ async function generateInterviewQuestions({
 - 회사문화: ${companyAnalysis.companyCulture}
 - 중요 역량: ${companyAnalysis.keyCompetencies.join(', ')}` : '';
 
-  const systemPrompt = `당신은 면접 전문가입니다. 지원자의 정보와 회사 공식 사이트에서 분석한 정보를 바탕으로 실제 면접에서 나올 가능성이 높은 맞춤형 질문을 생성해주세요.
+  const systemPrompt = `당신은 한국 최고의 채용 전문가이자 면접관입니다. 지원자의 정보와 회사 정보를 바탕으로, 실제 면접과 같이 날카롭고 깊이 있는 질문과, 그에 맞는 매우 구체적이고 실용적인 답변 팁을 생성해주세요.
 
 지원자 정보:
 - 회사: ${companyName}
@@ -108,124 +105,92 @@ ${jobDescription ? `- 직무 설명: ${jobDescription}` : ''}
 ${experience ? `- 주요 경험: ${experience}` : ''}
 ${skills ? `- 핵심 스킬: ${skills}` : ''}${companyInfoSection}
 
-질문 생성 규칙:
-1. 총 8-10개의 질문을 생성하세요
-2. 다음 카테고리들을 포함하세요: 자기소개, 지원동기, 기술/전문성, 문제해결, 협업/소통, 미래계획, 상황대처
-3. 경력 수준에 맞는 적절한 난이도로 조정하세요
-4. 실제 ${companyName}의 ${jobTitle} 면접에서 나올만한 현실적인 질문으로 구성하세요
-5. 회사 분석 정보가 있다면 해당 회사의 핵심가치, 인재상, 문화에 맞는 질문을 포함하세요
-6. 각 질문마다 실용적인 답변 팁을 3개씩 제공하세요${companyAnalysis ? 
-`\n7. 특히 "${companyAnalysis.coreValues.join(', ')}"와 관련된 질문과 "${companyAnalysis.keyCompetencies.join(', ')}" 역량을 평가할 수 있는 질문을 포함하세요` : ''}
+**질문 및 팁 생성 지침:**
 
-응답 형식은 반드시 다음 JSON 배열 형태로만 제공하세요:
-[
-  {
-    "category": "카테고리명",
-    "question": "면접 질문",
-    "difficulty": "easy|medium|hard",
-    "tips": ["팁1", "팁2", "팁3"]
-  }
-]
+1.  **질문 생성:**
+    *   총 8~10개의 질문을 생성합니다.
+    *   자기소개, 지원동기, 직무 전문성, 문제 해결 능력, 협업/소통, 성격 및 가치관, 미래 계획 등 다양한 카테고리를 포함해야 합니다.
+    *   특히, 지원자의 경험과 회사의 특성(핵심가치, 인재상, 사업분야)을 직접적으로 연결하는 **'맞춤형 꼬리 질문'**을 반드시 포함하세요. (예: "OO 프로젝트 경험이 저희 회사의 핵심 가치인 '도전'과 어떻게 연결되는지 구체적으로 설명해주세요.")
+    *   경력 수준에 맞는 난이도와 깊이로 질문을 조절해야 합니다. (신입에게는 잠재력을, 경력직에게는 전문성과 성과를 확인)
 
-JSON 배열만 응답하고 다른 텍스트는 포함하지 마세요.`;
+2.  **답변 팁 생성 (매우 중요):**
+    *   각 질문마다 **행동을 유도하는 구체적인 팁 3가지**를 제공해야 합니다.
+    *   **추상적인 조언 ("열심히 하세요", "긍정적으로 답변하세요")은 절대 금지합니다.**
+    *   **모든 경험 기반 질문의 팁에는 반드시 'STAR 기법'을 언급하고 설명해야 합니다.**
+        *   **S (Situation):** 어떤 상황이었는지 구체적인 배경을 설명하세요.
+        *   **T (Task):** 당신의 역할과 목표는 무엇이었나요?
+        *   **A (Action):** 그래서 당신이 '실제로 한 행동'은 무엇이었나요?
+        *   **R (Result):** 그 행동의 결과는 어땠나요? (가능하면 숫자로 표현: 예: '매출 15% 증가', '업무 시간 20% 단축')
+    *   **질문 유형별 팁 예시:**
+        *   **지원 동기 팁:** "'${companyName}의 [핵심 가치]'와 자신의 [경험/강점]을 연결하여, 단순한 팬이 아닌 기여할 수 있는 인재임을 어필하세요."
+        *   **문제 해결 팁:** "문제를 어떻게 정의했고, 해결 방안을 찾기 위해 어떤 기준을 세웠는지 논리적인 순서로 설명하는 것이 중요합니다."
+        *   **협업 팁:** "자신의 의견만 주장하기보다, 동료와 의견 차이가 있을 때 '공동의 목표'를 위해 어떻게 조율했는지 과정을 보여주세요."
+        *   **강점/약점 팁:** "강점은 [직무/회사의 인재상]과 연결하고, 약점은 이를 극복하기 위해 '현재 어떤 노력을 하고 있는지'를 함께 제시하세요."
+    *   회사 분석 정보가 있다면, **팁에 해당 정보를 직접적으로 활용**하세요. (예: "'${companyAnalysis?.keyCompetencies[0]}' 역량을 보여줄 수 있는 경험을 STAR 기법으로 설명해보세요.")
+    *   **지원자의 직무 특성을 반영한 팁을 반드시 포함하세요.**
+        *   **(예: 개발자 직무라면)** "답변 시 사용했던 기술 스택의 버전과 그 기술을 선택한 이유를 함께 설명하여 전문성을 어필하세요."
+        *   **(예: 마케터 직무라면)** "캠페인의 성공 여부를 어떤 핵심 지표(KPI)로 측정했고, 실제 데이터 기반의 성과가 어땠는지 수치로 보여주는 것이 중요합니다."
+        *   **(예: 디자이너 직무라면)** "자신의 디자인 철학을 설명하고, 제출하신 포트폴리오의 어떤 작업물에서 그 철학이 잘 드러나는지 연결하여 설명해보세요."
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt
-      },
-      {
-        role: "user",
-        content: `${companyName}의 ${jobTitle} 직무에 지원하는 ${careerLevelText[careerLevel]} 지원자를 위한 면접 질문을 생성해주세요.`
-      }
-    ],
-    max_tokens: 2000,
-    temperature: 0.7, // 창의적이면서도 일관성 있는 질문 생성
-  });
+**출력 형식 (반드시 엄수):**
 
-  const response = completion.choices[0].message.content;
-  
-  if (!response) {
-    throw new Error('질문 생성 응답이 없습니다.');
-  }
+"questions"라는 키를 가진 JSON 객체 형식으로만 응답해야 합니다. 다른 텍스트나 설명은 절대 포함하지 마세요.
 
-  try {
-    // JSON 파싱
-    const questions = JSON.parse(response);
-    
-    // ID 추가하여 반환
-    return questions.map((q: any, index: number) => ({
-      id: index + 1,
-      ...q
-    }));
-  } catch (parseError) {
-    console.error('JSON 파싱 오류:', parseError);
-    console.error('응답 내용:', response);
-    
-    // 파싱 실패 시 기본 질문 반환
-    return getDefaultQuestions(companyName, jobTitle, careerLevel);
-  }
-}
-
-// 기본 질문 (API 실패 시 백업용)
-function getDefaultQuestions(companyName: string, jobTitle: string, careerLevel: string) {
-  return [
+\`\`\`json
+{
+  "questions": [
     {
-      id: 1,
-      category: '자기소개',
-      question: '간단히 자기소개를 해주세요.',
-      difficulty: 'easy',
-      tips: [
-        '1-2분 내외로 간결하게 설명하세요',
-        '지원 직무와 관련된 경험을 중심으로 말하세요',
-        '회사에 어떤 가치를 제공할 수 있는지 포함하세요'
-      ]
-    },
-    {
-      id: 2,
-      category: '지원 동기',
-      question: `왜 ${companyName}에서 ${jobTitle} 직무를 지원하셨나요?`,
-      difficulty: 'medium',
-      tips: [
-        '회사의 비전과 본인의 목표가 어떻게 일치하는지 설명하세요',
-        '구체적인 사례나 경험을 들어 설명하세요',
-        '단순한 복리후생보다는 성장 가능성에 중점을 두세요'
-      ]
-    },
-    {
-      id: 3,
-      category: '기술/전문성',
-      question: `${jobTitle} 직무에 필요한 핵심 역량은 무엇이라고 생각하시나요?`,
-      difficulty: 'medium',
-      tips: [
-        '직무 분석을 통해 파악한 핵심 역량을 언급하세요',
-        '본인이 보유한 관련 경험이나 스킬을 연결하세요',
-        '지속적인 학습 의지를 보여주세요'
-      ]
-    },
-    {
-      id: 4,
-      category: '문제 해결',
-      question: '업무 중 가장 어려웠던 문제와 그것을 어떻게 해결했는지 말씀해주세요.',
-      difficulty: 'hard',
-      tips: [
-        'STAR 기법을 활용하세요 (Situation, Task, Action, Result)',
-        '구체적인 수치나 결과를 포함하세요',
-        '본인의 역할과 기여도를 명확히 하세요'
-      ]
-    },
-    {
-      id: 5,
-      category: '미래 계획',
-      question: '5년 후 본인의 모습을 어떻게 그리고 계시나요?',
-      difficulty: 'medium',
-      tips: [
-        '현실적이면서도 도전적인 목표를 제시하세요',
-        '회사의 성장과 함께하는 모습을 그려주세요',
-        '구체적인 계획과 준비 과정을 언급하세요'
+      "id": 1,
+      "category": "지원동기",
+      "question": "왜 다른 많은 회사들 중에서도 저희 ${companyName}에 지원하셨나요? 그리고 ${jobTitle} 직무를 통해 회사에 어떻게 기여하고 싶으신가요?",
+      "difficulty": "medium",
+      "tips": [
+        "회사의 최신 뉴스나 제품, 비전을 언급하며 얼마나 깊이 있는 관심을 가졌는지 보여주세요.",
+        "${companyName}의 '${companyAnalysis?.coreValues[0] || '핵심 가치'}'와 자신의 가치관이 어떻게 부합하는지 구체적인 경험과 연결하여 설명하세요.",
+        "자신이 가진 '${skills?.split(',')[0] || '핵심 스킬'}'을 활용하여 ${jobTitle} 직무에서 어떤 성과를 낼 수 있을지 구체적인 계획을 제시하세요."
       ]
     }
-  ];
-} 
+  ]
+}
+\`\`\`
+`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: `위 지침에 따라 ${companyName}의 ${jobTitle} 직무(${careerLevelText[careerLevel]}) 면접 질문과 팁을 생성해주세요.`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.8,
+      max_tokens: 3500,
+    });
+
+    const result = completion.choices[0]?.message?.content;
+    if (!result) {
+      throw new Error('질문 생성 결과를 받지 못했습니다.');
+    }
+    
+    const parsedResult = JSON.parse(result);
+    // 안정성 강화: GPT가 반환할 수 있는 다양한 형식을 모두 처리 (e.g., {questions: [...]}, {response: [...]}, [...])
+    const questions = parsedResult.questions || parsedResult.response || (Array.isArray(parsedResult) ? parsedResult : null);
+
+    if (!Array.isArray(questions)) {
+      console.error("GPT 응답에서 질문 배열을 찾을 수 없습니다:", parsedResult);
+      throw new Error("잘못된 형식의 질문 목록을 받았습니다.");
+    }
+    
+    return questions;
+
+  } catch (error) {
+    console.error('OpenAI API 호출 오류:', error);
+    throw error;
+  }
+}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{TITLE}}</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .slide-container {
+            width: 1280px;
+            height: 720px;
+            background-color: #FFFFFF;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 15px 40px;
+            color: #1E3A8A;
+            border-bottom: 1px solid rgba(30, 58, 138, 0.2);
+            font-family: 'Nanum Gothic Coding', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .content {
+            display: flex;
+            height: calc(100% - 60px);
+            padding: 40px;
+        }
+        
+        .left-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-right: 40px;
+        }
+        
+        .right-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .title {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 4.5rem;
+            line-height: 1.1;
+            color: #1E3A8A;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 1.7rem;
+            color: #1E3A8A;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .description {
+            font-family: 'Nanum Gothic Coding', monospace;
+            font-size: 1rem;
+            color: #6B7280;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            max-width: 500px;
+        }
+        
+        .priority-circle {
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            position: absolute;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .priority-number {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        
+        .priority-text {
+            font-family: 'Nanum Gothic Coding', monospace;
+            font-size: 0.9rem;
+            line-height: 1.3;
+            max-width: 85%;
+        }
+        
+        .priority-1 {
+            width: 190px;
+            height: 190px;
+            background-color: #1E3A8A;
+            top: 5%;
+            right: 20%;
+        }
+        
+        .priority-2 {
+            width: 210px;
+            height: 210px;
+            background-color: #1E40AF;
+            bottom: 15%;
+            left: 5%;
+        }
+        
+        .priority-3 {
+            width: 190px;
+            height: 190px;
+            background-color: #3B82F6;
+            bottom: 10%;
+            right: 5%;
+        }
+        
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(191, 219, 254, 0.3);
+            z-index: 0;
+        }
+        
+        .circle-1 {
+            width: 600px;
+            height: 600px;
+            top: -150px;
+            right: -150px;
+        }
+        
+        .circle-2 {
+            width: 400px;
+            height: 400px;
+            bottom: -100px;
+            left: 10%;
+        }
+    </style>
+</head>
+<body>
+<div class="slide-container">
+<!-- Background Circles -->
+<div class="circle circle-1"></div>
+<div class="circle circle-2"></div>
+<!-- Header -->
+<div class="header">
+<div class="header-left">{{HEADER_LEFT}}</div>
+<div class="header-center text-center">{{HEADER_CENTER}}</div>
+<div class="header-right text-right">{{HEADER_RIGHT}}</div>
+</div>
+<!-- Content -->
+<div class="content">
+<div class="left-content">
+<h1 class="title">{{TITLE}}</h1>
+<h2 class="subtitle">{{SUBTITLE}}</h2>
+<p class="description">{{DESCRIPTION}}</p>
+</div>
+<div class="right-content">
+{{PRIORITY_CIRCLES}}
+</div>
+</div>
+</div>
+</body>
+</html> 

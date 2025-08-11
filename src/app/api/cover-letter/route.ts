@@ -1,19 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { getOpenAIClient } from '@/lib/openai';
+import { validateTokenLimit, calculateResponseTokenLimit, calculateTokens } from '@/lib/token-validator';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// 토큰 제한 계산 함수 (대략적 계산)
-function estimateTokens(text: string): number {
-  // 한국어는 대략 1글자 = 1토큰, 영어는 1단어 = 1.3토큰으로 계산
-  const koreanChars = (text.match(/[가-힣]/g) || []).length;
-  const englishWords = (text.match(/[a-zA-Z]+/g) || []).length;
-  const otherChars = text.length - koreanChars - englishWords;
-  
-  return koreanChars + Math.ceil(englishWords * 1.3) + otherChars;
-}
+// OpenAI 클라이언트 초기화
+const openai = getOpenAIClient();
 
 // 컨텍스트 엔지니어링: 시스템 프롬프트 (AI의 역할과 규칙 정의)
 function buildSystemPrompt(): string {
@@ -254,26 +244,22 @@ async function generateCoverLetter({
     useSearchResults
   );
 
-  // 토큰 제한 체크 (파일 첨부 기능 제거로 단순화)
-  const estimatedSystemTokens = estimateTokens(systemPrompt);
-  const estimatedUserTokens = estimateTokens(userPrompt);
+  // 정확한 토큰 제한 검증
+  const tokenValidation = validateTokenLimit(systemPrompt, userPrompt, 'gpt-4');
   
-  // GPT-4의 대략적인 입력 제한 (8,000 토큰)
-  const maxTokens = 7000; // 여유를 두고 설정
-  
-  // 최종 토큰 수 확인
-  const totalEstimatedTokens = estimatedSystemTokens + estimatedUserTokens;
-  
-  if (totalEstimatedTokens > maxTokens) {
-    console.log(`토큰 수 초과: ${totalEstimatedTokens} > ${maxTokens}`);
+  if (!tokenValidation.isValid) {
+    throw new Error(tokenValidation.error || '토큰 제한을 초과했습니다.');
   }
+  
+  console.log(`토큰 검증 통과: ${tokenValidation.estimatedTokens}/${tokenValidation.maxAllowedTokens}`);
 
   try {
-    // 질문 수에 따라 max_tokens 동적 조정 (자동 보완 고려)
-    const baseTokens = 2000; // 자동 보완을 위해 기본 토큰 수 증가
-    const tokensPerQuestion = 700; // 자동 보완을 위해 질문당 토큰 수 증가
-    const dynamicMaxTokens = Math.min(baseTokens + (questions.length * tokensPerQuestion), 4500); // 자동 보완을 위해 최대 토큰 수 증가
+    // 정확한 응답 토큰 제한 계산
+    const systemTokens = calculateTokens(systemPrompt);
+    const userTokens = calculateTokens(userPrompt);
+    const maxResponseTokens = calculateResponseTokenLimit(systemTokens, userTokens, 'gpt-4');
 
+    const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -286,7 +272,7 @@ async function generateCoverLetter({
           content: userPrompt,
         },
       ],
-      max_tokens: dynamicMaxTokens,
+      max_tokens: maxResponseTokens,
       temperature: 0.3, // 자동 보완을 위해 온도 조정
     });
 

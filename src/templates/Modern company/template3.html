@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{TITLE}}</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body, html {
+        font-family: 'Noto Serif KR', serif;
+        overflow: hidden;
+    }
+
+    .slide-container {
+        width: 1280px;
+        height: 720px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 40px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-left, .header-center, .header-right {
+        font-family: 'Nanum Gothic Coding', monospace;
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .content {
+        flex: 1;
+        display: flex;
+        padding: 40px;
+        gap: 40px;
+    }
+
+    .left-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .right-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .title {
+        font-size: 48px;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 30px;
+        line-height: 1.2;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .description {
+        font-size: 20px;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.6;
+        margin-bottom: 40px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .trend-section {
+        margin-bottom: 30px;
+    }
+
+    .trend-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 20px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .trend-list {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    .trend-list li {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: flex-start;
+        font-size: 16px;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .trend-list li::before {
+        content: "•";
+        display: inline-block;
+        color: #fbbf24;
+        font-weight: bold;
+        font-size: 20px;
+        margin-right: 12px;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .stats-section {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stats-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 20px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        border-left: 4px solid #fbbf24;
+    }
+
+    .stat-number {
+        font-size: 36px;
+        font-weight: 700;
+        color: #fbbf24;
+        margin-right: 20px;
+        min-width: 80px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-text {
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.4;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .circle {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: -1;
+    }
+
+    .circle-1 {
+        width: 400px;
+        height: 400px;
+        top: -200px;
+        right: -200px;
+    }
+
+    .circle-2 {
+        width: 300px;
+        height: 300px;
+        bottom: -150px;
+        left: -150px;
+    }
+</style>
+</head>
+<body>
+<div class="slide-container">
+<!-- Background Circles -->
+<div class="circle circle-1"></div>
+<div class="circle circle-2"></div>
+
+<!-- Header -->
+<div class="header">
+<div class="header-left">{{HEADER_LEFT}}</div>
+<div class="header-center">{{HEADER_CENTER}}</div>
+<div class="header-right">{{HEADER_RIGHT}}</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+<div class="left-content">
+<h1 class="title">{{TITLE}}</h1>
+<p class="description">{{DESCRIPTION}}</p>
+<div class="trend-section">
+<h2 class="trend-title">주요 트렌드</h2>
+<ul class="trend-list">
+{{TRENDS}}
+</ul>
+</div>
+</div>
+<div class="right-content">
+<div class="stats-section">
+<h2 class="stats-title">핵심 통계</h2>
+<div class="stat-item">
+<div class="stat-number">20%</div>
+<div class="stat-text">{{STATS}}</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html> 

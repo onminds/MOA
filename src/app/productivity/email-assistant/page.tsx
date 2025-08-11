@@ -1,9 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Header from '../../components/Header';
-import { useSidebar } from '../../contexts/SidebarContext';
 import {
-  Search, Home as HomeIcon, List, BarChart, Megaphone, Newspaper, MessageCircle, Settings,
   ArrowLeft, Mail, Send, Edit3, Clock, User, AlertCircle,
   Bot, Loader2, RefreshCw, Calendar, Filter, Star,
   X, ChevronLeft, ChevronRight, HelpCircle
@@ -11,17 +9,6 @@ import {
 import { useRouter } from 'next/navigation';
 import GoogleLogin from '../../components/GoogleLogin';
 import DevTestButton from '../../components/DevTestButton';
-
-const sideMenus = [
-  { name: '홈', icon: <HomeIcon className="w-5 h-5 mr-2" />, href: '/' },
-  { name: '검색', icon: <Search className="w-5 h-5 mr-2" />, href: '#' },
-  { name: 'AI 목록', icon: <List className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '순위', icon: <BarChart className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '광고', icon: <Megaphone className="w-5 h-5 mr-2" />, href: '#' },
-  { name: 'AI 뉴스', icon: <Newspaper className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '문의하기', icon: <MessageCircle className="w-5 h-5 mr-2" />, href: '#' },
-  { name: '설정', icon: <Settings className="w-5 h-5 mr-2" />, href: '/settings' },
-];
 
 export default function EmailAssistant() {
   const router = useRouter();
@@ -68,7 +55,7 @@ export default function EmailAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   
   // Shortwave 스타일 레이아웃 상태
-  const { isSidebarCollapsed, toggleSidebar } = useSidebar();
+  // const { isSidebarCollapsed, toggleSidebar } = useSidebar();
 
   // AI 챗봇 응답 생성
   const generateAIResponse = async (message: string) => {
@@ -290,30 +277,7 @@ export default function EmailAssistant() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white flex flex-row w-full">
-        {/* 왼쪽 사이드바 */}
-        <aside className={`bg-gray-50 min-h-screen flex-col justify-between hidden md:flex transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-16' : 'w-64'
-        }`}>
-          <div className="p-6">
-            <nav className="space-y-2">
-              {sideMenus.map((menu) => (
-                <a
-                  key={menu.name}
-                  href={menu.href}
-                  className="flex items-center px-4 py-3 rounded-lg text-gray-800 hover:bg-gray-200 transition-colors font-medium"
-                >
-                  {menu.icon}
-                  {!isSidebarCollapsed && <span className="ml-2">{menu.name}</span>}
-                </a>
-              ))}
-            </nav>
-          </div>
-          <div className="p-6">
-            <GoogleLogin />
-          </div>
-        </aside>
-
+      <div className="min-h-screen bg-white flex flex-col">
         {/* 메인 콘텐츠 - 미니멀 스타일 */}
         <div className="flex-1 flex flex-col">
           {/* 상단 헤더 */}
@@ -326,12 +290,7 @@ export default function EmailAssistant() {
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={toggleSidebar}
-                  className="text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  {isSidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-                </button>
+                {/* 사이드바 접기/펼치기 버튼 완전 삭제 */}
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900">Inbox</h1>
                   <p className="text-sm text-gray-500">Primary {emails.length}+</p>

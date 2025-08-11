@@ -1,6 +1,10 @@
 import OpenAI from 'openai';
+import { getSummaryCostInfo } from './summary-cost-calculator';
+import { summarizeWithPuppeteer } from './puppeteer-summarizer';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 interface Section {
   title: string;
@@ -125,12 +129,20 @@ async function summarizeSections(sections: Section[]): Promise<string> {
 /**
  * 기존 함수와의 호환성을 위한 래퍼 함수
  */
-export async function summarizeText(text: string, maxLength: number = 2000): Promise<string> {
-  if (text.length <= maxLength) {
-    return text;
-  }
-
+export async function summarizeText(text: string): Promise<string> {
   try {
+    // 비용 계산 (GPT-3.5-turbo 사용)
+    const costInfo = getSummaryCostInfo(text, 'gpt-3.5-turbo', 2000);
+    console.log('💰 PDF 요약 비용 정보:', {
+      cost: costInfo.cost.toFixed(2) + '원',
+      isExpensive: costInfo.isExpensive,
+      inputTokens: costInfo.inputTokens,
+      estimatedOutputTokens: costInfo.estimatedOutputTokens,
+      contentLength: text.length
+    });
+
+    // 요약은 비용 제한 없이 OpenAI 사용
+    console.log('🤖 OpenAI 사용:', costInfo.cost.toFixed(2) + '원');
     console.log('📄 섹션별 PDF 요약 시작...');
     
     // 섹션 추출
@@ -148,7 +160,7 @@ export async function summarizeText(text: string, maxLength: number = 2000): Pro
     // 기존 방식으로 폴백
     try {
       const completion = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
@@ -156,17 +168,17 @@ export async function summarizeText(text: string, maxLength: number = 2000): Pro
           },
           {
             role: "user",
-            content: `다음 텍스트를 ${maxLength}자 이내로 요약해주세요:\n\n${text}`
+            content: `다음 텍스트를 2000자 이내로 요약해주세요:\n\n${text}`
           }
         ],
         max_tokens: 1000,
         temperature: 0.3,
       });
 
-      return completion.choices[0]?.message?.content || text.substring(0, maxLength);
+      return completion.choices[0]?.message?.content || text.substring(0, 2000);
     } catch (fallbackError) {
       console.log('❌ 폴백 요약도 실패, 원본 텍스트 자르기:', fallbackError);
-      return text.substring(0, maxLength) + '...';
+      return text.substring(0, 2000) + '...';
     }
   }
 } 
