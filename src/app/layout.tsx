@@ -9,10 +9,10 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://moa.tools"),
-  applicationName: "Moa Tools",
+  applicationName: "모아툴스",
   title: {
-    default: "Moa Tools - AI Search Engine",
-    template: "%s | Moa Tools",
+    default: "모아툴스 - AI 검색 엔진",
+    template: "%s | 모아툴스",
   },
   description: "AI 기반 검색과 생성형 도구를 한 곳에서 사용하는 Moa Tools",
   keywords: [
