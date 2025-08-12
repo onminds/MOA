@@ -22,22 +22,22 @@ export default function PlanPage() {
   const [loading, setLoading] = useState(true);
   const [paymentMessage, setPaymentMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-  useEffect(() => {
-    const fetchUserPlan = async () => {
-      if (session?.user?.id) {
-        try {
-          const response = await fetch('/api/user/plan');
-          if (response.ok) {
-            const data = await response.json();
-            setUserPlanInfo(data);
-          }
-        } catch (error) {
-          console.error('플랜 정보 조회 오류:', error);
+  const fetchUserPlan = async () => {
+    if (session?.user?.id) {
+      try {
+        const response = await fetch('/api/user/plan');
+        if (response.ok) {
+          const data = await response.json();
+          setUserPlanInfo(data);
         }
+      } catch (error) {
+        console.error('플랜 정보 조회 오류:', error);
       }
-      setLoading(false);
-    };
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchUserPlan();
   }, [session?.user?.id]);
 
@@ -268,8 +268,11 @@ export default function PlanPage() {
                           amount={15900}
                           onSuccess={() => {
                             setPaymentMessage({ type: 'success', message: 'Standard 플랜 결제가 완료되었습니다!' });
-                            // 페이지 새로고침하여 플랜 정보 업데이트
-                            window.location.reload();
+                            // 플랜 정보 다시 조회 (더 긴 지연 시간)
+                            setTimeout(() => {
+                              console.log('플랜 정보 재조회 시작...');
+                              fetchUserPlan();
+                            }, 2000);
                           }}
                           onError={(error: string) => {
                             setPaymentMessage({ type: 'error', message: error });
@@ -282,8 +285,11 @@ export default function PlanPage() {
                           amount={29000}
                           onSuccess={() => {
                             setPaymentMessage({ type: 'success', message: 'Pro 플랜 결제가 완료되었습니다!' });
-                            // 페이지 새로고침하여 플랜 정보 업데이트
-                            window.location.reload();
+                            // 플랜 정보 다시 조회 (더 긴 지연 시간)
+                            setTimeout(() => {
+                              console.log('플랜 정보 재조회 시작...');
+                              fetchUserPlan();
+                            }, 2000);
                           }}
                           onError={(error: string) => {
                             setPaymentMessage({ type: 'error', message: error });

@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
     const db = await getConnection();
     console.log('DB 연결 성공');
     
-    // 주문 ID 생성 (고유값)
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // 주문 ID 생성 (고유값 + planId 포함)
+    const orderId = `order_${Date.now()}_${planId}_${Math.random().toString(36).substr(2, 9)}`;
     console.log('생성된 주문 ID:', orderId);
 
     // 주문 정보 DB 저장

@@ -45,36 +45,50 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
     }
   }, [session]);
 
-  // 페이지 포커스 시 플랜 정보 새로고침
+  // 페이지 포커스, 결제 완료, 주기적 새로고침
   useEffect(() => {
     const handleFocus = () => {
       if (session?.user?.email) {
-        // 캐시 무시하고 새로 가져오기
-        fetchPlanInfo(true);
+        fetchPlanInfo();
       }
     };
 
+    const handlePlanUpdated = () => {
+      if (session?.user?.email) {
+        // 로그 제거 - 너무 자주 출력되므로 주석 처리
+        // console.log('결제 완료 감지 - 플랜 정보 새로고침');
+        fetchPlanInfo();
+      }
+    };
+
+    // 주기적 새로고침 (30초마다로 늘림)
+    const interval = setInterval(() => {
+      if (session?.user?.email) {
+        fetchPlanInfo();
+      }
+    }, 30000);
+
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener('planUpdated', handlePlanUpdated);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('planUpdated', handlePlanUpdated);
+      clearInterval(interval);
+    };
   }, [session]);
 
-  const fetchPlanInfo = async (forceRefresh = false) => {
+  const fetchPlanInfo = async () => {
     const userEmail = session?.user?.email;
     if (!userEmail) return;
 
-    // 강제 새로고침이 아니고 캐시가 있으면 캐시 사용
-    if (!forceRefresh && planCache.has(userEmail)) {
-      setPlanInfo(planCache.get(userEmail)!);
-      return;
-    }
-
     setPlanLoading(true);
     try {
-      // 강제 새로고침 시 캐시 키에 타임스탬프 추가
-      const cacheKey = forceRefresh ? `plan-${userEmail}-${Date.now()}` : `plan-${userEmail}`;
-      const data = await cachedFetchJson('/api/user/plan', cacheKey, {}, 2 * 60 * 1000); // 2분 캐시로 단축
+      // 항상 최신 데이터를 가져오기 위해 캐시 무시
+      const cacheKey = `plan-${userEmail}-${Date.now()}`;
+      const data = await cachedFetchJson('/api/user/plan', cacheKey, {}, 0); // 캐시 비활성화
       setPlanInfo(data);
-      // 캐시에 저장
+      // 캐시에 저장 (다음 요청 시 사용하지 않음)
       setPlanCache(prev => new Map(prev).set(userEmail, data));
     } catch (error) {
       console.error('플랜 정보 로딩 실패:', error);
@@ -231,14 +245,12 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
                     <div className="w-12 h-3 bg-gray-300 rounded animate-pulse"></div>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => fetchPlanInfo(true)}
-                    className={`hidden sm:flex items-center space-x-1 px-2 py-1 rounded-full border text-xs font-medium ${getPlanColor(planInfo.planType)} min-w-[80px] h-[28px] hover:opacity-80 transition-opacity cursor-pointer`}
-                    title="플랜 정보 새로고침"
+                  <div
+                    className={`hidden sm:flex items-center space-x-1 px-2 py-1 rounded-full border text-xs font-medium ${getPlanColor(planInfo.planType)} min-w-[80px] h-[28px]`}
                   >
                     {getPlanIcon(planInfo.planType)}
                     <span>{planInfo.planInfo.displayName}</span>
-                  </button>
+                  </div>
                 )}
                 
                 {/* 프로필 드롭다운 */}

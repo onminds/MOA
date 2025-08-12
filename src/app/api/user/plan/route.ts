@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const db = await getConnection();
     
-    // 사용자 정보와 최신 결제 내역 조회
+    // 사용자 정보와 최신 결제 내역 조회 (payments 테이블의 plan_type 사용)
     const userResult = await db.request()
       .input('email', session.user.email)
       .query(`
@@ -39,6 +39,14 @@ export async function GET(request: NextRequest) {
 
     const user = userResult.recordset[0];
     const planType = user.plan_type || 'basic';
+    
+    // 로그 제거 - 너무 자주 출력되므로 주석 처리
+    // console.log('플랜 정보 조회 결과:', {
+    //   userId: user.id,
+    //   email: user.email,
+    //   planType: planType,
+    //   rawPlanType: user.plan_type
+    // });
 
     // 플랜 정보 매핑
     const planInfo = {

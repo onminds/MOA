@@ -11,7 +11,7 @@ MOA는 AI 도구 검색, 커뮤니티, 그리고 다양한 AI 서비스를 제�
 - **리뷰 시스템**: AI 도구에 대한 사용자 리뷰 및 평가
 
 ### 💳 결제 시스템
-- **Bootpay 연동**: 안전한 결제 처리
+- **토스페이먼츠 연동**: 안전한 결제 처리
 - **플랜 시스템**: Basic(무료), Standard(15,900원), Pro(29,000원)
 - **사용량 관리**: 플랜별 AI 서비스 사용량 제한 및 추적
 
@@ -47,7 +47,7 @@ MOA는 AI 도구 검색, 커뮤니티, 그리고 다양한 AI 서비스를 제�
 ### AI & 외부 서비스
 - **OpenAI API** (GPT, DALL-E)
 - **Replicate API** (Stable Diffusion 등)
-- **Bootpay** (결제)
+- **토스페이먼츠** (결제)
 
 ## 📦 설치 및 실행
 
@@ -80,8 +80,8 @@ OPENAI_API_KEY=your_openai_api_key
 REPLICATE_API_TOKEN=your_replicate_token
 
 # 결제
-BOOTPAY_APPLICATION_ID=your_bootpay_app_id
-BOOTPAY_PRIVATE_KEY=your_bootpay_private_key
+NEXT_PUBLIC_TOSS_CLIENT_KEY=your_toss_client_key
+TOSS_SECRET_KEY=your_toss_secret_key
 ```
 
 ### 2. 의존성 설치
@@ -119,7 +119,7 @@ npm run dev
    - 직접 SQL 쿼리 사용
 
 2. **결제 시스템 통합**
-   - Bootpay 결제 게이트웨이 연동
+   - 토스페이먼츠 결제 게이트웨이 연동
    - 플랜별 사용량 제한 시스템
    - 결제 내역 관리
 

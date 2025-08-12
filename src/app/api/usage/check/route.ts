@@ -31,7 +31,7 @@ async function checkImageGenerationUsage(userId: string) {
     .input('userId', userId)
     .input('serviceType', 'image-generate')
     .query(`
-      SELECT usage_count, limit_count, reset_date 
+      SELECT usage_count, limit_count, next_reset_date 
       FROM usage 
       WHERE user_id = @userId AND service_type = @serviceType
     `);
@@ -60,7 +60,57 @@ async function checkImageGenerationUsage(userId: string) {
     planType = 'admin';
   }
 
-  const currentUsage = usageResult.recordset[0]?.usage_count || 0;
+  let currentUsage = usageResult.recordset[0]?.usage_count || 0;
+  let nextResetDate = usageResult.recordset[0]?.next_reset_date;
+  
+  // next_reset_date가 없으면 계정 생성일 기준으로 설정
+  if (!nextResetDate) {
+    const userCreatedResult = await db.request()
+      .input('userId', userId)
+      .query('SELECT created_at FROM users WHERE id = @userId');
+    
+    const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
+    if (userCreatedAt) {
+      const resetDate = new Date(userCreatedAt);
+      resetDate.setDate(resetDate.getDate() + 7);
+      nextResetDate = resetDate;
+      
+      // DB에 next_reset_date 저장
+      await db.request()
+        .input('userId', userId)
+        .input('serviceType', 'image-generate')
+        .input('nextResetDate', nextResetDate)
+        .query(`
+          UPDATE usage 
+          SET next_reset_date = @nextResetDate 
+          WHERE user_id = @userId AND service_type = @serviceType
+        `);
+    }
+  }
+  
+  // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
+  const now = new Date();
+  if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
+    console.log(`사용자 ${userId}의 이미지 생성 사용량 초기화: ${currentUsage} -> 0`);
+    
+    // 다음 초기화 시간을 기존 next_reset_date 기준으로 일주일 후로 설정
+    const nextReset = new Date(nextResetDate);
+    nextReset.setDate(nextReset.getDate() + 7);
+    
+    await db.request()
+      .input('userId', userId)
+      .input('serviceType', 'image-generate')
+      .input('nextResetDate', nextReset)
+      .query(`
+        UPDATE usage 
+        SET usage_count = 0, next_reset_date = @nextResetDate, updated_at = GETDATE()
+        WHERE user_id = @userId AND service_type = @serviceType
+      `);
+    
+    // currentUsage를 0으로 업데이트
+    currentUsage = 0;
+  }
+  
   const remainingCount = Math.max(0, maxLimit - currentUsage);
   const allowed = currentUsage < maxLimit;
 
@@ -70,7 +120,7 @@ async function checkImageGenerationUsage(userId: string) {
     limitCount: maxLimit,
     remainingCount,
     planType,
-    resetDate: new Date().toISOString() // 이미지는 총 제한이므로 리셋 없음
+    resetDate: nextResetDate || new Date().toISOString()
   };
 }
 
@@ -103,7 +153,7 @@ async function checkVideoGenerationUsage(userId: string) {
     .input('userId', userId)
     .input('serviceType', 'video-generate')
     .query(`
-      SELECT usage_count, limit_count, reset_date 
+      SELECT usage_count, limit_count, next_reset_date 
       FROM usage 
       WHERE user_id = @userId AND service_type = @serviceType
     `);
@@ -132,7 +182,57 @@ async function checkVideoGenerationUsage(userId: string) {
     planType = 'admin';
   }
 
-  const currentUsage = usageResult.recordset[0]?.usage_count || 0;
+  let currentUsage = usageResult.recordset[0]?.usage_count || 0;
+  let nextResetDate = usageResult.recordset[0]?.next_reset_date;
+  
+  // next_reset_date가 없으면 계정 생성일 기준으로 설정
+  if (!nextResetDate) {
+    const userCreatedResult = await db.request()
+      .input('userId', userId)
+      .query('SELECT created_at FROM users WHERE id = @userId');
+    
+    const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
+    if (userCreatedAt) {
+      const resetDate = new Date(userCreatedAt);
+      resetDate.setDate(resetDate.getDate() + 7);
+      nextResetDate = resetDate;
+      
+      // DB에 next_reset_date 저장
+      await db.request()
+        .input('userId', userId)
+        .input('serviceType', 'video-generate')
+        .input('nextResetDate', nextResetDate)
+        .query(`
+          UPDATE usage 
+          SET next_reset_date = @nextResetDate 
+          WHERE user_id = @userId AND service_type = @serviceType
+        `);
+    }
+  }
+  
+  // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
+  const now = new Date();
+  if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
+    console.log(`사용자 ${userId}의 영상 생성 사용량 초기화: ${currentUsage} -> 0`);
+    
+    // 다음 초기화 시간을 기존 next_reset_date 기준으로 일주일 후로 설정
+    const nextReset = new Date(nextResetDate);
+    nextReset.setDate(nextReset.getDate() + 7);
+    
+    await db.request()
+      .input('userId', userId)
+      .input('serviceType', 'video-generate')
+      .input('nextResetDate', nextReset)
+      .query(`
+        UPDATE usage 
+        SET usage_count = 0, next_reset_date = @nextResetDate, updated_at = GETDATE()
+        WHERE user_id = @userId AND service_type = @serviceType
+      `);
+    
+    // currentUsage를 0으로 업데이트
+    currentUsage = 0;
+  }
+  
   const remainingCount = Math.max(0, maxLimit - currentUsage);
   const allowed = currentUsage < maxLimit;
 
@@ -142,43 +242,104 @@ async function checkVideoGenerationUsage(userId: string) {
     limitCount: maxLimit,
     remainingCount,
     planType,
-    resetDate: new Date().toISOString() // 영상은 총 제한이므로 리셋 없음
+    resetDate: nextResetDate || new Date().toISOString()
   };
 }
 
 // 기존 사용량 체크 (다른 서비스용)
 async function checkUsageLimit(userId: string, serviceType: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const db = await getConnection();
   const usageResult = await db.request()
     .input('userId', userId)
     .input('serviceType', serviceType)
-    .query('SELECT usage_count, limit_count, reset_date FROM usage WHERE user_id = @userId AND service_type = @serviceType');
+    .query('SELECT usage_count, limit_count, next_reset_date FROM usage WHERE user_id = @userId AND service_type = @serviceType');
 
   if (usageResult.recordset.length === 0) {
+    // 사용량 정보가 없으면 생성
+    const defaultLimit = getDefaultLimit(serviceType);
+    
+    // 계정 생성일 기준으로 일주일 후 초기화 시간 설정
+    const userCreatedResult = await db.request()
+      .input('userId', userId)
+      .query('SELECT created_at FROM users WHERE id = @userId');
+    
+    const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
+    let nextResetDate = null;
+    
+    if (userCreatedAt) {
+      const resetDate = new Date(userCreatedAt);
+      resetDate.setDate(resetDate.getDate() + 7);
+      nextResetDate = resetDate;
+    }
+    
+    await db.request()
+      .input('userId', userId)
+      .input('serviceType', serviceType)
+      .input('limitCount', defaultLimit)
+      .input('nextResetDate', nextResetDate)
+      .query(`
+        INSERT INTO usage (user_id, service_type, usage_count, limit_count, next_reset_date, created_at, updated_at)
+        VALUES (@userId, @serviceType, 0, @limitCount, @nextResetDate, GETDATE(), GETDATE())
+      `);
+    
     return {
       allowed: true,
       usageCount: 0,
-      limitCount: getDefaultLimit(serviceType),
-      remainingCount: getDefaultLimit(serviceType),
-      resetDate: today
+      limitCount: defaultLimit,
+      remainingCount: defaultLimit,
+      resetDate: nextResetDate
     };
   }
 
   const usage = usageResult.recordset[0];
-  const usageDate = new Date(usage.reset_date);
-  usageDate.setHours(0, 0, 0, 0);
+  const now = new Date();
+  let nextResetDate = usage.next_reset_date;
   
-  if (today.getTime() !== usageDate.getTime()) {
-    return {
-      allowed: true,
-      usageCount: 0,
-      limitCount: usage.limit_count,
-      remainingCount: usage.limit_count,
-      resetDate: today
-    };
+  // next_reset_date가 없으면 계정 생성일 기준으로 설정
+  if (!nextResetDate) {
+    const userCreatedResult = await db.request()
+      .input('userId', userId)
+      .query('SELECT created_at FROM users WHERE id = @userId');
+    
+    const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
+    if (userCreatedAt) {
+      const resetDate = new Date(userCreatedAt);
+      resetDate.setDate(resetDate.getDate() + 7);
+      nextResetDate = resetDate;
+      
+      // DB에 next_reset_date 저장
+      await db.request()
+        .input('userId', userId)
+        .input('serviceType', serviceType)
+        .input('nextResetDate', nextResetDate)
+        .query(`
+          UPDATE usage 
+          SET next_reset_date = @nextResetDate 
+          WHERE user_id = @userId AND service_type = @serviceType
+        `);
+    }
+  }
+  
+  // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
+  if (nextResetDate && now > new Date(nextResetDate) && usage.usage_count > 0) {
+    console.log(`사용자 ${userId}의 ${serviceType} 사용량 초기화: ${usage.usage_count} -> 0`);
+    
+    // 다음 초기화 시간을 일주일 후로 설정
+    const nextReset = new Date(nextResetDate);
+    nextReset.setDate(nextReset.getDate() + 7);
+    
+    await db.request()
+      .input('userId', userId)
+      .input('serviceType', serviceType)
+      .input('nextResetDate', nextReset)
+      .query(`
+        UPDATE usage 
+        SET usage_count = 0, next_reset_date = @nextResetDate, updated_at = GETDATE()
+        WHERE user_id = @userId AND service_type = @serviceType
+      `);
+    
+    usage.usage_count = 0;
+    usage.next_reset_date = nextReset;
   }
 
   const allowed = usage.usage_count < usage.limit_count;
@@ -187,7 +348,7 @@ async function checkUsageLimit(userId: string, serviceType: string) {
     usageCount: usage.usage_count,
     limitCount: usage.limit_count,
     remainingCount: Math.max(0, usage.limit_count - usage.usage_count),
-    resetDate: usage.reset_date
+    resetDate: usage.next_reset_date
   };
 }
 

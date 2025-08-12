@@ -2,7 +2,7 @@
 
 import Header from '../components/Header';
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, MessageCircle, Heart, Search as SearchIcon, Flame, Users, Clock, Filter } from 'lucide-react';
+import { Pencil, MessageCircle, Heart, Search as SearchIcon, Flame, Users, Clock, Filter, HelpCircle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -21,8 +21,13 @@ interface Post {
 const categories = [
   { id: 1, name: '공지' },
   { id: 2, name: 'Q&A' },
-  { id: 3, name: '자유' }
+  { id: 3, name: '자유' },
+  { id: 4, name: '프롬프트 공유' },
+  { id: 5, name: '정보' },
+  { id: 6, name: '이미지' },
+  { id: 7, name: '영상' }
 ];
+
 const sortOptions = ['최신', '인기'];
 const POSTS_PER_PAGE = 10;
 
@@ -45,35 +50,16 @@ export default function CommunityPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [sideTab, setSideTab] = useState<'popular' | 'ranking' | 'comments'>('popular');
-  
-  // 사용자 role 관련 상태
-  const [userRole, setUserRole] = useState<string>('');
-  const [isAdmin, setIsAdmin] = useState(false);
-  
-  // 게시글 작성 관련 상태
-  const [showWriteForm, setShowWriteForm] = useState(false);
-  const [writeTitle, setWriteTitle] = useState('');
-  const [writeContent, setWriteContent] = useState('');
-  const [writeCategory, setWriteCategory] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // 사용자 role 가져오기
-  const fetchUserRole = async () => {
-    if (!session?.user?.id) return;
-    
-    try {
-      const response = await fetch('/api/auth/user-role');
-      if (response.ok) {
-        const data = await response.json();
-        setUserRole(data.role);
-        setIsAdmin(data.isAdmin);
-      }
-    } catch (error) {
-      console.error('사용자 role 조회 오류:', error);
-    }
-  };
+  // 모달용 상태 추가
+  const [showWriteForm, setShowWriteForm] = useState(false);
+  const [writeTitle, setWriteTitle] = useState('');
+  const [writeContent, setWriteContent] = useState('');
+  const [writeCategory, setWriteCategory] = useState('Q&A');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isQuestionModal, setIsQuestionModal] = useState(false);
 
   // 게시글 데이터 가져오기
   useEffect(() => {
@@ -82,7 +68,7 @@ export default function CommunityPage() {
         const response = await fetch('/api/community/posts');
         if (response.ok) {
           const data = await response.json();
-          setPosts(data.posts);
+          setPosts(data.posts || []);
         }
       } catch (error) {
         console.error('게시글 조회 오류:', error);
@@ -94,22 +80,8 @@ export default function CommunityPage() {
     fetchPosts();
   }, []);
 
-  // 사용자 role 가져오기
-  useEffect(() => {
-    fetchUserRole();
-  }, [session?.user?.id]);
-
-  // 사용자 role에 따라 기본 카테고리 설정
-  useEffect(() => {
-    if (userRole) {
-      // ADMIN이면 공지, 아니면 Q&A를 기본값으로 설정
-      const defaultCategory = isAdmin ? '공지' : 'Q&A';
-      setWriteCategory(defaultCategory);
-    }
-  }, [userRole, isAdmin]);
-
   // 필터링된 게시글
-  const filteredPosts = posts.filter(
+  const filteredPosts = (posts || []).filter(
     (post) =>
       (selectedCategory === '전체' || post.category_name === selectedCategory) &&
       (search === '' || post.title.includes(search) || post.author_name.includes(search))
@@ -157,13 +129,16 @@ export default function CommunityPage() {
   useEffect(() => {
     if (!showWriteForm) return;
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setShowWriteForm(false);
+      if (e.key === 'Escape') {
+        setShowWriteForm(false);
+        setIsQuestionModal(false);
+      }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [showWriteForm]);
 
-  // 글쓰기 폼 제출
+  // 글쓰기 폼 제출 (모달용)
   const handleWriteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -183,12 +158,9 @@ export default function CommunityPage() {
         setShowWriteForm(false);
         setWriteTitle('');
         setWriteContent('');
-        // 사용자 role에 따라 기본 카테고리 설정
-        const defaultCategory = isAdmin ? '공지' : 'Q&A';
-        setWriteCategory(defaultCategory);
-        // 새로고침
+        setWriteCategory('Q&A');
         const data = await fetch('/api/community/posts').then(r => r.json());
-        setPosts(data.posts);
+        setPosts(data.posts || []);
         setPage(1);
         setToast({ message: '게시글이 등록되었습니다!', type: 'success' });
       } else {
@@ -277,59 +249,50 @@ export default function CommunityPage() {
             <h1 className="text-3xl font-bold text-gray-900">커뮤니티</h1>
           </div>
 
-          <div className="flex gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* 메인 콘텐츠 */}
-            <div className="flex-1">
+            <div className="md:col-span-2">
               {/* 카테고리 버튼들 */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-                <div className="flex gap-2">
-                  <button
+              <div className="flex gap-2 mb-4">
+                <button
                     onClick={() => handleCategoryChange('전체')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
                       selectedCategory === '전체' 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-black text-white shadow' 
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                     }`}
+                >
+                  전체
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryChange(cat.name)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
+                        selectedCategory === cat.name 
+                          ? 'bg-black text-white shadow' 
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      }`}
                   >
-                    전체
+                    {cat.name}
                   </button>
-                  {categories.map((cat) => {
-                    // ADMIN이 아니면 공지 카테고리 숨기기
-                    if (cat.name === '공지' && !isAdmin) {
-                      return null;
-                    }
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => handleCategoryChange(cat.name)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                          selectedCategory === cat.name 
-                            ? 'bg-blue-600 text-white shadow-md' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {cat.name}
-                      </button>
-                    );
-                  })}
-                </div>
+                ))}
               </div>
 
-              {/* 정렬 및 필터 옵션들 */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-                <div className="flex items-center justify-between gap-4">
+              {/* 정렬, 필터, 글쓰기 바 */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 flex items-center justify-between gap-4">
                   {/* 왼쪽 영역: 정렬 버튼들 + 검색창 */}
                   <div className="flex items-center gap-4 flex-1">
                     {/* 정렬 버튼들 */}
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2 border-r pr-4">
                       {sortOptions.map((sort) => (
                         <button
                           key={sort}
                           onClick={() => handleSortChange(sort)}
-                          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                             selectedSort === sort 
-                              ? 'bg-blue-100 text-blue-700' 
-                              : 'text-gray-600 hover:bg-gray-100'
+                              ? 'text-gray-900' 
+                              : 'text-gray-500 hover:text-gray-800'
                           }`}
                         >
                           {sort === '최신' && <Clock className="w-4 h-4" />}
@@ -340,156 +303,72 @@ export default function CommunityPage() {
                     </div>
 
                     {/* 검색창 */}
-                    <div className="max-w-xs">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={search}
-                          onChange={handleSearchChange}
-                          placeholder="게시글 검색..."
-                          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:outline-none text-gray-900 bg-white"
-                        />
-                        <SearchIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
-                      </div>
+                    <div className="relative flex-1 max-w-sm">
+                      <input
+                        type="text"
+                        value={search}
+                        onChange={handleSearchChange}
+                        placeholder="게시글 검색..."
+                        className="w-full pl-9 pr-4 py-2 rounded-lg border-transparent focus:ring-2 focus:ring-gray-300 focus:outline-none text-gray-900 bg-transparent"
+                      />
+                      <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
                   </div>
 
                   {/* 오른쪽 영역: 글쓰기 버튼 */}
                   <div className="flex-shrink-0">
                     {session?.user?.id ? (
-                      <button 
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors font-semibold"
-                        onClick={() => setShowWriteForm(true)}
+                      <Link
+                        href="/community/write"
+                        className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg shadow hover:bg-gray-800 transition-colors font-semibold"
                       >
-                        <Pencil className="w-5 h-5" />
+                        <Pencil className="w-4 h-4" />
                         글쓰기
-                      </button>
+                      </Link>
                     ) : (
-                      <div className="flex items-center gap-2 text-gray-500 bg-gray-100 px-4 py-2 rounded-lg">
-                        <Pencil className="w-5 h-5" />
-                        <span className="text-sm">로그인이 필요합니다</span>
-                      </div>
+                       <Link
+                        href="/auth/signin"
+                        className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        글쓰기
+                      </Link>
                     )}
                   </div>
-                </div>
               </div>
 
-              {/* 게시글 작성 폼 */}
-              {showWriteForm && session?.user?.id && (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
-                  onClick={e => {
-                    if (e.target === e.currentTarget) setShowWriteForm(false);
-                  }}
-                >
-                  <form
-                    ref={formRef}
-                    onSubmit={handleWriteSubmit}
-                    className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg flex flex-col gap-5 border border-gray-100 animate-fade-in-up relative"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <h2 className="text-2xl font-bold mb-2 text-gray-900">게시글 작성</h2>
-                    <label className="flex flex-col gap-1">
-                      <span className="font-medium text-gray-800">카테고리</span>
-                      <select
-                        value={writeCategory}
-                        onChange={e => setWriteCategory(e.target.value)}
-                        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-gray-50 text-gray-900"
-                      >
-                        {categories.map(cat => {
-                          // ADMIN이 아니면 공지 카테고리 숨기기
-                          if (cat.name === '공지' && !isAdmin) {
-                            return null;
-                          }
-                          return (
-                            <option key={cat.id} value={cat.name} className="text-gray-900">{cat.name}</option>
-                          );
-                        })}
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="font-medium text-gray-800">제목</span>
-                      <input
-                        type="text"
-                        value={writeTitle}
-                        onChange={e => setWriteTitle(e.target.value)}
-                        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-gray-50 text-gray-900 placeholder-gray-500"
-                        placeholder="제목을 입력하세요"
-                        required
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="font-medium text-gray-800">내용</span>
-                      <textarea
-                        value={writeContent}
-                        onChange={e => setWriteContent(e.target.value)}
-                        className="border rounded-lg px-3 py-2 min-h-[120px] focus:ring-2 focus:ring-blue-400 focus:outline-none bg-gray-50 text-gray-900 placeholder-gray-500 resize-y"
-                        placeholder="내용을 입력하세요"
-                        required
-                      />
-                    </label>
-                    <div className="flex gap-2 justify-end mt-2">
-                      <button
-                        type="button"
-                        className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium shadow-sm border border-gray-400 transition-colors"
-                        onClick={() => setShowWriteForm(false)}
-                        disabled={isSubmitting}
-                      >
-                        취소
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 active:bg-blue-800 transition-colors flex items-center gap-2 disabled:opacity-60"
-                        disabled={isSubmitting || !writeTitle.trim() || !writeContent.trim()}
-                      >
-                        {isSubmitting && (
-                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
-                        )}
-                        {isSubmitting ? '등록 중...' : '등록'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
               {/* 게시글 리스트 */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 {loading ? (
-                  <div className="text-gray-400 text-center py-12">
+                  <div className="text-gray-500 text-center p-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
                     게시글을 불러오는 중...
                   </div>
                 ) : paginatedPosts.length === 0 ? (
-                  <div className="text-gray-400 text-center py-12">게시글이 없습니다.</div>
+                  <div className="text-gray-500 text-center p-12">게시글이 없습니다.</div>
                 ) : (
                   <div className="divide-y divide-gray-200">
                     {paginatedPosts.map(post => (
-                      <Link key={post.id} href={`/community/${post.id}`} className="block">
-                        <div className="p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 border">
-                                  {post.category_name}
-                                </span>
-                                <span className="text-xs text-gray-400">{getRelativeTime(post.created_at)}</span>
-                              </div>
-                              <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer transition-colors">
-                                {post.title}
-                              </h3>
-                              <div className="flex items-center gap-4 text-sm text-gray-500">
-                                <span>by {post.author_name}</span>
-                                <div className="flex items-center gap-4">
-                                  <div className="flex items-center gap-1">
-                                    <Heart className="w-4 h-4" />
-                                    <span>{post.like_count}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <MessageCircle className="w-4 h-4" />
-                                    <span>{post.comment_count}</span>
-                                  </div>
-                                </div>
-                              </div>
+                      <Link key={post.id} href={`/community/${post.id}`} className="block p-5 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {post.category_name}
+                          </span>
+                           <span className="text-xs text-gray-400">{getRelativeTime(post.created_at)}</span>
+                        </div>
+                        <h3 className="font-bold text-lg text-gray-900 mb-2.5 break-all">
+                          {post.title}
+                        </h3>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">by {post.author_name}</span>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <Heart className="w-4 h-4" />
+                              <span>{post.like_count}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MessageCircle className="w-4 h-4" />
+                              <span>{post.comment_count}</span>
                             </div>
                           </div>
                         </div>
@@ -508,8 +387,8 @@ export default function CommunityPage() {
                       onClick={() => handlePageChange(num)}
                       className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
                         page === num 
-                          ? 'bg-blue-600 text-white border-blue-600' 
-                          : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50'
+                          ? 'bg-black text-white border-black' 
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                       }`}
                     >
                       {num}
@@ -520,103 +399,163 @@ export default function CommunityPage() {
             </div>
 
             {/* 오른쪽 사이드바 */}
-            <div className="w-80 flex-shrink-0">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* 헤더 */}
-                <div className="p-4 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900">실시간 Best</h2>
-                    <p className="text-sm text-gray-500">최근 24시간 기준</p>
-                  </div>
+            <div className="w-full space-y-6">
+              {/* 실시간 Best */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-gray-900">실시간 Best</h2>
+                  <p className="text-sm text-gray-500">최근 24시간</p>
                 </div>
                 
-                {/* 탭 버튼 */}
-                <div className="flex border-b">
-                  <button
-                    className={`flex-1 py-3 text-center font-semibold transition-colors ${
-                      sideTab === 'popular' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'text-blue-600 border border-blue-200 bg-white hover:bg-blue-50'
-                    }`}
-                    onClick={() => setSideTab('popular')}
-                  >
-                    인기 게시글
-                  </button>
-                  <button
-                    className={`flex-1 py-3 text-center font-semibold transition-colors ${
-                      sideTab === 'ranking' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'text-blue-600 border border-blue-200 bg-white hover:bg-blue-50'
-                    }`}
-                    onClick={() => setSideTab('ranking')}
-                  >
-                    최다 조회
-                  </button>
-                  <button
-                    className={`flex-1 py-3 text-center font-semibold transition-colors ${
-                      sideTab === 'comments' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'text-blue-600 border border-blue-200 bg-white hover:bg-blue-50'
-                    }`}
-                    onClick={() => setSideTab('comments')}
-                  >
-                    최다 댓글
-                  </button>
+                <div className="p-3">
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                        className={`flex-1 py-1.5 text-center text-sm font-semibold transition-all duration-200 rounded-md ${
+                          sideTab === 'popular' 
+                            ? 'bg-white text-black shadow-sm' 
+                            : 'bg-transparent text-gray-600'
+                        }`}
+                      onClick={() => setSideTab('popular')}
+                    >
+                      인기
+                    </button>
+                    <button
+                        className={`flex-1 py-1.5 text-center text-sm font-semibold transition-all duration-200 rounded-md ${
+                          sideTab === 'ranking' 
+                            ? 'bg-white text-black shadow-sm' 
+                            : 'bg-transparent text-gray-600'
+                        }`}
+                      onClick={() => setSideTab('ranking')}
+                    >
+                      조회 순
+                    </button>
+                    <button
+                        className={`flex-1 py-1.5 text-center text-sm font-semibold transition-all duration-200 rounded-md ${
+                          sideTab === 'comments' 
+                            ? 'bg-white text-black shadow-sm' 
+                            : 'bg-transparent text-gray-600'
+                        }`}
+                      onClick={() => setSideTab('comments')}
+                    >
+                      댓글 순
+                    </button>
+                  </div>
                 </div>
 
                 {/* 탭 내용 */}
-                <div className="p-4">
-                  {sideTab === 'popular' && (
-                    <>
-                      <h2 className="text-lg font-bold text-gray-900 mb-4">인기 게시글</h2>
-                      <ul className="space-y-3">
-                        {popularPosts.map((post, idx) => (
-                          <li key={post.id} className="flex items-start gap-3">
-                            <span className="text-gray-400 text-sm w-5 flex-shrink-0">{idx + 1}.</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-800 text-sm truncate">{post.title}</div>
-                            </div>
+                <div className="p-4 pt-0">
+                  <ul className="space-y-3">
+                      {
+                        (sideTab === 'popular' ? popularPosts : sideTab === 'ranking' ? mostViewedPosts : mostCommentedPosts)
+                        .map((post, idx) => (
+                          <li key={post.id} className="flex items-center gap-3 text-sm">
+                            <span className="font-bold text-gray-700 w-5 flex-shrink-0">{idx + 1}.</span>
+                            <span className="font-medium text-gray-700 truncate flex-1 min-w-0 hover:underline">
+                              <Link href={`/community/${post.id}`}>{post.title}</Link>
+                            </span>
                           </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  {sideTab === 'ranking' && (
-                    <>
-                      <h2 className="text-lg font-bold text-gray-900 mb-4">최다 조회</h2>
-                      <ul className="space-y-3">
-                        {mostViewedPosts.map((post, idx) => (
-                          <li key={post.id} className="flex items-start gap-3">
-                            <span className="text-gray-400 text-sm w-5 flex-shrink-0">{idx + 1}.</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-800 text-sm truncate">{post.title}</div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  {sideTab === 'comments' && (
-                    <>
-                      <h2 className="text-lg font-bold text-gray-900 mb-4">최다 댓글</h2>
-                      <ul className="space-y-3">
-                        {mostCommentedPosts.map((post, idx) => (
-                          <li key={post.id} className="flex items-start gap-3">
-                            <span className="text-gray-400 text-sm w-5 flex-shrink-0">{idx + 1}.</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-800 text-sm truncate">{post.title}</div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
+                        ))
+                      }
+                      {(popularPosts || []).length === 0 && (
+                        <li className="text-sm text-gray-400 text-center py-2">
+                          최근 24시간 내 인기글이 없습니다.
+                        </li>
+                      )}
+                  </ul>
                 </div>
+              </div>
+
+              {/* 오늘의 질문 */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <h2 className="text-lg font-bold text-gray-900 mb-2">오늘의 질문</h2>
+                <p className="text-sm text-gray-500 mb-4">
+                  초보자도 환영! 간단한 질문이라도 괜찮아요.
+                </p>
+                <button 
+                  className="w-full bg-black text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                  onClick={() => {
+                    setShowWriteForm(true);
+                  }}
+                >
+                 <HelpCircle className="w-5 h-5" />
+                 질문하러 가기
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 글쓰기 모달 */}
+      {showWriteForm && session?.user?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+          onClick={e => {
+            if (e.target === e.currentTarget) {
+              setShowWriteForm(false);
+            }
+          }}
+        >
+          <form
+            ref={formRef}
+            onSubmit={handleWriteSubmit}
+            className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg flex flex-col gap-5 border border-gray-100 animate-fade-in-up relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold mb-2 text-gray-900">질문 작성</h2>
+            <label className="flex flex-col gap-1">
+              <span className="font-medium text-gray-800">카테고리</span>
+                <input
+                  type="text"
+                  value="Q&A"
+                  readOnly
+                  className="border rounded-lg px-3 py-2 bg-gray-200 text-gray-700 cursor-not-allowed"
+                />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="font-medium text-gray-800">제목</span>
+              <input
+                type="text"
+                value={writeTitle}
+                onChange={e => setWriteTitle(e.target.value)}
+                className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-900 placeholder-gray-500"
+                placeholder="질문을 입력하세요"
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="font-medium text-gray-800">내용</span>
+              <textarea
+                value={writeContent}
+                onChange={e => setWriteContent(e.target.value)}
+                className="border rounded-lg px-3 py-2 min-h-[120px] focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-900 placeholder-gray-500 resize-y"
+                placeholder="궁금한 점을 자세하게 적어주세요."
+                required
+              />
+            </label>
+            <div className="flex gap-2 justify-end mt-2">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium shadow-sm border border-gray-400 transition-colors"
+                onClick={() => setShowWriteForm(false)}
+                disabled={isSubmitting}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-lg bg-black text-white font-semibold shadow-md hover:bg-gray-800 active:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-60"
+                disabled={isSubmitting || !writeTitle.trim() || !writeContent.trim()}
+              >
+                {isSubmitting && (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                )}
+                {isSubmitting ? '등록 중...' : '등록'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 } 

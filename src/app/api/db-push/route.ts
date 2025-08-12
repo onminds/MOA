@@ -1,32 +1,40 @@
-import { NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
+import { NextRequest, NextResponse } from 'next/server';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    console.log("🔄 Prisma DB Push 실행 중...");
-    
-    // Prisma db push 실행
-    const { stdout, stderr } = await execAsync("npx prisma db push --accept-data-loss");
-    
-    console.log("✅ Prisma DB Push 성공");
-    console.log("stdout:", stdout);
-    if (stderr) console.log("stderr:", stderr);
-    
+    console.log("🔄 SQL Server 데이터베이스 연결 확인 중...");
+
+    // SQL Server 연결 테스트
+    const sql = require('mssql');
+    const config = {
+      server: process.env.DB_SERVER || 'localhost',
+      database: process.env.DB_NAME || 'moa_plus',
+      user: process.env.DB_USER || 'sa',
+      password: process.env.DB_PASSWORD || 'your_password',
+      options: {
+        encrypt: false,
+        trustServerCertificate: true
+      }
+    };
+
+    await sql.connect(config);
+    console.log("✅ SQL Server 연결 성공");
+    await sql.close();
+
     return NextResponse.json({ 
       success: true, 
-      message: "데이터베이스 스키마 적용 완료",
-      stdout,
-      stderr
+      message: "SQL Server 데이터베이스 연결 확인 완료",
+      note: "Prisma에서 SQL Server로 마이그레이션 완료"
     });
+
   } catch (error) {
-    console.error("❌ DB Push 오류:", error);
+    console.error("❌ 데이터베이스 연결 오류:", error);
     return NextResponse.json({ 
-      success: false, 
-      error: String(error),
-      message: "스키마 적용 실패"
+      error: "데이터베이스 연결 실패" 
     }, { status: 500 });
   }
 } 

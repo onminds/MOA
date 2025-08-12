@@ -1,50 +1,60 @@
-const { PrismaClient } = require('@prisma/client');
+const sql = require('mssql');
 
-const prisma = new PrismaClient();
+const config = {
+  server: 'localhost',
+  database: 'moa_plus',
+  user: 'sa',
+  password: 'your_password', // 실제 비밀번호로 변경 필요
+  options: {
+    encrypt: false,
+    trustServerCertificate: true
+  }
+};
 
 async function updateLimits() {
   try {
-    console.log('사용자별 제한 업데이트 시작...');
+    console.log('데이터베이스 연결 중...');
+    await sql.connect(config);
+    console.log('연결 성공!');
 
-    // 일반 사용자 (onminds123@gmail.com)의 이미지 생성 제한을 2회로 변경
-    const normalUser = await prisma.user.findUnique({
-      where: { email: 'onminds123@gmail.com' },
-      include: { usage: true }
-    });
+    // 일반 사용자 제한 업데이트
+    const normalUser = await sql.query(`
+      SELECT id, email 
+      FROM users 
+      WHERE email = 'test@example.com' AND role = 'USER'
+    `);
 
-    if (normalUser) {
-      const imageUsage = normalUser.usage.find(u => u.serviceType === 'image-generate');
-      if (imageUsage) {
-        await prisma.usage.update({
-          where: { id: imageUsage.id },
-          data: { limitCount: 2 }
-        });
-        console.log(`일반 사용자 이미지 제한 변경: ${imageUsage.limitCount} → 2`);
-      }
+    if (normalUser.recordset.length > 0) {
+      await sql.query(`
+        UPDATE usage 
+        SET limit_count = 50 
+        WHERE user_id = ${normalUser.recordset[0].id} AND service_type = 'image-generate'
+      `);
+      console.log(`일반 사용자 ${normalUser.recordset[0].email}의 이미지 생성 제한을 50으로 업데이트`);
     }
 
-    // 관리자 (admin@moa.com)의 이미지 생성 제한을 9999회로 변경
-    const adminUser = await prisma.user.findUnique({
-      where: { email: 'admin@moa.com' },
-      include: { usage: true }
-    });
+    // 관리자 제한 업데이트
+    const adminUser = await sql.query(`
+      SELECT id, email 
+      FROM users 
+      WHERE email = 'admin@moa.com' AND role = 'ADMIN'
+    `);
 
-    if (adminUser) {
-      const imageUsage = adminUser.usage.find(u => u.serviceType === 'image-generate');
-      if (imageUsage) {
-        await prisma.usage.update({
-          where: { id: imageUsage.id },
-          data: { limitCount: 9999 }
-        });
-        console.log(`관리자 이미지 제한 변경: ${imageUsage.limitCount} → 9999`);
-      }
+    if (adminUser.recordset.length > 0) {
+      await sql.query(`
+        UPDATE usage 
+        SET limit_count = 9999 
+        WHERE user_id = ${adminUser.recordset[0].id} AND service_type = 'image-generate'
+      `);
+      console.log(`관리자 ${adminUser.recordset[0].email}의 이미지 생성 제한을 9999로 업데이트`);
     }
 
     console.log('제한 업데이트 완료!');
+
   } catch (error) {
-    console.error('업데이트 중 오류:', error);
+    console.error('제한 업데이트 오류:', error);
   } finally {
-    await prisma.$disconnect();
+    await sql.close();
   }
 }
 

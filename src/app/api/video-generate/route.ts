@@ -105,7 +105,7 @@ async function checkVideoGenerationLimit(userId: string) {
   if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
     console.log(`사용자 ${userId}의 영상 생성 사용량 초기화: ${currentUsage} -> 0`);
     
-    // 다음 초기화 시간을 일주일 후로 설정
+    // 다음 초기화 시간을 기존 next_reset_date 기준으로 일주일 후로 설정
     const nextReset = new Date(nextResetDate);
     nextReset.setDate(nextReset.getDate() + 7);
     
@@ -170,10 +170,9 @@ async function incrementVideoUsage(userId: string) {
       .query('SELECT created_at FROM users WHERE id = @userId');
     
     const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
-    let nextResetDate = new Date();
+    let nextResetDate = null;
     
     if (userCreatedAt) {
-      // 계정 생성일 + 7일로 설정
       const resetDate = new Date(userCreatedAt);
       resetDate.setDate(resetDate.getDate() + 7);
       nextResetDate = resetDate;
@@ -182,11 +181,10 @@ async function incrementVideoUsage(userId: string) {
     await db.request()
       .input('userId', userIdInt)
       .input('serviceType', 'video-generate')
-      .input('usageCount', 1)
       .input('nextResetDate', nextResetDate)
       .query(`
         INSERT INTO usage (user_id, service_type, usage_count, next_reset_date, created_at, updated_at)
-        VALUES (@userId, @serviceType, @usageCount, @nextResetDate, GETDATE(), GETDATE())
+        VALUES (@userId, @serviceType, 1, @nextResetDate, GETDATE(), GETDATE())
       `);
   }
 }

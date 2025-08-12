@@ -5,62 +5,97 @@ import { getConnection } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== 결제 확인 API 시작 ===');
+    
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
+      console.log('인증되지 않은 사용자');
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
     }
 
-    const { receiptId, orderId } = await request.json();
+    console.log('사용자 인증 확인됨:', session.user.id);
 
-    // 1. Bootpay API 호출하여 결제 검증
-    const response = await fetch('https://api.bootpay.co.kr/v2/request/receipt', {
+    const { paymentKey, orderId, amount, planId } = await request.json();
+    
+    console.log('결제 확인 요청 받음:', { paymentKey, orderId, amount, planId });
+
+    // 1. 토스페이먼츠 API 호출하여 결제 검증
+    console.log('토스페이먼츠 API 호출 준비:', {
+      secretKey: process.env.TOSS_SECRET_KEY ? '설정됨' : '설정되지 않음',
+      secretKeyLength: process.env.TOSS_SECRET_KEY?.length || 0
+    });
+    
+    const response = await fetch(`https://api.tosspayments.com/v1/payments/confirm`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.BOOTPAY_PRIVATE_KEY}`,
+        'Authorization': `Basic ${Buffer.from(process.env.TOSS_SECRET_KEY + ':').toString('base64')}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        receipt_id: receiptId
+        paymentKey: paymentKey,
+        orderId: orderId,
+        amount: amount
       })
     });
 
     const result = await response.json();
+    
+    console.log('토스페이먼츠 API 응답:', {
+      status: response.status,
+      ok: response.ok,
+      result: result
+    });
 
-    if (result.status === 200 && result.data.status === 1) {
+    if (response.ok && result.status === 'DONE') {
       // 결제 성공
+      console.log('토스페이먼츠 결제 성공:', {
+        paymentKey,
+        orderId,
+        amount,
+        planId,
+        result: result
+      });
+      
       const db = await getConnection();
 
-      // 2. DB 업데이트
+      // 2. DB 업데이트 (한 번에 모든 정보 업데이트)
       await db.request()
         .input('transactionId', orderId)
-        .input('receiptId', receiptId)
+        .input('paymentKey', paymentKey)
         .input('status', 'completed')
-        .input('paymentMethod', result.data.payment_method || 'card')
+        .input('paymentMethod', result.method || 'card')
+        .input('planType', planId)
         .query(`
           UPDATE payments 
-          SET receipt_id = @receiptId, status = @status, payment_method = @paymentMethod, updated_at = GETDATE()
+          SET receipt_id = @paymentKey, 
+              status = @status, 
+              payment_method = @paymentMethod, 
+              plan_type = @planType,
+              updated_at = GETDATE()
           WHERE transaction_id = @transactionId
         `);
 
-      // 3. 사용자 플랜 업데이트 (payments 테이블의 최신 플랜으로)
-      await db.request()
-        .input('userId', session.user.id)
-        .input('planType', result.data.order_name.toLowerCase().includes('standard') ? 'standard' : 
-                         result.data.order_name.toLowerCase().includes('pro') ? 'pro' : 'basic')
-        .query(`
-          UPDATE users 
-          SET plan_type = @planType, updated_at = GETDATE()
-          WHERE id = @userId
-        `);
+      console.log('결제 정보 업데이트 완료:', {
+        orderId,
+        planId,
+        status: 'completed'
+      });
+
+      // 4. 사용자 플랜은 payments 테이블의 plan_type으로 관리하므로 users 테이블 업데이트 불필요
 
       return NextResponse.json({
         success: true,
         message: '결제가 완료되었습니다.',
-        planType: result.data.order_name
+        planType: planId
       });
     } else {
       // 결제 실패
+      console.log('토스페이먼츠 결제 실패:', {
+        responseStatus: response.status,
+        result: result
+      });
+      
       const db = await getConnection();
       await db.request()
         .input('transactionId', orderId)
@@ -74,7 +109,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         message: '결제에 실패했습니다.',
-        error: result.message
+        error: result.message || '알 수 없는 오류'
       });
     }
 

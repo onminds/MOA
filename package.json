@@ -17,10 +17,9 @@
     "local": "npm run dev-setup && npm run dev"
   },
   "dependencies": {
-    "@bootpay/client-js": "^5.1.5",
     "@distube/ytdl-core": "^4.16.12",
     "@runwayml/sdk": "^2.5.1",
-    "@tailwindcss/line-clamp": "^0.4.4",
+    "@tosspayments/payment-sdk": "^1.9.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cheerio": "^0.22.35",
     "@types/nodemailer": "^6.4.17",
