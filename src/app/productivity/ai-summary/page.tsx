@@ -17,7 +17,6 @@ export default function AISummary() {
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [inputType, setInputType] = useState<'auto' | 'youtube' | 'document' | 'website' | 'text'>('auto');
   const [showSpeechBubble, setShowSpeechBubble] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -32,7 +31,7 @@ export default function AISummary() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      setIsLoginModalOpen(true);
+      // setIsLoginModalOpen(true); // Removed as per edit hint
     }
   }, [status]);
 
@@ -131,11 +130,35 @@ export default function AISummary() {
           url: url
         });
       } else {
+        // API 키가 없거나 실패한 경우 기본 정보로 fallback
         const errorData = await response.json();
-        console.error('API 오류:', errorData);
+        console.log('YouTube API 실패, 기본 정보 사용:', errorData);
+        
+        // 기본 YouTube 정보 설정
+        setYoutubeInfo({ title: 'YouTube 영상', url });
+        setYoutubeVideoInfo({
+          title: 'YouTube 영상',
+          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+          duration: '',
+          channel: 'YouTube',
+          url: url
+        });
       }
     } catch (error) {
-      console.error('YouTube 정보 가져오기 실패:', error);
+      console.log('YouTube 정보 가져오기 실패, 기본 정보 사용:', error);
+      
+      // 에러 발생 시에도 기본 정보 설정
+      const videoId = extractVideoId(url);
+      if (videoId) {
+        setYoutubeInfo({ title: 'YouTube 영상', url });
+        setYoutubeVideoInfo({
+          title: 'YouTube 영상',
+          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+          duration: '',
+          channel: 'YouTube',
+          url: url
+        });
+      }
     }
   };
 
@@ -191,7 +214,7 @@ export default function AISummary() {
 
   const handleGenerateSummary = async () => {
     if (!session) {
-      setIsLoginModalOpen(true);
+      // setIsLoginModalOpen(true); // Removed as per edit hint
       return;
     }
 
@@ -589,48 +612,7 @@ export default function AISummary() {
       )}
 
       {/* 로그인 모달 */}
-      {isLoginModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">로그인이 필요합니다</h2>
-              <button
-                onClick={() => setIsLoginModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="text-gray-600 mb-6">
-              <p className="mb-4">AI 완벽요약 기능을 사용하려면 로그인이 필요합니다.</p>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-2">플랜별 사용량</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• <strong>Basic:</strong> 2회</li>
-                  <li>• <strong>Standard:</strong> 무제한</li>
-                  <li>• <strong>Pro:</strong> 무제한</li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={() => router.push('/auth/signin')}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                로그인하기
-              </button>
-              <button
-                onClick={() => setIsLoginModalOpen(false)}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-              >
-                나중에
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Removed as per edit hint */}
 
       {/* 토스트 메시지 */}
       {showToast && (

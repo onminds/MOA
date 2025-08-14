@@ -3,11 +3,36 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="다음 내용을 바탕으로 우선순위 원형 슬라이드에 적합한 내용을 만들어줘:
+
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
+
+요구사항:
+1. 정확히 다음 7줄 형식으로 출력해주세요:
+   HEADER_LEFT: [주제 관련 보고서명]
+   HEADER_CENTER: 2025.08.05
+   HEADER_RIGHT: [관련 기관명]
+   TITLE: [제목 그대로]
+   SUBTITLE: [주제에 맞는 부제목]
+   DESCRIPTION: [주제에 대한 3-4문장 설명]
+   PRIORITY_CIRCLES: <div class=\"priority-circle priority-1\"><div class=\"priority-number\">01</div><div class=\"priority-text\">[첫 번째 우선순위]</div></div><div class=\"priority-circle priority-2\"><div class=\"priority-number\">02</div><div class=\"priority-text\">[두 번째 우선순위]</div></div><div class=\"priority-circle priority-3\"><div class=\"priority-number\">03</div><div class=\"priority-text\">[세 번째 우선순위]</div></div>
+
+2. HEADER_LEFT는 주제와 관련된 보고서명을 작성해주세요
+3. HEADER_CENTER는 그대로 두세요
+4. HEADER_RIGHT는 관련 기관명을 작성해주세요
+5. TITLE은 제목을 그대로 사용해주세요
+6. SUBTITLE은 주제에 맞는 부제목을 작성해주세요
+7. DESCRIPTION은 주제에 대한 3-4문장 설명을 작성해주세요
+8. PRIORITY_CIRCLES는 키포인트를 참고하여 3개의 우선순위를 작성해주세요
+
+위 7줄만 정확히 출력해주세요."/>
 <title>{{TITLE}}</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
-
+        @import url("https://www.genspark.ai/image_placeholder.png");
         
         body, html {
             margin: 0;

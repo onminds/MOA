@@ -1,7 +1,7 @@
 "use client";
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { Crown, Check, Star, Zap, Shield } from 'lucide-react';
+import { Crown, Check, Star, Zap, Shield, X } from 'lucide-react';
 import Link from 'next/link';
 import PaymentButton from '../components/PaymentButton';
 
@@ -15,24 +15,65 @@ interface PlanInfo {
   };
 }
 
+interface SubscriptionInfo {
+  subscriptionId: string;
+  planType: string;
+  status: string;
+  startDate: string;
+  nextBillingDate: string;
+  autoRenewal: boolean;
+  canceledAt: string | null;
+  amount: number;
+}
+
 export default function PlanPage() {
   const { data: session } = useSession();
   const [selectedPlan, setSelectedPlan] = useState('standard');
   const [userPlanInfo, setUserPlanInfo] = useState<PlanInfo | null>(null);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentMessage, setPaymentMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
 
   const fetchUserPlan = async () => {
     if (session?.user?.id) {
       try {
-        const response = await fetch('/api/user/plan');
-        if (response.ok) {
-          const data = await response.json();
-          setUserPlanInfo(data);
+        console.log('🔍 fetchUserPlan 시작 - 사용자 ID:', session.user.id);
+        
+        // 플랜 정보 조회
+        const planResponse = await fetch('/api/user/plan');
+        console.log('🔍 플랜 정보 API 응답:', {
+          status: planResponse.status,
+          ok: planResponse.ok
+        });
+        
+        if (planResponse.ok) {
+          const planData = await planResponse.json();
+          console.log('🔍 플랜 정보 데이터:', planData);
+          setUserPlanInfo(planData);
+        } else {
+          console.error('🔍 플랜 정보 API 실패:', planResponse.status);
+        }
+
+        // 구독 정보 조회
+        const subscriptionResponse = await fetch('/api/payments/cancel-subscription');
+        console.log('🔍 구독 정보 API 응답:', {
+          status: subscriptionResponse.status,
+          ok: subscriptionResponse.ok
+        });
+        
+        if (subscriptionResponse.ok) {
+          const subscriptionData = await subscriptionResponse.json();
+          console.log('🔍 구독 정보 데이터:', subscriptionData);
+          setSubscriptionInfo(subscriptionData.activeSubscription);
+        } else {
+          console.error('🔍 구독 정보 API 실패:', subscriptionResponse.status);
         }
       } catch (error) {
         console.error('플랜 정보 조회 오류:', error);
       }
+    } else {
+      console.log('🔍 세션 사용자 ID 없음');
     }
     setLoading(false);
   };
@@ -40,6 +81,61 @@ export default function PlanPage() {
   useEffect(() => {
     fetchUserPlan();
   }, [session?.user?.id]);
+
+  // 다음 결제일 포맷팅 함수
+  const formatNextBillingDate = (dateString: string) => {
+    if (!dateString) return '매월 자동 결제';
+    
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      
+      return `${year}년 ${month}월 ${day}일 자동 결제`;
+    } catch (error) {
+      return '매월 자동 결제';
+    }
+  };
+
+  // 구독 해제 버튼 클릭 핸들러
+  const handleCancelSubscription = async () => {
+    if (!subscriptionInfo?.subscriptionId) {
+      alert('구독 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    if (confirm('정말로 정기결제를 해제하시겠습니까?\n\n해제 후에는 다음 결제일까지 서비스를 이용할 수 있습니다.')) {
+      setCancelingSubscription(true);
+      try {
+        const response = await fetch('/api/payments/cancel-subscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            subscriptionId: subscriptionInfo.subscriptionId,
+            reason: '사용자 요청'
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          alert('정기결제가 성공적으로 해제되었습니다.');
+          // 구독 정보 새로고침
+          fetchUserPlan();
+        } else {
+          alert(`구독 해제 실패: ${result.message || '알 수 없는 오류가 발생했습니다.'}`);
+        }
+      } catch (error) {
+        console.error('구독 해제 오류:', error);
+        alert('구독 해제 중 오류가 발생했습니다.');
+      } finally {
+        setCancelingSubscription(false);
+      }
+    }
+  };
 
   const plans = [
     {
@@ -102,7 +198,14 @@ export default function PlanPage() {
     return userPlanInfo.planType.toLowerCase();
   };
 
-  const currentPlan = getCurrentPlan();
+  const currentPlan = userPlanInfo?.planType || 'basic';
+
+  // 디버깅을 위한 로그 추가
+  console.log('🔍 Plan Page Debug:', {
+    userPlanInfo,
+    currentPlan,
+    userPlanInfoType: userPlanInfo?.planType
+  });
 
   const getCurrentPlanInfo = () => {
     if (!userPlanInfo) {
@@ -167,9 +270,24 @@ export default function PlanPage() {
             <p className="text-gray-600 mb-4">
               {currentPlanInfo.description}
             </p>
-            <div className="text-sm text-gray-500">
-              다음 결제일: {userPlanInfo?.planType === 'basic' ? '무료 플랜' : '매월 자동 결제'}
+            <div className="text-sm text-gray-500 mb-4">
+              다음 결제일: {subscriptionInfo?.nextBillingDate ? formatNextBillingDate(subscriptionInfo.nextBillingDate) : (userPlanInfo?.planType === 'basic' ? '무료 플랜' : '매월 자동 결제')}
             </div>
+            
+            {/* 구독 해제 버튼 */}
+            {subscriptionInfo && subscriptionInfo.status === 'active' && (
+              <button
+                onClick={handleCancelSubscription}
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={cancelingSubscription}
+              >
+                <X className="w-4 h-4" />
+                <span>{cancelingSubscription ? '해제 중...' : '정기결제 해제'}</span>
+                {cancelingSubscription && (
+                  <div className="ml-2 animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -249,54 +367,64 @@ export default function PlanPage() {
                     >
                       현재 플랜
                     </button>
+                  ) : plan.id === 'basic' && (currentPlan === 'standard' || currentPlan === 'pro') ? (
+                    // Basic Plan이면서 현재 유료 플랜인 경우 - 버튼 숨김
+                    <div className="w-full h-14 flex items-center justify-center text-gray-400 text-sm">
+                      현재 유료 플랜 사용 중
+                    </div>
+                  ) : plan.id === 'basic' && currentPlan === 'basic' ? (
+                    // Basic Plan이면서 현재도 Basic인 경우 - 이미 현재 플랜
+                    <button
+                      className="w-full py-4 px-6 rounded-xl font-semibold transition-all duration-200 h-14 flex items-center justify-center bg-gray-200 text-gray-500 cursor-not-allowed"
+                      disabled
+                    >
+                      현재 플랜
+                    </button>
                   ) : plan.id === 'basic' ? (
+                    // Basic Plan이면서 다른 상태인 경우 - 무료로 시작 버튼
                     <button
                       className="w-full py-4 px-6 rounded-xl font-semibold transition-all duration-200 h-14 flex items-center justify-center bg-gray-900 text-white hover:bg-gray-800 transform hover:-translate-y-1"
-                      onClick={() => {
-                        // Basic 플랜은 무료이므로 즉시 적용
-                        setPaymentMessage({ type: 'success', message: 'Basic 플랜이 적용되었습니다!' });
+                      onClick={async () => {
+                        try {
+                          // Basic 플랜으로 전환 API 호출
+                          const response = await fetch('/api/user/plan', {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                              planType: 'basic'
+                            })
+                          });
+
+                          if (response.ok) {
+                            setPaymentMessage({ type: 'success', message: 'Basic 플랜으로 전환되었습니다!' });
+                            fetchUserPlan(); // 플랜 정보 새로고침
+                          } else {
+                            setPaymentMessage({ type: 'error', message: '플랜 전환에 실패했습니다.' });
+                          }
+                        } catch (error) {
+                          console.error('플랜 전환 오류:', error);
+                          setPaymentMessage({ type: 'error', message: '플랜 전환 중 오류가 발생했습니다.' });
+                        }
                       }}
                     >
                       무료로 시작
                     </button>
                   ) : (
-                    <div className="w-full">
-                      {plan.id === 'standard' ? (
-                        <PaymentButton
-                          planId="standard"
-                          planName="Standard Plan"
-                          amount={15900}
-                          onSuccess={() => {
-                            setPaymentMessage({ type: 'success', message: 'Standard 플랜 결제가 완료되었습니다!' });
-                            // 플랜 정보 다시 조회 (더 긴 지연 시간)
-                            setTimeout(() => {
-                              console.log('플랜 정보 재조회 시작...');
-                              fetchUserPlan();
-                            }, 2000);
-                          }}
-                          onError={(error: string) => {
-                            setPaymentMessage({ type: 'error', message: error });
-                          }}
-                        />
-                      ) : (
-                        <PaymentButton
-                          planId="pro"
-                          planName="Pro Plan"
-                          amount={29000}
-                          onSuccess={() => {
-                            setPaymentMessage({ type: 'success', message: 'Pro 플랜 결제가 완료되었습니다!' });
-                            // 플랜 정보 다시 조회 (더 긴 지연 시간)
-                            setTimeout(() => {
-                              console.log('플랜 정보 재조회 시작...');
-                              fetchUserPlan();
-                            }, 2000);
-                          }}
-                          onError={(error: string) => {
-                            setPaymentMessage({ type: 'error', message: error });
-                          }}
-                        />
-                      )}
-                    </div>
+                    <PaymentButton
+                      planId={plan.id}
+                      planName={plan.name}
+                      amount={plan.id === 'standard' ? 15900 : plan.id === 'pro' ? 29000 : 0}
+                      currentPlan={currentPlan}
+                      onSuccess={() => {
+                        setPaymentMessage({ type: 'success', message: '플랜 업그레이드가 완료되었습니다!' });
+                        fetchUserPlan(); // 플랜 정보 새로고침
+                      }}
+                      onError={(error) => {
+                        setPaymentMessage({ type: 'error', message: error });
+                      }}
+                    />
                   )}
                 </div>
               </div>

@@ -5,18 +5,25 @@ import { Wand2, Download, Copy, RefreshCw, Eye, Code, FileText } from 'lucide-re
 
 export default function PPTCreatePage() {
   const [topic, setTopic] = useState('');
-  const [slideCount, setSlideCount] = useState(5);
   const [htmlContents, setHtmlContents] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
   const [showHtmlPreview, setShowHtmlPreview] = useState(false);
   const [currentSection, setCurrentSection] = useState(1);
-  const [totalSections, setTotalSections] = useState(0);
   const [script, setScript] = useState<string>('');
   const [showScript, setShowScript] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState('template1');
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+
+  // 고정된 5페이지 구조
+  const fixedSlideCount = 5;
+  const slideTypes = [
+    { type: 'title', name: '제목 슬라이드' },
+    { type: 'table-of-contents', name: '목차' },
+    { type: 'statistics', name: '통계 & 트렌드' },
+    { type: 'priority', name: '우선순위 분석' },
+    { type: 'metrics', name: '성과 지표' }
+  ];
 
   const generateSlides = async () => {
     if (!topic.trim()) {
@@ -32,9 +39,10 @@ export default function PPTCreatePage() {
     try {
       const allContents: string[] = [];
       
-      // 모든 섹션을 순차적으로 생성
-      for (let section = 1; section <= slideCount; section++) {
-        console.log(`🎯 ${section}번째 섹션 생성 중...`);
+      // 고정된 5개 섹션을 순차적으로 생성
+      for (let section = 1; section <= fixedSlideCount; section++) {
+        console.log(`🎯 ${section}번째 섹션 생성 중... (${slideTypes[section-1].name})`);
+        setCurrentSection(section);
         
         const response = await fetch('/api/slide-generate', {
           method: 'POST',
@@ -43,10 +51,9 @@ export default function PPTCreatePage() {
           },
           body: JSON.stringify({ 
             topic, 
-            slideCount, 
+            slideCount: fixedSlideCount, 
             format: 'html',
-            section,
-            template: selectedTemplate
+            section
           }),
         });
 
@@ -58,16 +65,15 @@ export default function PPTCreatePage() {
 
         allContents.push(data.html);
         setHtmlContents([...allContents]);
-        setTotalSections(slideCount);
         setScript(data.script);
         
         // 마지막 섹션이 아니면 잠시 대기
-        if (section < slideCount) {
+        if (section < fixedSlideCount) {
           await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
         }
       }
       
-      setCurrentSection(slideCount);
+      setCurrentSection(fixedSlideCount);
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
@@ -77,35 +83,56 @@ export default function PPTCreatePage() {
   };
 
   const downloadPPT = async () => {
-    if (!htmlContents.length) {
-      alert('HTML 내용이 없습니다.');
-      return;
-    }
-
-    // 모든 HTML 내용을 하나로 합치기
-    const combinedHtml = htmlContents.join('\n\n');
+    if (htmlContents.length === 0) return;
     
-    // HTML 형식인 경우 직접 다운로드
-    const blob = new Blob([combinedHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${topic || 'presentation'}_all_sections.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setIsDownloading(true);
+    try {
+      // 프롬프트가 제거된 깨끗한 HTML 생성
+      const cleanedHtmlContents = htmlContents.map(content => cleanHtmlForPreview(content));
+      const combinedHtml = cleanedHtmlContents.join('\n\n<!-- Next Slide -->\n\n');
+      
+      const blob = new Blob([combinedHtml], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${topic || 'presentation'}_slides.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('다운로드 오류:', error);
+      alert('다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const copyToClipboard = () => {
-    if (!htmlContents.length) {
-      alert('HTML 내용이 없습니다.');
-      return;
-    }
-
-    const combinedHtml = htmlContents.join('\n\n');
+    if (htmlContents.length === 0) return;
+    
+    // 프롬프트가 제거된 깨끗한 HTML 생성
+    const cleanedHtmlContents = htmlContents.map(content => cleanHtmlForPreview(content));
+    const combinedHtml = cleanedHtmlContents.join('\n\n<!-- Next Slide -->\n\n');
+    
     navigator.clipboard.writeText(combinedHtml);
     alert('HTML 코드가 클립보드에 복사되었습니다.');
+  };
+
+  // HTML에서 프롬프트 제거 함수
+  const cleanHtmlForPreview = (htmlContent: string) => {
+    // meta name="template-prompt" 태그 제거
+    let cleanedHtml = htmlContent.replace(/<meta name="template-prompt"[^>]*>/g, '');
+    
+    // 프롬프트 관련 텍스트 패턴 제거
+    cleanedHtml = cleanedHtml.replace(/다음 내용을 바탕으로[^"]*"/g, '"');
+    cleanedHtml = cleanedHtml.replace(/\*\*\* 매우 중요[^"]*"/g, '"');
+    cleanedHtml = cleanedHtml.replace(/\*\*\* 절대적으로 중요[^"]*"/g, '"');
+    
+    // 빈 meta 태그 정리
+    cleanedHtml = cleanedHtml.replace(/<meta[^>]*content=""\s*\/>/g, '');
+    
+    return cleanedHtml;
   };
 
   return (
@@ -138,38 +165,17 @@ export default function PPTCreatePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    총 카드 섹션 수
+                    고정 슬라이드 구조 (5페이지)
                   </label>
-                  <select
-                    value={slideCount}
-                    onChange={(e) => setSlideCount(Number(e.target.value))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value={3}>3개</option>
-                    <option value={5}>5개</option>
-                    <option value={7}>7개</option>
-                    <option value={10}>10개</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    템플릿 선택
-                  </label>
-                  <div className="grid grid-cols-1 gap-3">
-                    <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        value="template1"
-                        checked={selectedTemplate === 'template1'}
-                        onChange={(e) => setSelectedTemplate(e.target.value)}
-                        className="mr-3"
-                      />
-                      <div>
-                        <div className="font-medium text-gray-900">템플릿 1 - 목차 테마</div>
-                        <div className="text-sm text-gray-500">목차 형식의 슬라이드 디자인</div>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    {slideTypes.map((slide, index) => (
+                      <div key={index} className="flex items-center text-sm text-gray-600">
+                        <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium mr-3">
+                          {index + 1}
+                        </span>
+                        <span className="font-medium">{slide.name}</span>
                       </div>
-                    </label>
+                    ))}
                   </div>
                 </div>
 
@@ -187,15 +193,34 @@ export default function PPTCreatePage() {
                   {isLoading ? (
                     <>
                       <RefreshCw className="w-5 h-5 animate-spin" />
-                      <span>{isGeneratingAll ? '전체 섹션 생성 중...' : '생성 중...'}</span>
+                      <span>
+                        {currentSection}번째 슬라이드 생성 중... 
+                        ({slideTypes[currentSection - 1]?.name})
+                      </span>
                     </>
                   ) : (
                     <>
                       <Wand2 className="w-5 h-5" />
-                      <span>전체 섹션 생성하기</span>
+                      <span>5페이지 PPT 생성하기</span>
                     </>
                   )}
                 </button>
+
+                {/* 생성 진행률 표시 */}
+                {isLoading && (
+                  <div className="mt-4">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>진행률: {currentSection}/{fixedSlideCount}</span>
+                      <span>{Math.round((currentSection / fixedSlideCount) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${(currentSection / fixedSlideCount) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -273,7 +298,9 @@ export default function PPTCreatePage() {
                   
                   {showHtmlPreview ? (
                     <div className="border rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
-                      <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">{htmlContents.join('\n\n')}</pre>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                        {htmlContents.map(content => cleanHtmlForPreview(content)).join('\n\n')}
+                      </pre>
                     </div>
                   ) : (
                     <div className="space-y-4 max-h-[800px] overflow-y-auto">
@@ -283,7 +310,7 @@ export default function PPTCreatePage() {
                             {index + 1}번째 섹션
                           </div>
                           <iframe
-                            srcDoc={content}
+                            srcDoc={cleanHtmlForPreview(content)}
                             className="w-full h-full"
                             title={`Section ${index + 1} Preview`}
                             style={{ border: 'none', width: '140%', transform: 'scale(0.7)', transformOrigin: 'top left' }}

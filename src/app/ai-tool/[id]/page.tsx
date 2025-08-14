@@ -44,12 +44,41 @@ export default function AIToolDetail() {
   const [userComment, setUserComment] = useState('');
   const [showVideo, setShowVideo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // 클라이언트 사이드에서만 배경 설정 확인
+  const [clientBackground, setClientBackground] = useState('default');
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      const savedBackground = localStorage.getItem('selectedBackground');
+      if (savedBackground) {
+        setClientBackground(savedBackground);
+      } else {
+        setClientBackground(currentBackground);
+      }
+    }
+  }, [mounted, currentBackground]);
 
   // 배경에 따른 스타일 결정
-  const isCustomBackground = currentBackground !== 'default';
-  const isSpaceBackground = currentBackground === 'space';
-  const isNatureBackground = currentBackground === 'nature';
-  const isGeometricBackground = currentBackground === 'geometric';
+  const isCustomBackground = clientBackground !== 'default';
+  const isSpaceBackground = clientBackground === 'space';
+  const isNatureBackground = clientBackground === 'nature';
+  const isGeometricBackground = clientBackground === 'geometric';
+
+  // 디버깅 로그 추가
+  console.log('🔍 AI Tool Detail Debug:', {
+    currentBackground,
+    clientBackground,
+    isCustomBackground,
+    isGeometricBackground,
+    mounted,
+    pathname: typeof window !== 'undefined' ? window.location.pathname : 'server'
+  });
 
   // 세션 상태 모니터링 및 강제 업데이트
   useEffect(() => {
@@ -245,9 +274,9 @@ export default function AIToolDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen">
         <Header />
-        <div className="p-8">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
             <div className="h-64 bg-gray-200 rounded mb-4"></div>
@@ -260,9 +289,9 @@ export default function AIToolDetail() {
 
   if (!service) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen">
         <Header />
-        <div className="p-8">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">도구를 찾을 수 없습니다</h1>
             <button
@@ -278,9 +307,9 @@ export default function AIToolDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <Header />
-      <div className="p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
         {/* 뒤로 가기 버튼 */}
         <button
           onClick={() => router.back()}
@@ -312,26 +341,14 @@ export default function AIToolDetail() {
               </div>
             )}
             <div className="flex-1">
-              <h1 className={`text-3xl font-bold mb-2 transition-colors ${
-                isNatureBackground || isGeometricBackground 
-                  ? 'text-gray-900' 
-                  : 'text-gray-900'
-              }`}>{service.name}</h1>
+              <h1 className="text-3xl font-bold mb-2 text-gray-900">{service.name}</h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   {renderStars(service.rating)}
-                  <span className={`text-lg font-semibold transition-colors ${
-                    isNatureBackground || isGeometricBackground 
-                      ? 'text-gray-900' 
-                      : 'text-gray-900'
-                  }`}>{service.rating}</span>
+                  <span className="text-lg font-semibold text-gray-900">{service.rating}</span>
                 </div>
                 {service.userCount && (
-                  <div className={`flex items-center gap-1 transition-colors ${
-                    isNatureBackground || isGeometricBackground 
-                      ? 'text-gray-700' 
-                      : 'text-gray-600'
-                  }`}>
+                  <div className="flex items-center gap-1 text-gray-600">
                     <span>👥</span>
                     <span className="font-medium">
                       {service.userCount >= 1000000
@@ -361,11 +378,7 @@ export default function AIToolDetail() {
 
         {/* 공식 설명 영상 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className={`text-xl font-bold mb-4 transition-colors ${
-            isNatureBackground || isGeometricBackground 
-              ? 'text-gray-900' 
-              : 'text-gray-900'
-          }`}>공식 설명 영상</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">공식 설명 영상</h2>
           <div className="relative bg-gray-900 rounded-lg overflow-hidden">
             {showVideo ? (
               <div className="aspect-video">
@@ -392,34 +405,18 @@ export default function AIToolDetail() {
 
         {/* 도구 설명 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className={`text-xl font-bold mb-4 transition-colors ${
-            isNatureBackground || isGeometricBackground 
-              ? 'text-gray-900' 
-              : 'text-gray-900'
-          }`}>도구 설명</h2>
-          <p className={`leading-relaxed transition-colors ${
-            isNatureBackground || isGeometricBackground 
-              ? 'text-gray-800' 
-              : 'text-gray-700'
-          }`}>{service.description}</p>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">도구 설명</h2>
+          <p className="leading-relaxed text-gray-700">{service.description}</p>
         </div>
 
         {/* 주요 기능 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className={`text-xl font-bold mb-4 transition-colors ${
-            isNatureBackground || isGeometricBackground 
-              ? 'text-gray-900' 
-              : 'text-gray-900'
-          }`}>주요 기능</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">주요 기능</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {service.features.map((feature, index) => (
               <div key={index} className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className={`transition-colors ${
-                  isNatureBackground || isGeometricBackground 
-                    ? 'text-gray-800' 
-                    : 'text-gray-700'
-                }`}>{feature}</span>
+                <span className="text-gray-700">{feature}</span>
               </div>
             ))}
           </div>
@@ -427,11 +424,7 @@ export default function AIToolDetail() {
 
         {/* 가격 정보 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className={`text-xl font-bold mb-4 transition-colors ${
-            isNatureBackground || isGeometricBackground 
-              ? 'text-gray-900' 
-              : 'text-gray-900'
-          }`}>가격 정보</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">가격 정보</h2>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
               {service.pricing}
@@ -451,12 +444,8 @@ export default function AIToolDetail() {
 
           {/* 리뷰 작성 폼 */}
           {session?.user?.id && (
-            <div className="border border-gray-200 rounded-lg p-6 mb-6">
-              <h3 className={`text-lg font-semibold mb-4 transition-colors ${
-                isNatureBackground || isGeometricBackground 
-                  ? 'text-gray-900' 
-                  : 'text-gray-900'
-              }`}>리뷰 작성</h3>
+            <div className="border border-gray-200 rounded-lg p-6 mb-6 bg-gray-50">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">리뷰 작성</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">평점</label>

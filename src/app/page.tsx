@@ -406,16 +406,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* 우측 플로팅 버튼들 */}
-        <div className="fixed right-6 top-1/2 transform -translate-y-1/2 space-y-4 z-10">
-          <button className="w-12 h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-            <Grid className="w-6 h-6 text-gray-700" />
-          </button>
-          <button className="w-12 h-12 bg-purple-500 rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
-            <MessageCircle className="w-6 h-6 text-white" />
-          </button>
-        </div>
       </div>
 
       {/* 푸터 */}

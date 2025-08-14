@@ -3,219 +3,204 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="다음 내용을 바탕으로 통계와 트렌드 슬라이드에 적합한 내용을 만들어줘:
+
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
+
+*** 절대적으로 중요: 반드시 아래 4줄을 정확히 이 순서대로 출력해주세요 ***
+다른 설명이나 추가 텍스트는 절대 포함하지 마세요!
+
+TITLE: {{SECTION_TITLE}}
+DESCRIPTION: {{SECTION_TITLE}}에 대한 현재 동향과 미래 전망을 간단히 2-3문장으로 설명해주세요
+TRENDS: <li>{{SECTION_TITLE}} 기술 발전</li><li>시장 규모 확대</li><li>사용자 채택 증가</li><li>미래 전망 긍정적</li>
+STATS: <div class=\"stat-item\"><div class=\"stat-arrow\"><i class=\"fas fa-arrow-up\"></i></div><div class=\"stat-number\">실제수치%</div><div class=\"stat-text\">통계설명1<br/>부가설명1</div></div><div class=\"stat-item\"><div class=\"stat-arrow\"><i class=\"fas fa-chart-line\"></i></div><div class=\"stat-number\">실제수치%</div><div class=\"stat-text\">통계설명2<br/>부가설명2</div></div>
+
+위 4줄 형식을 정확히 따라 {{SECTION_TITLE}}에 맞는 실제 통계 데이터로 채워주세요. 
+STATS 부분의 수치는 해당 주제와 관련된 실제적이고 의미 있는 퍼센트 값이나 배수로 작성해주세요!"/>
 <title>{{TITLE}}</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body, html {
-        font-family: 'Noto Serif KR', serif;
-        overflow: hidden;
-    }
-
-    .slide-container {
-        width: 1280px;
-        height: 720px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .header-left, .header-center, .header-right {
-        font-family: 'Nanum Gothic Coding', monospace;
-        font-size: 14px;
-        color: #6b7280;
-    }
-
-    .content {
-        flex: 1;
-        display: flex;
-        padding: 40px;
-        gap: 40px;
-    }
-
-    .left-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-    }
-
-    .right-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    .title {
-        font-size: 48px;
-        font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 30px;
-        line-height: 1.2;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .description {
-        font-size: 20px;
-        color: rgba(255, 255, 255, 0.9);
-        line-height: 1.6;
-        margin-bottom: 40px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .trend-section {
-        margin-bottom: 30px;
-    }
-
-    .trend-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 20px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .trend-list {
-        list-style-type: none;
-        padding-left: 0;
-    }
-
-    .trend-list li {
-        margin-bottom: 15px;
-        display: flex;
-        align-items: flex-start;
-        font-size: 16px;
-        line-height: 1.5;
-        color: rgba(255, 255, 255, 0.9);
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .trend-list li::before {
-        content: "•";
-        display: inline-block;
-        color: #fbbf24;
-        font-weight: bold;
-        font-size: 20px;
-        margin-right: 12px;
-        margin-top: 2px;
-        flex-shrink: 0;
-    }
-
-    .stats-section {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 30px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .stats-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 20px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        border-left: 4px solid #fbbf24;
-    }
-
-    .stat-number {
-        font-size: 36px;
-        font-weight: 700;
-        color: #fbbf24;
-        margin-right: 20px;
-        min-width: 80px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .stat-text {
-        font-size: 16px;
-        color: rgba(255, 255, 255, 0.9);
-        line-height: 1.4;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .circle {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        z-index: -1;
-    }
-
-    .circle-1 {
-        width: 400px;
-        height: 400px;
-        top: -200px;
-        right: -200px;
-    }
-
-    .circle-2 {
-        width: 300px;
-        height: 300px;
-        bottom: -150px;
-        left: -150px;
-    }
-</style>
+        @import url("https://www.genspark.ai/image_placeholder.png");
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .slide-container {
+            width: 1280px;
+            height: 720px;
+            background-color: #FFFFFF;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 15px 40px;
+            color: #1E3A8A;
+            border-bottom: 1px solid rgba(30, 58, 138, 0.2);
+        }
+        
+        .content {
+            display: flex;
+            height: calc(100% - 60px);
+            padding: 40px;
+        }
+        
+        .left-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-right: 40px;
+        }
+        
+        .right-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .title {
+            font-size: 4.5rem;
+            font-weight: bold;
+            line-height: 1.1;
+            color: #1E3A8A;
+            margin-bottom: 40px;
+            font-family: 'Noto Serif KR', serif;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            color: #6B7280;
+            line-height: 1.5;
+            margin-bottom: 40px;
+            max-width: 500px;
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .stat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-arrow {
+            width: 40px;
+            height: 40px;
+            background-color: #1E40AF;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .stat-arrow i {
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .stat-number {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #1E3A8A;
+            margin-right: 20px;
+            font-family: 'Noto Serif KR', serif;
+        }
+        
+        .stat-text {
+            font-size: 1rem;
+            color: #6B7280;
+            line-height: 1.4;
+            max-width: 300px;
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(191, 219, 254, 0.3);
+            z-index: -1;
+        }
+        
+        .circle-1 {
+            width: 600px;
+            height: 600px;
+            top: -150px;
+            right: -150px;
+        }
+        
+        .circle-2 {
+            width: 400px;
+            height: 400px;
+            bottom: -100px;
+            left: 10%;
+        }
+        
+        .header-left, .header-center, .header-right {
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .trend-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .trend-list li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .trend-list li::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #3B82F6;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+    </style>
 </head>
 <body>
 <div class="slide-container">
 <!-- Background Circles -->
 <div class="circle circle-1"></div>
 <div class="circle circle-2"></div>
-
 <!-- Header -->
 <div class="header">
 <div class="header-left">{{HEADER_LEFT}}</div>
-<div class="header-center">{{HEADER_CENTER}}</div>
-<div class="header-right">{{HEADER_RIGHT}}</div>
+<div class="header-center text-center">{{HEADER_CENTER}}</div>
+<div class="header-right text-right">{{HEADER_RIGHT}}</div>
 </div>
-
 <!-- Content -->
 <div class="content">
 <div class="left-content">
 <h1 class="title">{{TITLE}}</h1>
 <p class="description">{{DESCRIPTION}}</p>
-<div class="trend-section">
-<h2 class="trend-title">주요 트렌드</h2>
 <ul class="trend-list">
 {{TRENDS}}
 </ul>
 </div>
-</div>
 <div class="right-content">
-<div class="stats-section">
-<h2 class="stats-title">핵심 통계</h2>
-<div class="stat-item">
-<div class="stat-number">20%</div>
-<div class="stat-text">{{STATS}}</div>
-</div>
+<div class="stat-container">
+{{STATS}}
 </div>
 </div>
 </div>

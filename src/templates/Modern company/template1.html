@@ -3,133 +3,149 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="다음 내용을 바탕으로 제목 슬라이드에 적합한 내용을 만들어줘:
+
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
+
+요구사항:
+1. 제목은 그대로 사용해주세요
+2. 부제목을 주제에 맞게 2-3문장으로 작성해주세요
+3. 절대로 '제목:', '내용:', '키포인트:' 같은 라벨을 포함하지 마세요
+4. HTML 태그나 불릿 포인트를 사용하지 마세요
+5. 간결하고 깔끔한 텍스트만 출력해주세요
+6. 주제의 핵심 내용을 담은 설명문을 작성해주세요
+
+2-3문장의 깔끔한 설명만 출력해주세요."/>
 <title>{{TITLE}}</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body, html {
-        font-family: 'Noto Serif KR', serif;
-        overflow: hidden;
-    }
-
-    .slide-container {
-        width: 1280px;
-        height: 720px;
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .header-left, .header-center, .header-right {
-        font-family: 'Nanum Gothic Coding', monospace;
-        font-size: 14px;
-        color: #6b7280;
-    }
-
-    .content {
-        flex: 1;
-        display: flex;
-        padding: 40px;
-        gap: 40px;
-    }
-
-    .left-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    .right-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .title {
-        font-size: 56px;
-        font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 30px;
-        line-height: 1.2;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .description {
-        font-size: 24px;
-        color: rgba(255, 255, 255, 0.9);
-        line-height: 1.6;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-        word-wrap: break-word;
-        word-break: keep-all;
-        white-space: normal;
-        max-width: 100%;
-        overflow-wrap: break-word;
-    }
-
-    .circle {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        z-index: -1;
-    }
-
-    .circle-1 {
-        width: 400px;
-        height: 400px;
-        top: -200px;
-        right: -200px;
-    }
-
-    .circle-2 {
-        width: 300px;
-        height: 300px;
-        bottom: -150px;
-        left: -150px;
-    }
-</style>
+        @import url("https://www.genspark.ai/image_placeholder.png");
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .slide-container {
+            width: 1280px;
+            height: 720px;
+            background-color: #1E3A8A;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 20px 40px;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            font-family: 'Nanum Gothic Coding', monospace;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .content {
+            display: flex;
+            height: calc(100% - 70px);
+            padding: 0 40px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .left-content {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .right-content {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+            text-align: right;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .title {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 5rem;
+            line-height: 1.2;
+            color: white;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-family: 'Nanum Gothic Coding', monospace;
+            font-size: 1.5rem;
+            color: white;
+            line-height: 1.5;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(191, 219, 254, 0.5);
+            z-index: 1;
+        }
+        
+        .circle-1 {
+            width: 500px;
+            height: 500px;
+            top: -100px;
+            right: -100px;
+        }
+        
+        .circle-2 {
+            width: 300px;
+            height: 300px;
+            bottom: -50px;
+            right: 300px;
+        }
+        
+        .circle-3 {
+            width: 400px;
+            height: 400px;
+            top: 200px;
+            right: 100px;
+            background-color: rgba(30, 64, 175, 0.5);
+        }
+    </style>
 </head>
 <body>
 <div class="slide-container">
 <!-- Background Circles -->
 <div class="circle circle-1"></div>
 <div class="circle circle-2"></div>
-
+<div class="circle circle-3"></div>
 <!-- Header -->
 <div class="header">
 <div class="header-left">{{HEADER_LEFT}}</div>
-<div class="header-center">{{HEADER_CENTER}}</div>
-<div class="header-right">{{HEADER_RIGHT}}</div>
+<div class="header-center text-center">{{HEADER_CENTER}}</div>
+<div class="header-right text-right">{{HEADER_RIGHT}}</div>
 </div>
-
 <!-- Content -->
 <div class="content">
 <div class="left-content">
 <h1 class="title">{{TITLE}}</h1>
-<p class="description">{{DESCRIPTION}}</p>
 </div>
 <div class="right-content">
-<!-- 오른쪽 영역은 비워둠 -->
+<p class="subtitle">{{CONTENT}}</p>
 </div>
 </div>
 </div>

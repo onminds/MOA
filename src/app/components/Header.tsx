@@ -39,6 +39,20 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
     setMounted(true);
   }, []);
 
+  // 클라이언트 사이드에서만 배경 설정 확인
+  const [clientBackground, setClientBackground] = useState('default');
+  
+  useEffect(() => {
+    if (mounted) {
+      const savedBackground = localStorage.getItem('selectedBackground');
+      if (savedBackground) {
+        setClientBackground(savedBackground);
+      } else {
+        setClientBackground(currentBackground);
+      }
+    }
+  }, [mounted, currentBackground]);
+
   useEffect(() => {
     if (session?.user?.email) {
       fetchPlanInfo();
@@ -145,10 +159,21 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
   };
 
   // 배경에 따른 드롭다운 스타일 결정
-  const isCustomBackground = currentBackground !== 'default' && !forceWhiteBackground;
-  const isSpaceBackground = currentBackground === 'space' && !forceWhiteBackground;
-  const isNatureBackground = currentBackground === 'nature' && !forceWhiteBackground;
-  const isGeometricBackground = currentBackground === 'geometric' && !forceWhiteBackground;
+  const isCustomBackground = clientBackground !== 'default' && !forceWhiteBackground;
+  const isSpaceBackground = clientBackground === 'space' && !forceWhiteBackground;
+  const isNatureBackground = clientBackground === 'nature' && !forceWhiteBackground;
+  const isGeometricBackground = clientBackground === 'geometric' && !forceWhiteBackground;
+  
+  // 디버깅 로그 추가
+  console.log('🔍 Header Debug:', {
+    currentBackground,
+    clientBackground,
+    forceWhiteBackground,
+    isCustomBackground,
+    isGeometricBackground,
+    mounted,
+    pathname: typeof window !== 'undefined' ? window.location.pathname : 'server'
+  });
   
   const dropdownClasses = isCustomBackground 
     ? 'bg-white/90 backdrop-blur-md border border-white/20 shadow-lg' 

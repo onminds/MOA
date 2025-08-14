@@ -3,12 +3,42 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="다음 내용을 바탕으로 게이지 차트 슬라이드에 적합한 내용을 만들어주세요:
+
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
+
+요구사항:
+1. 정확히 다음 8줄 형식으로 출력해주세요:
+   HEADER_LEFT: [주제 관련 기관명]
+   HEADER_CENTER: 2025.08.05
+   HEADER_RIGHT: [관련 계정명]
+   TITLE: [제목 그대로]
+   DESCRIPTION: [주제에 대한 2-3문장 설명]
+   GAUGE_VALUE: [퍼센트 값]%
+   GAUGE_DESCRIPTION: [게이지 설명문]
+   STAT_VALUE: [통계 수치]
+   STAT_DESCRIPTION: [통계 설명문]
+
+2. HEADER_LEFT는 주제와 관련된 기관명을 작성해주세요
+3. HEADER_CENTER는 그대로 두세요
+4. HEADER_RIGHT는 관련 계정명을 작성해주세요
+5. TITLE은 제목을 그대로 사용해주세요
+6. DESCRIPTION은 주제에 대한 2-3문장 설명을 작성해주세요
+7. GAUGE_VALUE는 20-80% 범위의 퍼센트 값을 작성해주세요
+8. GAUGE_DESCRIPTION은 게이지 값에 대한 설명을 작성해주세요
+9. STAT_VALUE는 주제와 관련된 통계 수치를 작성해주세요
+10. STAT_DESCRIPTION은 통계에 대한 설명을 작성해주세요
+11. 키포인트를 참고하여 내용을 구성해주세요
+
+위 8줄만 정확히 출력해주세요."/>
 <title>{{TITLE}}</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-
+        @import url("https://www.genspark.ai/image_placeholder.png");
         
         body, html {
             margin: 0;

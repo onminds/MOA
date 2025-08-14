@@ -457,12 +457,96 @@ export async function POST(request: NextRequest) {
 
     if (modelConfig.apiType === "openai") {
       // OpenAI API 사용 (DALL-E 3)
-      response = await openai.images.generate({
+      const dalleResponse = await openai.images.generate({
         model: modelConfig.model,
         prompt: finalPrompt,
         n: 1,
         size: validSize as "1024x1024" | "1792x1024" | "1024x1792",
       });
+
+      // DALL-E 3 이미지를 다운로드하여 DB에 저장
+      if (dalleResponse.data && dalleResponse.data[0] && dalleResponse.data[0].url) {
+        console.log('🔄 DALL-E 3 이미지 다운로드 시작:', dalleResponse.data[0].url);
+        
+        try {
+          // Azure Blob Storage에서 이미지 다운로드
+          const imageResponse = await fetch(dalleResponse.data[0].url);
+          if (!imageResponse.ok) {
+            throw new Error(`이미지 다운로드 실패: ${imageResponse.status}`);
+          }
+          
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
+          
+          console.log('✅ DALL-E 3 이미지 다운로드 완료, 크기:', imageBuffer.byteLength, 'bytes');
+          
+          // DB에 이미지 데이터 저장
+          const pool = await sql.connect({
+            server: process.env.DB_SERVER || '',
+            database: process.env.DB_NAME || '',
+            user: process.env.DB_USER || '',
+            password: process.env.DB_PASSWORD || '',
+            options: {
+              encrypt: true,
+              trustServerCertificate: true,
+            },
+          });
+
+          // user.id가 숫자인지 이메일인지 확인
+          let userId: number;
+          
+          if (typeof user.id === 'string' && user.id.includes('@')) {
+            const userResult = await pool.request()
+              .input('userEmail', sql.VarChar, user.id)
+              .query(`SELECT id FROM users WHERE email = @userEmail`);
+            
+            if (userResult.recordset.length === 0) {
+              throw new Error('사용자 정보를 찾을 수 없습니다.');
+            }
+            
+            userId = userResult.recordset[0].id;
+          } else {
+            userId = parseInt(user.id as string);
+          }
+
+          // 이미지 데이터를 DB에 저장
+          const insertResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .input('prompt', sql.NVarChar, finalPrompt)
+            .input('imageData', sql.VarBinary(sql.MAX), Buffer.from(imageBuffer))
+            .input('contentType', sql.NVarChar, contentType)
+            .input('model', sql.NVarChar, model)
+            .input('size', sql.NVarChar, `${width}x${height}`)
+            .input('style', sql.NVarChar, style || 'unknown')
+            .input('quality', sql.NVarChar, 'standard')
+            .input('title', sql.NVarChar, originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt)
+            .query(`
+              INSERT INTO image_generation_history 
+              (user_id, prompt, image_data, content_type, model, size, style, quality, title, created_at, status)
+              VALUES 
+              (@userId, @prompt, @imageData, @contentType, @model, @size, @style, @quality, @title, GETDATE(), 'success')
+              SELECT SCOPE_IDENTITY() as id
+            `);
+
+          const imageId = insertResult.recordset[0].id;
+          console.log('💾 DALL-E 3 이미지 DB 저장 완료, ID:', imageId);
+
+          // 내부 URL로 응답 생성
+          response = {
+            data: [{
+              url: `/api/image/${imageId}`,
+              id: imageId
+            }]
+          };
+
+        } catch (error) {
+          console.error('❌ DALL-E 3 이미지 처리 실패:', error);
+          throw new Error(`DALL-E 3 이미지 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        }
+      } else {
+        throw new Error('DALL-E 3에서 유효한 이미지 URL을 받지 못했습니다.');
+      }
     } else if (modelConfig.apiType === "replicate") {
       // Replicate API 사용 (다른 모델들)
       console.log('Replicate API 호출 시작:', {
@@ -572,94 +656,93 @@ export async function POST(request: NextRequest) {
       // 업데이트된 사용량 정보 반환
       const updatedUsage = await checkImageGenerationLimit(user.id);
       
-      // DB에 이미지 히스토리 저장
-      try {
-        const pool = await sql.connect({
-          server: process.env.DB_SERVER || '',
-          database: process.env.DB_NAME || '',
-          user: process.env.DB_USER || '',
-          password: process.env.DB_PASSWORD || '',
-          options: {
-            encrypt: true,
-            trustServerCertificate: true,
-          },
-        });
+      // DALL-E 3의 경우 이미 DB에 저장되었으므로 추가 저장하지 않음
+      if (modelConfig.apiType !== "openai") {
+        // Replicate 모델들의 경우 기존 방식으로 DB 저장
+        try {
+          const pool = await sql.connect({
+            server: process.env.DB_SERVER || '',
+            database: process.env.DB_NAME || '',
+            user: process.env.DB_USER || '',
+            password: process.env.DB_PASSWORD || '',
+            options: {
+              encrypt: true,
+              trustServerCertificate: true,
+            },
+          });
 
-        console.log('💾 DB 저장 시작 - 사용자:', user.id);
-        
-        // user.id가 숫자인지 이메일인지 확인
-        let userId: number;
-        
-        if (typeof user.id === 'string' && user.id.includes('@')) {
-          // 이메일인 경우: users 테이블에서 ID 조회
-          console.log('📧 이메일로 사용자 ID 조회 중:', user.id);
-          const userResult = await pool.request()
-            .input('userEmail', sql.VarChar, user.id)
-            .query(`SELECT id FROM users WHERE email = @userEmail`);
+          console.log('💾 Replicate 모델 DB 저장 시작 - 사용자:', user.id);
           
-          if (userResult.recordset.length === 0) {
-            console.error('❌ 사용자를 찾을 수 없습니다:', user.id);
-            return NextResponse.json({ error: '사용자 정보를 찾을 수 없습니다.' }, { status: 404 });
+          // user.id가 숫자인지 이메일인지 확인
+          let userId: number;
+          
+          if (typeof user.id === 'string' && user.id.includes('@')) {
+            console.log('📧 이메일로 사용자 ID 조회 중:', user.id);
+            const userResult = await pool.request()
+              .input('userEmail', sql.VarChar, user.id)
+              .query(`SELECT id FROM users WHERE email = @userEmail`);
+            
+            if (userResult.recordset.length === 0) {
+              console.error('❌ 사용자를 찾을 수 없습니다:', user.id);
+              return NextResponse.json({ error: '사용자 정보를 찾을 수 없습니다.' }, { status: 404 });
+            }
+            
+            userId = userResult.recordset[0].id;
+            console.log('👤 이메일로 조회된 사용자 ID:', userId);
+          } else {
+            userId = parseInt(user.id as string);
+            console.log('👤 직접 사용자 ID:', userId);
           }
           
-          userId = userResult.recordset[0].id;
-          console.log('👤 이메일로 조회된 사용자 ID:', userId);
-        } else {
-          // 이미 숫자 ID인 경우: 그대로 사용
-          userId = parseInt(user.id as string);
-          console.log('👤 직접 사용자 ID:', userId);
-        }
-        
-        // 현재 사용자의 히스토리 개수 확인
-        const checkResult = await pool.request()
-          .input('userId', sql.Int, userId)
-          .query(`SELECT COUNT(*) as count FROM image_generation_history WHERE user_id = @userId`);
-
-        const currentCount = checkResult.recordset[0].count;
-        console.log('📊 현재 히스토리 개수:', currentCount);
-
-        // 10개가 넘으면 가장 오래된 것 삭제
-        if (currentCount >= 10) {
-          console.log('🗑️ 오래된 히스토리 삭제 중...');
-          await pool.request()
+          // 현재 사용자의 히스토리 개수 확인
+          const checkResult = await pool.request()
             .input('userId', sql.Int, userId)
+            .query(`SELECT COUNT(*) as count FROM image_generation_history WHERE user_id = @userId`);
+
+          const currentCount = checkResult.recordset[0].count;
+          console.log('📊 현재 히스토리 개수:', currentCount);
+
+          // 10개가 넘으면 가장 오래된 것 삭제
+          if (currentCount >= 10) {
+            console.log('🗑️ 오래된 히스토리 삭제 중...');
+            await pool.request()
+              .input('userId', sql.Int, userId)
+              .query(`
+                DELETE FROM image_generation_history
+                WHERE id IN (
+                  SELECT TOP 1 id FROM image_generation_history 
+                  WHERE user_id = @userId 
+                  ORDER BY created_at ASC
+                )
+              `);
+            console.log('✅ 오래된 히스토리 삭제 완료');
+          }
+
+          // 새로운 이미지 생성 히스토리 저장
+          console.log('💾 새 히스토리 저장 중...');
+          
+          const title = originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt;
+          
+          const insertResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .input('prompt', sql.NVarChar, finalPrompt)
+            .input('generatedImageUrl', sql.NVarChar, response.data[0].url)
+            .input('model', sql.NVarChar, model)
+            .input('size', sql.NVarChar, `${width}x${height}`)
+            .input('style', sql.NVarChar, style || 'unknown')
+            .input('quality', sql.NVarChar, 'standard')
+            .input('title', sql.NVarChar, title)
             .query(`
-              DELETE FROM image_generation_history
-              WHERE id IN (
-                SELECT TOP 1 id FROM image_generation_history 
-                WHERE user_id = @userId 
-                ORDER BY created_at ASC
-              )
+              INSERT INTO image_generation_history 
+              (user_id, prompt, generated_image_url, model, size, style, quality, title, created_at, status)
+              VALUES (@userId, @prompt, @generatedImageUrl, @model, @size, @style, @quality, @title, GETDATE(), 'success');
+              SELECT SCOPE_IDENTITY() as id;
             `);
-          console.log('✅ 오래된 히스토리 삭제 완료');
+
+          console.log('✅ Replicate 이미지 히스토리가 DB에 저장되었습니다. ID:', insertResult.recordset[0]?.id);
+        } catch (dbError) {
+          console.error('❌ Replicate DB 저장 실패:', dbError);
         }
-
-        // 새로운 이미지 생성 히스토리 저장
-        console.log('💾 새 히스토리 저장 중...');
-        
-        // 제목을 사용자가 입력한 원본 프롬프트로 설정 (50자 제한)
-        const title = originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt;
-        
-        const insertResult = await pool.request()
-          .input('userId', sql.Int, userId)
-          .input('prompt', sql.NVarChar, finalPrompt)
-          .input('generatedImageUrl', sql.NVarChar, response.data[0].url)
-          .input('model', sql.NVarChar, model)
-          .input('size', sql.NVarChar, `${width}x${height}`)
-          .input('style', sql.NVarChar, style || 'unknown')
-          .input('quality', sql.NVarChar, 'standard')
-          .input('title', sql.NVarChar, title)
-          .query(`
-            INSERT INTO image_generation_history 
-            (user_id, prompt, generated_image_url, model, size, style, quality, title, created_at, status)
-            VALUES (@userId, @prompt, @generatedImageUrl, @model, @size, @style, @quality, @title, GETDATE(), 'success');
-            SELECT SCOPE_IDENTITY() as id;
-          `);
-
-        console.log('✅ 이미지 히스토리가 DB에 저장되었습니다. ID:', insertResult.recordset[0]?.id);
-      } catch (dbError) {
-        console.error('❌ DB 저장 실패:', dbError);
-        // DB 저장 실패는 이미지 생성 성공에 영향을 주지 않음
       }
 
       return NextResponse.json({ 

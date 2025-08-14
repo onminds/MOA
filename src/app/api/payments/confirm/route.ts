@@ -5,7 +5,7 @@ import { getConnection } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== 결제 확인 API 시작 ===');
+    console.log('=== 정기결제 확인 API 시작 ===');
     
     const session = await getServerSession(authOptions);
     
@@ -18,7 +18,11 @@ export async function POST(request: NextRequest) {
 
     const { paymentKey, orderId, amount, planId } = await request.json();
     
-    console.log('결제 확인 요청 받음:', { paymentKey, orderId, amount, planId });
+    console.log('정기결제 확인 요청 받음:', { paymentKey, orderId, amount, planId });
+
+    // 정기결제 주문인지 확인
+    const isSubscription = orderId.startsWith('subscription_');
+    console.log('정기결제 여부:', isSubscription);
 
     // 1. 토스페이먼츠 API 호출하여 결제 검증
     console.log('토스페이먼츠 API 호출 준비:', {
@@ -59,36 +63,94 @@ export async function POST(request: NextRequest) {
       
       const db = await getConnection();
 
-      // 2. DB 업데이트 (한 번에 모든 정보 업데이트)
-      await db.request()
-        .input('transactionId', orderId)
-        .input('paymentKey', paymentKey)
-        .input('status', 'completed')
-        .input('paymentMethod', result.method || 'card')
-        .input('planType', planId)
-        .query(`
-          UPDATE payments 
-          SET receipt_id = @paymentKey, 
-              status = @status, 
-              payment_method = @paymentMethod, 
-              plan_type = @planType,
-              updated_at = GETDATE()
-          WHERE transaction_id = @transactionId
-        `);
+      if (isSubscription) {
+        // 정기결제인 경우 구독 정보 저장
+        console.log('정기결제 구독 정보 저장 중...');
+        
+        // 구독 ID 생성 (토스페이먼츠에서 제공하거나 자체 생성)
+        const subscriptionId = result.subscriptionId || `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // 다음 결제일 계산 (1개월 후)
+        const nextBillingDate = new Date();
+        nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
 
-      console.log('결제 정보 업데이트 완료:', {
-        orderId,
-        planId,
-        status: 'completed'
-      });
+        // 정기결제 정보 업데이트
+        await db.request()
+          .input('transactionId', orderId)
+          .input('paymentKey', paymentKey)
+          .input('status', 'completed')
+          .input('paymentMethod', result.method || 'card')
+          .input('planType', planId)
+          .input('subscriptionId', subscriptionId)
+          .input('subscriptionStatus', 'active')
+          .input('nextBillingDate', nextBillingDate)
+          .input('autoRenewal', 1)
+          .input('subscriptionStartDate', new Date())
+          .query(`
+            UPDATE payments 
+            SET receipt_id = @paymentKey, 
+                status = @status, 
+                payment_method = @paymentMethod, 
+                plan_type = @planType,
+                subscription_id = @subscriptionId,
+                subscription_status = @subscriptionStatus,
+                next_billing_date = @nextBillingDate,
+                auto_renewal = @autoRenewal,
+                subscription_start_date = @subscriptionStartDate,
+                updated_at = GETDATE()
+            WHERE transaction_id = @transactionId
+          `);
 
-      // 4. 사용자 플랜은 payments 테이블의 plan_type으로 관리하므로 users 테이블 업데이트 불필요
+        console.log('정기결제 구독 정보 저장 완료:', {
+          orderId,
+          planId,
+          subscriptionId,
+          status: 'active',
+          nextBillingDate: nextBillingDate.toISOString()
+        });
 
-      return NextResponse.json({
-        success: true,
-        message: '결제가 완료되었습니다.',
-        planType: planId
-      });
+        return NextResponse.json({
+          success: true,
+          message: '정기결제가 완료되었습니다.',
+          planType: planId,
+          subscriptionId: subscriptionId,
+          nextBillingDate: nextBillingDate.toISOString(),
+          billingCycle: 'monthly'
+        });
+
+      } else {
+        // 일반 결제인 경우 기존 로직 유지
+        console.log('일반 결제 처리 중...');
+        
+        await db.request()
+          .input('transactionId', orderId)
+          .input('paymentKey', paymentKey)
+          .input('status', 'completed')
+          .input('paymentMethod', result.method || 'card')
+          .input('planType', planId)
+          .query(`
+            UPDATE payments 
+            SET receipt_id = @paymentKey, 
+                status = @status, 
+                payment_method = @paymentMethod, 
+                plan_type = @planType,
+                updated_at = GETDATE()
+            WHERE transaction_id = @transactionId
+          `);
+
+        console.log('일반 결제 정보 업데이트 완료:', {
+          orderId,
+          planId,
+          status: 'completed'
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: '결제가 완료되었습니다.',
+          planType: planId
+        });
+      }
+
     } else {
       // 결제 실패
       console.log('토스페이먼츠 결제 실패:', {
@@ -97,14 +159,31 @@ export async function POST(request: NextRequest) {
       });
       
       const db = await getConnection();
-      await db.request()
-        .input('transactionId', orderId)
-        .input('status', 'failed')
-        .query(`
-          UPDATE payments 
-          SET status = @status, updated_at = GETDATE()
-          WHERE transaction_id = @transactionId
-        `);
+      
+      if (isSubscription) {
+        // 정기결제 실패 시 구독 상태도 업데이트
+        await db.request()
+          .input('transactionId', orderId)
+          .input('status', 'failed')
+          .input('subscriptionStatus', 'failed')
+          .query(`
+            UPDATE payments 
+            SET status = @status, 
+                subscription_status = @subscriptionStatus, 
+                updated_at = GETDATE()
+            WHERE transaction_id = @transactionId
+          `);
+      } else {
+        // 일반 결제 실패
+        await db.request()
+          .input('transactionId', orderId)
+          .input('status', 'failed')
+          .query(`
+            UPDATE payments 
+            SET status = @status, updated_at = GETDATE()
+            WHERE transaction_id = @transactionId
+          `);
+      }
 
       return NextResponse.json({
         success: false,
@@ -114,7 +193,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('결제 확인 오류:', error);
+    console.error('정기결제 확인 오류:', error);
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
   }
 } 

@@ -28,7 +28,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/productivity/lecture-notes",
     "/productivity/presentation-script",
     "/productivity/report-writer",
-    "/productivity/slide-generator",
     "/productivity/sns-post",
     "/payments/success",
     "/usage",

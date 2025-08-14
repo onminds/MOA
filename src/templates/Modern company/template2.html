@@ -3,11 +3,33 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="다음 내용을 바탕으로 목차 슬라이드에 적합한 내용을 만들어줘:
+
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
+
+*** 절대적으로 중요: 아래 형식만 출력하고 다른 모든 텍스트는 포함하지 마세요 ***
+*** 첫 3개 항목은 반드시 통계&트렌드, 우선순위분석, 성과지표에 적합한 내용이어야 합니다 ***
+
+<div class=\"toc-item\">01. {{SECTION_TITLE}} 현황 및 통계</div>
+<div class=\"toc-item\">02. {{SECTION_TITLE}} 핵심 우선순위</div>
+<div class=\"toc-item\">03. {{SECTION_TITLE}} 성과 및 지표</div>
+<div class=\"toc-item\">04. 주요 특징과 구성요소</div>
+<div class=\"toc-item\">05. 실제 적용 사례</div>
+<div class=\"toc-item\">06. 산업별 활용 현황</div>
+<div class=\"toc-item\">07. 시장 전망과 기회</div>
+<div class=\"toc-item\">08. 도전과제와 해결방안</div>
+<div class=\"toc-item\">09. 미래 발전 방향</div>
+<div class=\"toc-item\">10. 결론 및 시사점</div>
+
+위 10개의 <div class=\"toc-item\"> 태그만 출력하세요. 주제에 맞게 내용을 수정하되 형식은 절대 바꾸지 마세요!
+특히 01, 02, 03번은 각각 통계분석, 우선순위분석, 성과지표 슬라이드와 연결되므로 해당 내용에 적합해야 합니다!"/>
 <title>{{TITLE}}</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
-
+        @import url("https://www.genspark.ai/image_placeholder.png");
         
         body, html {
             margin: 0;
@@ -72,18 +94,16 @@
         .toc-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
             position: relative;
             z-index: 10;
         }
         
         .toc-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             font-size: 1.2rem;
             position: relative;
             z-index: 10;
+            line-height: 1.3;
         }
         
         .toc-number {
