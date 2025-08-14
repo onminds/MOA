@@ -15,7 +15,9 @@
     "dev-setup": "node scripts/dev-setup.js",
     "deploy": "node scripts/prod-deploy.js",
     "local": "npm run dev-setup && npm run dev",
-    "favicons": "node scripts/generate-favicons.js"
+    "favicons": "node scripts/generate-favicons.js",
+    "subscription-scheduler": "node scripts/subscription-scheduler.js",
+    "create-subscription-tables": "node scripts/create-subscription-tables.js"
   },
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
@@ -24,6 +26,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cheerio": "^0.22.35",
     "@types/nodemailer": "^6.4.17",
+    "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
@@ -44,6 +47,8 @@
     "multer": "^2.0.1",
     "next": "15.3.5",
     "next-auth": "^4.24.11",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
     "node-stream-zip": "^1.15.0",
     "nodemailer": "^6.10.1",
     "openai": "^5.9.0",
@@ -60,6 +65,7 @@
     "sharp": "^0.34.3",
     "tailwind-merge": "^3.3.1",
     "tesseract.js": "^5.0.4",
+    "uuid": "^11.1.0",
     "ws": "^8.18.3",
     "xml2js": "^0.6.2",
     "yauzl": "^3.2.0",

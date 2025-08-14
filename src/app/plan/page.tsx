@@ -3,7 +3,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { Crown, Check, Star, Zap, Shield, X } from 'lucide-react';
 import Link from 'next/link';
-import PaymentButton from '../components/PaymentButton';
+import SubscriptionPaymentButton from '../components/SubscriptionPaymentButton';
 
 interface PlanInfo {
   planType: string;
@@ -412,19 +412,43 @@ export default function PlanPage() {
                       무료로 시작
                     </button>
                   ) : (
-                    <PaymentButton
-                      planId={plan.id}
-                      planName={plan.name}
-                      amount={plan.id === 'standard' ? 15900 : plan.id === 'pro' ? 29000 : 0}
-                      currentPlan={currentPlan}
-                      onSuccess={() => {
-                        setPaymentMessage({ type: 'success', message: '플랜 업그레이드가 완료되었습니다!' });
-                        fetchUserPlan(); // 플랜 정보 새로고침
-                      }}
-                      onError={(error) => {
-                        setPaymentMessage({ type: 'error', message: error });
-                      }}
-                    />
+                    <div className="w-full">
+                      {plan.id === 'standard' ? (
+                        <SubscriptionPaymentButton
+                          planId="standard"
+                          planName="Standard Plan"
+                          amount={15900}
+                          onSuccess={() => {
+                            setPaymentMessage({ type: 'success', message: 'Standard 플랜 구독이 설정되었습니다!' });
+                            // 플랜 정보 다시 조회 (더 긴 지연 시간)
+                            setTimeout(() => {
+                              console.log('플랜 정보 재조회 시작...');
+                              fetchUserPlan();
+                            }, 2000);
+                          }}
+                          onError={(error: string) => {
+                            setPaymentMessage({ type: 'error', message: error });
+                          }}
+                        />
+                      ) : (
+                        <SubscriptionPaymentButton
+                          planId="pro"
+                          planName="Pro Plan"
+                          amount={29000}
+                          onSuccess={() => {
+                            setPaymentMessage({ type: 'success', message: 'Pro 플랜 구독이 설정되었습니다!' });
+                            // 플랜 정보 다시 조회 (더 긴 지연 시간)
+                            setTimeout(() => {
+                              console.log('플랜 정보 재조회 시작...');
+                              fetchUserPlan();
+                            }, 2000);
+                          }}
+                          onError={(error: string) => {
+                            setPaymentMessage({ type: 'error', message: error });
+                          }}
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -444,25 +468,25 @@ export default function PlanPage() {
               </h3>
               <p className="text-gray-600">
                 네, 언제든지 플랜을 업그레이드하거나 다운그레이드할 수 있습니다. 
-                변경사항은 즉시 적용됩니다.
+                변경사항은 다음 결제일부터 적용됩니다.
               </p>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                환불 정책은 어떻게 되나요?
+                구독 취소는 언제든지 가능한가요?
               </h3>
               <p className="text-gray-600">
-                구매 후 7일 이내에 100% 환불을 제공합니다. 
-                단, 사용량이 많지 않은 경우에만 적용됩니다.
+                네, 언제든지 구독을 취소할 수 있습니다. 
+                취소 후에도 현재 결제 기간이 끝날 때까지 서비스를 이용할 수 있습니다.
               </p>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                팀 플랜은 어떻게 작동하나요?
+                결제는 언제 이루어지나요?
               </h3>
               <p className="text-gray-600">
-                Pro 플랜에서는 팀원을 초대하여 함께 사용할 수 있습니다. 
-                팀 관리 기능을 통해 사용량을 모니터링할 수 있습니다.
+                매월 구독 시작일(또는 연간 구독의 경우 매년)에 자동으로 결제됩니다. 
+                결제 실패 시 3일간 재시도합니다.
               </p>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-lg">
@@ -470,8 +494,8 @@ export default function PlanPage() {
                 결제 방법은 어떤 것이 있나요?
               </h3>
               <p className="text-gray-600">
-                신용카드, 체크카드, 간편결제(카카오페이, 네이버페이), 
-                계좌이체 등 다양한 결제 방법을 지원합니다.
+                신용카드, 체크카드 등으로 정기 결제가 가능합니다. 
+                카드 정보는 안전하게 암호화되어 저장됩니다.
               </p>
             </div>
           </div>
