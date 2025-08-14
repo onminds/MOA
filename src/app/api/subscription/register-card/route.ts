@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import { getConnection } from '@/lib/db';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
 
     const db = await getConnection();
     
-    // 고유한 customerKey 생성
-    const customerKey = uuidv4();
+    // 고유한 customerKey 생성 (UUID 대신 사용)
+    const customerKey = `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // 빌링키 발급을 위한 URL 생성
     const successUrl = `${process.env.NEXTAUTH_URL}/subscription/success?customerKey=${customerKey}`;

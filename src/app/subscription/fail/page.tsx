@@ -2,8 +2,9 @@
 import { useSearchParams } from 'next/navigation';
 import { XCircle, Home, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
-export default function SubscriptionFail() {
+function SubscriptionFailContent() {
   const searchParams = useSearchParams();
   const errorCode = searchParams.get('code');
   const errorMessage = searchParams.get('message');
@@ -57,5 +58,21 @@ export default function SubscriptionFail() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SubscriptionFail() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <SubscriptionFailContent />
+    </Suspense>
   );
 } 
