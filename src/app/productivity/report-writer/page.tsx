@@ -195,9 +195,9 @@ export default function ReportWriter() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="min-h-screen">
       <Header />
-      <div className="p-8">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
         <div className="max-w-6xl mx-auto">
           {/* 뒤로가기 버튼 */}
           <div className="mb-6">

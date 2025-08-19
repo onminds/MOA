@@ -268,11 +268,9 @@ export default function ImageCreate() {
       
       const response = await fetch('/api/image-generate/history');
       const data = await response.json();
-      console.log('📡 API 응답:', { response: response.status, data });
       
       if (response.ok && data.success) {
-        console.log('✅ 히스토리 데이터:', data.history);
-        console.log('📊 히스토리 개수:', data.count);
+        // 모든 히스토리 표시
         setDbHistory(data.history);
       } else {
         console.error('❌ 이미지 히스토리 로드 실패:', data.error);
@@ -1027,8 +1025,7 @@ export default function ImageCreate() {
 
   // dbHistory 상태 변경 감지
   useEffect(() => {
-    console.log('🔄 dbHistory 상태 변경:', dbHistory);
-    console.log('📊 dbHistory 길이:', dbHistory.length);
+    // 상태 변경 감지 (로그 제거)
   }, [dbHistory]);
 
   // inpaint 카테고리 변경 시 캔버스 초기화
@@ -1106,10 +1103,10 @@ export default function ImageCreate() {
                 <div className="mb-16">
                   <div className="bg-white rounded-2xl flex items-center justify-center relative" style={getContainerStyle()}>
                     {loading ? (
-                      <div className="text-center w-full h-full flex flex-col items-center justify-center bg-white rounded-xl">
-                        <div className="relative flex items-center justify-center">
-                          <div className="text-black font-bold text-5xl z-10 relative">MOA</div>
-                          <div className="absolute top-16 text-black text-lg font-medium z-10 text-left w-full whitespace-nowrap -ml-6">AI가 이미지 제작중</div>
+                      <div className="text-center w-full h-full flex flex-col items-center justify-center bg-white rounded-xl relative z-0">
+                        <div className="relative flex items-center justify-center" style={{ transform: 'translateY(2rem)' }}>
+                          <div className="text-black font-bold text-5xl relative">MOA</div>
+                          <div className="absolute top-16 text-black text-lg font-medium text-center w-full whitespace-nowrap">제작 중</div>
                           <div className="absolute w-60 h-60 border-2 border-black border-t-transparent rounded-full animate-spin flex items-center justify-center">
                             <div className="w-48 h-48 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '2s'}}></div>
                           </div>
@@ -1179,8 +1176,9 @@ export default function ImageCreate() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center w-full h-full flex items-center justify-center">
-                        {/* 빈 상태 */}
+                      <div className="text-center w-full h-full flex flex-col items-center justify-center">
+                        <div className="text-gray-400 text-lg mb-2">이미지를 생성해보세요</div>
+                        <div className="text-gray-300 text-sm">프롬프트를 입력하고 생성 버튼을 클릭하세요</div>
                       </div>
                     )}
                   </div>

@@ -56,7 +56,11 @@ export async function GET(request: NextRequest) {
     const result = await pool.request()
       .input('userId', sql.Int, userId)
       .query(`
+<<<<<<< HEAD
         SELECT TOP 10
+=======
+        SELECT
+>>>>>>> 7322637 (upload)
           id, prompt, generated_image_url, image_data, content_type, model, size, style, quality, title, created_at, status
         FROM image_generation_history
         WHERE user_id = @userId
@@ -67,11 +71,19 @@ export async function GET(request: NextRequest) {
     console.log('🔍 쿼리 결과:', result.recordset);
 
     const history = result.recordset.map(item => {
+<<<<<<< HEAD
       // DALL-E 3 이미지의 경우 내부 URL 생성, 다른 모델은 기존 URL 사용
       let imageUrl = item.generated_image_url;
       
       if (item.model === 'DALL-E 3' && item.image_data) {
         // DALL-E 3이고 이미지 데이터가 있으면 내부 URL 사용
+=======
+      // 모든 모델이 이제 DB에 바이너리로 저장되므로 내부 URL 사용
+      let imageUrl = item.generated_image_url;
+      
+      if (item.image_data) {
+        // 이미지 데이터가 있으면 내부 URL 사용 (모든 모델)
+>>>>>>> 7322637 (upload)
         imageUrl = `/api/image/${item.id}`;
       }
       

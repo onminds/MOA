@@ -636,13 +636,83 @@ export async function POST(request: NextRequest) {
         throw new Error('Replicate API에서 빈 URL을 받았습니다.');
       }
       
-      console.log('최종 이미지 URL:', imageUrl);
+      console.log('🔄 Replicate 이미지 다운로드 시작:', imageUrl);
       
-      response = {
-        data: [{
-          url: imageUrl
-        }]
-      };
+      try {
+        // Replicate에서 이미지 다운로드
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          throw new Error(`이미지 다운로드 실패: ${imageResponse.status}`);
+        }
+        
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const contentType = imageResponse.headers.get('content-type') || 'image/png';
+        
+        console.log('✅ Replicate 이미지 다운로드 완료, 크기:', imageBuffer.byteLength, 'bytes');
+        
+        // DB에 이미지 데이터 저장
+        const pool = await sql.connect({
+          server: process.env.DB_SERVER || '',
+          database: process.env.DB_NAME || '',
+          user: process.env.DB_USER || '',
+          password: process.env.DB_PASSWORD || '',
+          options: {
+            encrypt: true,
+            trustServerCertificate: true,
+          },
+        });
+
+        // user.id가 숫자인지 이메일인지 확인
+        let userId: number;
+        
+        if (typeof user.id === 'string' && user.id.includes('@')) {
+          const userResult = await pool.request()
+            .input('userEmail', sql.VarChar, user.id)
+            .query(`SELECT id FROM users WHERE email = @userEmail`);
+          
+          if (userResult.recordset.length === 0) {
+            throw new Error('사용자 정보를 찾을 수 없습니다.');
+          }
+          
+          userId = userResult.recordset[0].id;
+        } else {
+          userId = parseInt(user.id as string);
+        }
+
+        // 이미지 데이터를 DB에 저장
+        const insertResult = await pool.request()
+          .input('userId', sql.Int, userId)
+          .input('prompt', sql.NVarChar, finalPrompt)
+          .input('imageData', sql.VarBinary(sql.MAX), Buffer.from(imageBuffer))
+          .input('contentType', sql.NVarChar, contentType)
+          .input('model', sql.NVarChar, model)
+          .input('size', sql.NVarChar, `${width}x${height}`)
+          .input('style', sql.NVarChar, style || 'unknown')
+          .input('quality', sql.NVarChar, 'standard')
+          .input('title', sql.NVarChar, originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt)
+          .query(`
+            INSERT INTO image_generation_history 
+            (user_id, prompt, image_data, content_type, model, size, style, quality, title, created_at, status)
+            VALUES 
+            (@userId, @prompt, @imageData, @contentType, @model, @size, @style, @quality, @title, GETDATE(), 'success')
+            SELECT SCOPE_IDENTITY() as id
+          `);
+
+        const imageId = insertResult.recordset[0].id;
+        console.log('💾 Replicate 이미지 DB 저장 완료, ID:', imageId);
+
+        // 내부 URL로 응답 생성
+        response = {
+          data: [{
+            url: `/api/image/${imageId}`,
+            id: imageId
+          }]
+        };
+
+      } catch (error) {
+        console.error('❌ Replicate 이미지 처리 실패:', error);
+        throw new Error(`Replicate 이미지 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      }
     } else {
       throw new Error(`지원하지 않는 API 타입: ${modelConfig.apiType}`);
     }
@@ -656,6 +726,7 @@ export async function POST(request: NextRequest) {
       // 업데이트된 사용량 정보 반환
       const updatedUsage = await checkImageGenerationLimit(user.id);
       
+<<<<<<< HEAD
       // DALL-E 3의 경우 이미 DB에 저장되었으므로 추가 저장하지 않음
       if (modelConfig.apiType !== "openai") {
         // Replicate 모델들의 경우 기존 방식으로 DB 저장
@@ -744,6 +815,9 @@ export async function POST(request: NextRequest) {
           console.error('❌ Replicate DB 저장 실패:', dbError);
         }
       }
+=======
+      // 모든 모델이 이제 DB에 바이너리로 저장되므로 추가 저장 로직 제거
+>>>>>>> 7322637 (upload)
 
       return NextResponse.json({ 
         url: response.data[0].url,

@@ -1,8 +1,8 @@
 "use client";
 
 import Header from '../../components/Header';
-import { useState, useRef, Suspense } from 'react';
-import { Pencil, ArrowLeft, Save } from 'lucide-react';
+import { useState, useRef, Suspense, useEffect } from 'react';
+import { Pencil, ArrowLeft, Save, Image } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -52,7 +52,7 @@ function WritePageContent() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
-  const isAdmin = session?.user?.role === 'admin';
+  const isAdmin = session?.user?.role === 'ADMIN';
   const availableCategories = isAdmin ? allCategories : userCategories;
   
   const initialCategory = searchParams.get('category') || availableCategories[0].name;
@@ -61,6 +61,41 @@ function WritePageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  
+     // 이미지 업로드 관련 상태
+   const [uploadedImages, setUploadedImages] = useState<Array<{
+     id: number;
+     fileName: string;
+     originalName: string;
+     fileSize: number;
+     mimeType: string;
+     width?: number;
+     height?: number;
+     file?: File;
+     isTemp?: boolean;
+     previewUrl?: string;
+   }>>([]);
+     const [isUploading, setIsUploading] = useState(false);
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   const editorRef = useRef<HTMLDivElement>(null);
+
+   // 컴포넌트 언마운트 시 미리보기 URL 정리
+   useEffect(() => {
+     return () => {
+       uploadedImages.forEach(image => {
+         if (image.previewUrl) {
+           URL.revokeObjectURL(image.previewUrl);
+         }
+       });
+     };
+   }, []);
+
+   // 에디터 초기화
+   useEffect(() => {
+     if (editorRef.current && !content && !editorRef.current.innerHTML.trim()) {
+       editorRef.current.innerHTML = '<div class="text-gray-400">내용을 입력하세요.</div>';
+     }
+   }, []);
 
   // 로그인 체크
   if (!session?.user?.id) {
@@ -83,6 +118,129 @@ function WritePageContent() {
     );
   }
 
+     // 이미지 업로드 및 텍스트에 삽입
+   const handleImageUpload = async (files: FileList) => {
+     if (files.length === 0) return;
+     
+     // 파일 개수 제한 (최대 10개)
+     if (uploadedImages.length + files.length > 10) {
+       setToast({ message: '최대 10개까지 업로드 가능합니다', type: 'error' });
+       return;
+     }
+     
+     setIsUploading(true);
+     
+     try {
+       // 파일들을 임시로 저장 (미리보기용 URL 생성)
+       const newImages = Array.from(files).map(file => ({
+         id: Date.now() + Math.random(), // 임시 ID
+         file: file,
+         fileName: file.name,
+         originalName: file.name,
+         fileSize: file.size,
+         mimeType: file.type,
+         isTemp: true,
+         previewUrl: URL.createObjectURL(file) // 미리보기 URL 추가
+       }));
+       
+       setUploadedImages(prev => [...prev, ...newImages]);
+       
+       // 리치 텍스트 에디터에 이미지 삽입
+       const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+       if (editor) {
+         // 에디터에 포커스 주기
+         editor.focus();
+         
+         // 플레이스홀더 제거
+         const placeholder = '<div class="text-gray-400">내용을 입력하세요.</div>';
+         if (editor.innerHTML === placeholder) {
+           editor.innerHTML = '';
+         }
+         
+         // 현재 선택 영역 가져오기
+         let selection = window.getSelection();
+         let range = selection?.getRangeAt(0);
+         
+         // 선택 영역이 없거나 에디터 외부에 있으면 에디터 끝에 커서 위치시키기
+         if (!selection || !range || !editor.contains(range.commonAncestorContainer)) {
+           // 에디터 끝에 새로운 범위 생성
+           range = document.createRange();
+           range.selectNodeContents(editor);
+           range.collapse(false); // false = 끝으로 이동
+           
+           // 선택 영역 설정
+           selection = window.getSelection();
+           selection?.removeAllRanges();
+           selection?.addRange(range);
+         }
+         
+         if (range) {
+           // 각 이미지를 실제 이미지 요소로 삽입
+           newImages.forEach(img => {
+             // 이미지 앞에 줄바꿈 추가 (커서가 에디터 시작점이 아닌 경우)
+             if (range.startOffset > 0 || range.startContainer !== editor) {
+               const beforeDiv = document.createElement('div');
+               beforeDiv.innerHTML = '<br>';
+               range.insertNode(beforeDiv);
+               range.setStartAfter(beforeDiv);
+               range.setEndAfter(beforeDiv);
+             }
+             
+             // 이미지 요소 생성
+             const imgElement = document.createElement('img');
+             imgElement.src = img.previewUrl;
+             imgElement.alt = img.originalName;
+             imgElement.className = 'max-w-full h-auto rounded-lg border border-gray-200 my-2';
+             
+             // 이미지 삽입
+             range.insertNode(imgElement);
+             
+             // 이미지 뒤에 줄바꿈 추가
+             const afterDiv = document.createElement('div');
+             afterDiv.innerHTML = '<br>';
+             range.insertNode(afterDiv);
+             
+             // 커서를 이미지 뒤의 줄바꿈 뒤로 이동
+             range.setStartAfter(afterDiv);
+             range.setEndAfter(afterDiv);
+           });
+           
+           // 포커스 유지
+           editor.focus();
+         }
+         
+         // content state 업데이트는 onInput에서 자동으로 처리됨
+       }
+     
+       setToast({ message: `${files.length}개의 이미지가 내용에 삽입되었습니다.`, type: 'success' });
+     } catch (error) {
+       console.error('이미지 삽입 오류:', error);
+       setToast({ message: '이미지 삽입 중 오류가 발생했습니다.', type: 'error' });
+     } finally {
+       setIsUploading(false);
+     }
+   };
+
+  // 이미지 삭제 (임시 이미지)
+  const handleImageDelete = (imageId: number) => {
+    setUploadedImages(prev => {
+      const imageToDelete = prev.find(img => img.id === imageId);
+      if (imageToDelete?.previewUrl) {
+        URL.revokeObjectURL(imageToDelete.previewUrl); // 미리보기 URL 해제
+      }
+      return prev.filter(img => img.id !== imageId);
+    });
+    
+    // content에서 해당 이미지 마크다운 제거
+    const imageToDelete = uploadedImages.find(img => img.id === imageId);
+    if (imageToDelete) {
+      const imageMarkdown = `\n![${imageToDelete.originalName}](temp_${imageToDelete.id})\n`;
+      setContent(prev => prev.replace(imageMarkdown, ''));
+    }
+    
+    setToast({ message: '이미지가 제거되었습니다', type: 'success' });
+  };
+
   // 글쓰기 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +250,7 @@ function WritePageContent() {
       const selectedCategory = allCategories.find(cat => cat.name === category);
       const category_id = selectedCategory ? selectedCategory.id : null;
       
+      // 1. 게시글 생성
       const res = await fetch('/api/community/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,9 +262,78 @@ function WritePageContent() {
       });
       
       if (res.ok) {
-        setToast({ message: '게시글이 등록되었습니다!', type: 'success' });
+        const data = await res.json();
+        const postId = data.postId;
+        
+                 // 2. 이미지가 있으면 업로드하고 내용의 임시 ID를 실제 ID로 변환
+         if (uploadedImages.length > 0) {
+           const tempImages = uploadedImages.filter(img => img.isTemp && img.file);
+           if (tempImages.length > 0) {
+             const formData = new FormData();
+             tempImages.forEach(img => {
+               if (img.file) {
+                 formData.append('images', img.file);
+               }
+             });
+             
+             const imageRes = await fetch(`/api/community/posts/${postId}/images`, {
+               method: 'POST',
+               body: formData
+             });
+             
+             if (imageRes.ok) {
+               const imageData = await imageRes.json();
+               
+               // 내용의 임시 ID를 실제 이미지 ID로 변환 (개선된 로직)
+               let updatedContent = content;
+               
+               // 이미지 ID 매핑 생성
+               const imageIdMap = new Map();
+               tempImages.forEach((tempImg, index) => {
+                 const actualImage = imageData.images[index];
+                 if (actualImage) {
+                   imageIdMap.set(tempImg.id, actualImage.id);
+                 }
+               });
+               
+               // 정확한 패턴으로 치환
+               imageIdMap.forEach((actualId, tempId) => {
+                 const tempPattern = new RegExp(`temp_${tempId}`, 'g');
+                 updatedContent = updatedContent.replace(tempPattern, actualId.toString());
+               });
+               
+               // 디버깅용 로그 (개발 환경에서만)
+               if (process.env.NODE_ENV === 'development') {
+                 console.log('이미지 ID 변환 결과:', {
+                   originalContent: content,
+                   updatedContent: updatedContent,
+                   imageIdMap: Object.fromEntries(imageIdMap)
+                 });
+               }
+               
+               // 변환된 내용으로 게시글 업데이트 (이미지 업로드 후이므로 updated_at 업데이트 안함)
+               await fetch(`/api/community/posts/${postId}`, {
+                 method: 'PUT',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ content: updatedContent, skipUpdatedAt: true })
+               });
+               
+               setToast({ message: '게시글과 이미지가 등록되었습니다!', type: 'success' });
+             } else {
+               setToast({ message: '게시글은 등록되었지만 이미지 업로드에 실패했습니다.', type: 'error' });
+             }
+           }
+         } else {
+           setToast({ message: '게시글이 등록되었습니다!', type: 'success' });
+         }
+        
         setTimeout(() => {
-          router.push('/community');
+          // 생성된 게시글 페이지로 이동
+          if (postId) {
+            router.push(`/community/${postId}`);
+          } else {
+            router.push('/community');
+          }
         }, 1500);
       } else {
         const errorData = await res.json();
@@ -184,23 +412,170 @@ function WritePageContent() {
                 </div>
               </div>
 
-              {/* 내용 입력 */}
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  내용
-                </label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-4 py-3 min-h-[400px] rounded-lg border border-gray-300 focus:ring-2 focus:ring-gray-400 focus:outline-none text-gray-900 bg-white placeholder-gray-500 resize-y"
-                  placeholder="내용을 입력하세요"
-                  required
-                  maxLength={5000}
-                />
-                <div className="text-xs text-gray-500 mt-1 text-right">
-                  {content.length}/5000
-                </div>
-              </div>
+                             {/* 내용 입력 */}
+               <div className="mb-8">
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   내용
+                 </label>
+                 <div className="relative">
+                                       {/* 리치 텍스트 에디터 */}
+                                         <div 
+                       ref={editorRef}
+                       className="w-full px-4 py-3 min-h-[400px] rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-gray-400 focus-within:outline-none text-gray-900 bg-white resize-y pr-12"
+                       contentEditable
+                       suppressContentEditableWarning
+                                             onInput={(e) => {
+                         // 플레이스홀더 제거
+                         const placeholder = '<div class="text-gray-400">내용을 입력하세요.</div>';
+                         if (e.currentTarget.innerHTML === placeholder) {
+                           e.currentTarget.innerHTML = '';
+                           return;
+                         }
+                         
+                         // 현재 에디터의 HTML 내용을 가져와서 마크다운으로 변환
+                         const html = e.currentTarget.innerHTML;
+                         let markdownContent = '';
+                         
+                         // HTML을 파싱하여 텍스트와 이미지를 마크다운으로 변환
+                         const tempDiv = document.createElement('div');
+                         tempDiv.innerHTML = html;
+                         
+                         // 각 노드를 순회하면서 처리 (개선된 로직)
+                         const processNode = (node: Node): string => {
+                           if (node.nodeType === Node.TEXT_NODE) {
+                             // 텍스트 노드
+                             const text = node.textContent || '';
+                             return text.trim() ? text : '';
+                           } else if (node.nodeType === Node.ELEMENT_NODE) {
+                             const element = node as HTMLElement;
+                             
+                             if (element.tagName === 'IMG') {
+                               // 이미지 요소
+                               const img = element as HTMLImageElement;
+                               const src = img.src;
+                               const alt = img.alt;
+                               
+                               // 미리보기 URL에서 해당 이미지 찾기
+                               const image = uploadedImages.find(img => img.previewUrl === src);
+                               if (image) {
+                                 return `\n![${alt || image.originalName}](temp_${image.id})\n`;
+                               }
+                               return '';
+                             } else if (element.tagName === 'DIV' || element.tagName === 'P') {
+                               // div나 p 태그 처리
+                               let content = '';
+                               
+                               // 자식 노드들을 재귀적으로 처리
+                               for (let i = 0; i < element.childNodes.length; i++) {
+                                 content += processNode(element.childNodes[i]);
+                               }
+                               
+                               // 내용이 있으면 줄바꿈 추가
+                               if (content.trim()) {
+                                 return content + '\n';
+                               } else {
+                                 return '\n';
+                               }
+                             } else if (element.tagName === 'BR') {
+                               // 줄바꿈
+                               return '\n';
+                             } else {
+                               // 기타 요소의 텍스트
+                               const text = element.textContent || '';
+                               return text.trim() ? text : '';
+                             }
+                           }
+                           return '';
+                         };
+                         
+                         // 모든 노드를 순회하면서 처리
+                         for (let i = 0; i < tempDiv.childNodes.length; i++) {
+                           markdownContent += processNode(tempDiv.childNodes[i]);
+                         }
+                         
+                         // 연속된 줄바꿈을 정리 (최대 2개까지만)
+                         markdownContent = markdownContent.replace(/\n{3,}/g, '\n\n');
+                         
+                         // 디버깅용 로그 (개발 환경에서만)
+                         if (process.env.NODE_ENV === 'development') {
+                           console.log('마크다운 변환 결과:', {
+                             html: html,
+                             markdown: markdownContent.trim(),
+                             uploadedImages: uploadedImages.map(img => ({ id: img.id, name: img.originalName }))
+                           });
+                         }
+                         
+                         setContent(markdownContent.trim());
+                       }}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const text = e.clipboardData.getData('text/plain');
+                        document.execCommand('insertText', false, text);
+                      }}
+                                             onFocus={(e) => {
+                         const placeholder = '<div class="text-gray-400">내용을 입력하세요.</div>';
+                         if (e.currentTarget.innerHTML === placeholder) {
+                           e.currentTarget.innerHTML = '';
+                         }
+                       }}
+                       onBlur={(e) => {
+                         if (!e.currentTarget.innerHTML.trim()) {
+                           e.currentTarget.innerHTML = '<div class="text-gray-400">내용을 입력하세요.</div>';
+                         }
+                       }}
+                       onKeyDown={(e) => {
+                         const placeholder = '<div class="text-gray-400">내용을 입력하세요.</div>';
+                         if (e.currentTarget.innerHTML === placeholder) {
+                           e.currentTarget.innerHTML = '';
+                         }
+                       }}
+                      style={{ 
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        outline: 'none'
+                      }}
+                    />
+                   
+                   {/* 이미지 첨부 버튼 */}
+                   <button
+                     type="button"
+                     className="absolute top-3 right-3 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                     onClick={() => fileInputRef.current?.click()}
+                     disabled={isUploading}
+                     title="이미지 첨부"
+                   >
+                     {isUploading ? (
+                       <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                       </svg>
+                     ) : (
+                       <Image className="w-5 h-5" />
+                     )}
+                   </button>
+                   
+                   {/* 숨겨진 파일 입력 */}
+                   <input
+                     ref={fileInputRef}
+                     type="file"
+                     multiple
+                     accept="image/*"
+                     className="hidden"
+                     onChange={(e) => {
+                       if (e.target.files) {
+                         handleImageUpload(e.target.files);
+                       }
+                       e.target.value = ''; // 파일 입력 초기화
+                     }}
+                   />
+                 </div>
+                 
+                 <div className="text-xs text-gray-500 mt-1 text-right">
+                   {content.length}/5000
+                 </div>
+                 
+                 
+               </div>
 
               {/* 버튼 영역 */}
               <div className="flex gap-3 justify-end">

@@ -16,8 +16,6 @@ export async function safeFetchJson(url: string, options?: RequestInit): Promise
     
     // 응답 시간 로깅 (개발 환경에서만)
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📊 API 응답 시간: ${responseTime}ms - ${url}`);
-      
       // 느린 응답 경고 (3초 이상)
       if (responseTime > 3000) {
         console.warn(`⚠️ 느린 API 응답: ${responseTime}ms - ${url}`);
@@ -54,7 +52,6 @@ export async function cachedFetchJson(
       
       // 캐시가 유효한지 확인
       if (cachedData.timestamp && (now - cachedData.timestamp) < cacheDuration) {
-        console.log(`📦 캐시된 데이터 사용: ${cacheKey}`);
         return cachedData.data;
       }
     } catch (error) {
@@ -72,7 +69,6 @@ export async function cachedFetchJson(
       timestamp: Date.now()
     };
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    console.log(`💾 데이터 캐시 저장: ${cacheKey}`);
   } catch (error) {
     console.warn('캐시 저장 오류:', error);
   }

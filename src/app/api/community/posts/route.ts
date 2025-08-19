@@ -8,12 +8,14 @@ export async function GET() {
     const db = await getConnection();
     const result = await db.request().query(`
       SELECT TOP 10
-        p.id, p.title, p.content, p.created_at,
+        p.id, p.title, p.content, p.created_at, p.updated_at,
         u.display_name AS author_name,
         p.author_id,
         c.name AS category_name,
+        ISNULL(p.view_count, 0) AS view_count,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
-        (SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id AND cm.is_deleted = 0) AS comment_count
+        (SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id AND cm.is_deleted = 0) AS comment_count,
+        (SELECT TOP 1 pi.id FROM post_images pi WHERE pi.post_id = p.id AND pi.is_deleted = 0 ORDER BY pi.created_at ASC) AS first_image_id
       FROM posts p
       JOIN users u ON p.author_id = u.id
       JOIN categories c ON p.category_id = c.id
@@ -79,17 +81,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '공지 게시글은 관리자만 작성할 수 있습니다' }, { status: 403 });
     }
 
-    await db.request()
+    const result = await db.request()
       .input('title', title)
       .input('content', content)
       .input('author_id', session.user.id)
       .input('category_id', category_id)
       .query(`
         INSERT INTO posts (title, content, author_id, category_id, created_at, updated_at)
-        VALUES (@title, @content, @author_id, @category_id, GETDATE(), GETDATE())
+        OUTPUT INSERTED.id
+        VALUES (@title, @content, @author_id, @category_id, GETDATE(), NULL)
       `);
 
-    return NextResponse.json({ success: true });
+    const postId = result.recordset[0].id;
+    return NextResponse.json({ success: true, postId });
   } catch (err) {
     console.error('게시글 작성 오류:', err);
     return NextResponse.json({ error: 'DB 오류', detail: err }, { status: 500 });

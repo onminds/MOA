@@ -2,7 +2,7 @@
 
 import Header from '../components/Header';
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, MessageCircle, Heart, Search as SearchIcon, Flame, Users, Clock, Filter, HelpCircle } from 'lucide-react';
+import { Pencil, MessageCircle, Heart, Search as SearchIcon, Flame, Users, Clock, Filter, HelpCircle, Eye } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -12,10 +12,13 @@ interface Post {
   content: string;
   author_name: string;
   created_at: string;
+  updated_at?: string;
   comment_count: number;
   like_count: number;
+  view_count: number;
   category_name: string;
   author_id: number;
+  first_image_id?: number;
 }
 
 const categories = [
@@ -93,7 +96,7 @@ export default function CommunityPage() {
       case '최신':
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       case '인기':
-        return (b.like_count + b.comment_count) - (a.like_count + a.comment_count);
+        return (b.like_count || 0) - (a.like_count || 0);
       default:
         return 0;
     }
@@ -190,10 +193,10 @@ export default function CommunityPage() {
     .sort((a, b) => b.like_count - a.like_count)
     .slice(0, 5);
 
-  // 최다 조회 게시글 (조회수 기준 - 임시로 좋아요+댓글 수로 대체, 최근 24시간)
+  // 최다 조회 게시글 (실제 조회수 기준, 최근 24시간)
   const mostViewedPosts = recentPosts
     .slice()
-    .sort((a, b) => (b.like_count + b.comment_count * 2) - (a.like_count + a.comment_count * 2))
+    .sort((a, b) => b.view_count - a.view_count)
     .slice(0, 5);
 
   // 최다 댓글 게시글 (댓글 수 기준, 최근 24시간)
@@ -210,24 +213,22 @@ export default function CommunityPage() {
     { name: 'skyblue', posts: 5 },
   ];
 
-  // 상대적 시간 표시 함수
-  const getRelativeTime = (dateString: string) => {
-    const now = new Date();
+  // 실제 시간 표시 함수 (서버 시간을 한국 시간으로 변환)
+  const getDateTime = (dateString: string) => {
     const postDate = new Date(dateString);
-    const diffInMs = now.getTime() - postDate.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-    if (diffInMinutes < 3) {
-      return '방금 전';
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes}분 전`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}시간 전`;
-    } else {
-      return postDate.toLocaleDateString('ko-KR');
-    }
+    
+    // 서버 시간을 한국 시간으로 변환 (9시간 차이 보정 - 빼기)
+    const koreanTime = new Date(postDate.getTime() - (9 * 60 * 60 * 1000));
+    
+    return koreanTime.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'Asia/Seoul'
+    });
   };
 
   const recentComments = [
@@ -350,25 +351,63 @@ export default function CommunityPage() {
                   <div className="divide-y divide-gray-200">
                     {paginatedPosts.map(post => (
                       <Link key={post.id} href={`/community/${post.id}`} className="block p-5 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                            {post.category_name}
-                          </span>
-                           <span className="text-xs text-gray-400">{getRelativeTime(post.created_at)}</span>
-                        </div>
-                        <h3 className="font-bold text-lg text-gray-900 mb-2.5 break-all">
-                          {post.title}
-                        </h3>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">by {post.author_name}</span>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" />
-                              <span>{post.like_count}</span>
+                        <div className="flex gap-4">
+                          {/* 게시글 정보 */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                {post.category_name}
+                              </span>
+                              <span className="text-xs text-gray-400">{getDateTime(post.created_at)}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" />
-                              <span>{post.comment_count}</span>
+                            <h3 className="font-bold text-lg text-gray-900 mb-2.5 break-all">
+                              {post.title}
+                            </h3>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">by {post.author_name}</span>
+                            </div>
+                          </div>
+                          
+                          {/* 이미지 미리보기와 통계 */}
+                          <div className="flex flex-col items-end gap-2">
+                            {post.first_image_id ? (
+                              <div className="flex-shrink-0">
+                                <div className="w-24 h-16 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                  <img
+                                    src={`/api/community/posts/images/${post.first_image_id}`}
+                                    alt="게시글 이미지"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      // 이미지 로드 실패 시 기본 아이콘 표시
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden w-full h-full flex items-center justify-center bg-gray-100">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              // 이미지가 없을 때 빈 공간을 만들어 높이 통일
+                              <div className="w-24 h-16"></div>
+                            )}
+                            
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Heart className="w-4 h-4" />
+                                <span>{post.like_count}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <MessageCircle className="w-4 h-4" />
+                                <span>{post.comment_count}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-4 h-4" />
+                                <span>{post.view_count}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -452,6 +491,11 @@ export default function CommunityPage() {
                             <span className="font-bold text-gray-700 w-5 flex-shrink-0">{idx + 1}.</span>
                             <span className="font-medium text-gray-700 truncate flex-1 min-w-0 hover:underline">
                               <Link href={`/community/${post.id}`}>{post.title}</Link>
+                            </span>
+                            <span className="text-xs text-gray-500 flex-shrink-0">
+                              {sideTab === 'popular' && `♥${post.like_count}`}
+                              {sideTab === 'ranking' && `👁${post.view_count}`}
+                              {sideTab === 'comments' && `💬${post.comment_count}`}
                             </span>
                           </li>
                         ))

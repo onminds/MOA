@@ -93,7 +93,7 @@ export default function ContactPage() {
   return (
     <>
       <div className="min-h-screen">
-        <Header forceWhiteBackground={true} />
+        <Header />
         <main className="grid grid-cols-1 md:grid-cols-2 min-h-[calc(100vh-4rem)]">
             {/* Left Column */}
             <div className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 xl:px-12 flex items-center justify-center">
