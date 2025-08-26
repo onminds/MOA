@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ORDER BY u.created_at DESC
     `);
 
-    // 각 사용자의 사용량 정보 조회
+    // 각 사용자의 사용량 정보 조회 (현재 플랜 기준으로 계산)
     const formattedUsers = await Promise.all(usersResult.recordset.map(async (user: any) => {
       const usageResult = await db.request()
         .input('userId', user.id)
@@ -51,19 +51,58 @@ export async function GET(request: NextRequest) {
           WHERE user_id = @userId
         `);
 
+      // 현재 플랜 기준으로 사용량 한도 계산
+      const planType = user.plan_type || 'basic';
+      const getLimitForService = (serviceType: string, planType: string) => {
+        switch (serviceType) {
+          case 'image-generate':
+          case 'image':
+            switch (planType) {
+              case 'standard': return 120;
+              case 'pro': return 300;
+              default: return 2;
+            }
+          case 'video-generate':
+          case 'video':
+            switch (planType) {
+              case 'standard': return 20;
+              case 'pro': return 45;
+              default: return 1;
+            }
+          case 'ai-chat':
+            return 20;
+          case 'code-generate':
+            return 15;
+          case 'sns-post':
+            return 10;
+          default:
+            return 10;
+        }
+      };
+
+      // 관리자는 무제한
+      const isAdmin = user.role === 'ADMIN';
+      
       return {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        planType: user.plan_type || 'basic',
-        usage: usageResult.recordset.map((usage: any, index: number) => ({
-          id: `${user.id}-${usage.serviceType}-${index}`,
-          serviceType: usage.serviceType,
-          usageCount: usage.usageCount,
-          limitCount: usage.limitCount,
-          resetDate: usage.resetDate.toISOString()
-        })),
+        planType: planType,
+        usage: usageResult.recordset.map((usage: any, index: number) => {
+          const currentLimit = isAdmin ? 9999 : getLimitForService(usage.serviceType, planType);
+          
+          // 디버깅 로그 추가
+          console.log(`🔍 사용량 계산 - 사용자: ${user.email}, 서비스: ${usage.serviceType}, 플랜: ${planType}, 계산된 한도: ${currentLimit}, DB 한도: ${usage.limitCount}`);
+          
+          return {
+            id: `${user.id}-${usage.serviceType}-${index}`,
+            serviceType: usage.serviceType,
+            usageCount: usage.usageCount,
+            limitCount: currentLimit,
+            resetDate: usage.resetDate ? usage.resetDate.toISOString() : new Date().toISOString()
+          };
+        }),
         createdAt: user.createdAt.toISOString(),
         _count: { payments: user.paymentCount }
       };

@@ -3,222 +3,308 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="당신은 프롬프트를 고품질 HTML 코드로 변환하는 전문 개발자입니다.
+
+변환 규칙:
+1. HTML5 시맨틱 태그 사용 (<header>, <nav>, <main>, <section>, <article>, <footer>)
+2. 반응형 디자인을 위한 CSS Grid/Flexbox 활용
+3. 접근성을 위한 ARIA 속성 추가
+4. SEO 최적화를 위한 메타태그 및 구조화
+5. 모던 브라우저 호환성 보장
+6. 성능 최적화 고려
+
+입력 프롬프트: 
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
+
+*** 절대적으로 중요: 반드시 아래 4줄을 정확히 이 순서대로 출력해주세요 ***
+다른 설명이나 추가 텍스트는 절대 포함하지 마세요!
+
+출력 형식:
+```html
+<!-- 통계 및 트렌드 HTML 구조 -->
+<section class="stats-section">
+  <h2 class="stats-title">{{SECTION_TITLE}}</h2>
+  <p class="stats-description">{{SECTION_TITLE}}에 대한 현재 동향과 미래 전망을 간단히 2-3문장으로 설명해주세요</p>
+  
+  <div class="trends-list">
+    <ul>
+      <li>{{SECTION_TITLE}} 기술 발전</li>
+      <li>시장 규모 확대</li>
+      <li>사용자 채택 증가</li>
+      <li>미래 전망 긍정적</li>
+    </ul>
+  </div>
+  
+  <div class="stats-container">
+    <div class="stat-item">
+      <div class="stat-arrow"><i class="fas fa-arrow-up"></i></div>
+      <div class="stat-number">실제수치%</div>
+      <div class="stat-text">통계설명1<br/>부가설명1</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-arrow"><i class="fas fa-chart-line"></i></div>
+      <div class="stat-number">실제수치%</div>
+      <div class="stat-text">통계설명2<br/>부가설명2</div>
+    </div>
+  </div>
+</section>
+```
+
+```css
+/* 통계 및 트렌드 스타일링 */
+.stats-section {
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.stats-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.stats-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.trends-list ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 2rem;
+}
+
+.trends-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+```
+
+위 4줄 형식을 정확히 따라 {{SECTION_TITLE}}에 맞는 실제 통계 데이터로 채워주세요. 
+STATS 부분의 수치는 해당 주제와 관련된 실제적이고 의미 있는 퍼센트 값이나 배수로 작성해주세요!"/>
 <title>{{TITLE}}</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+        @import url("https://www.genspark.ai/image_placeholder.png");
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Nanum Gothic Coding', monospace;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .slide-container {
+            width: 1280px;
+            height: 720px;
+            background-color: #FFFFFF;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        .header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 15px 40px;
+            color: #1E3A8A;
+            border-bottom: 1px solid rgba(30, 58, 138, 0.2);
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: start;
+            column-gap: 40px;
+            height: calc(100% - 60px);
+            padding: 40px;
+        }
+        
+        .left-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        .right-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            position: relative;
+        }
+        
+        .title {
+            font-size: 4.5rem;
+            font-weight: bold;
+            line-height: 1.1;
+            color: #1E3A8A;
+            margin-bottom: 40px;
+            font-family: 'Noto Serif KR', serif;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            color: #6B7280;
+            line-height: 1.5;
+            margin-bottom: 40px;
+            max-width: 500px;
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .stat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-arrow {
+            width: 40px;
+            height: 40px;
+            background-color: #1E40AF;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .stat-arrow i {
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .stat-number {
+            font-size: 3.2rem;
+            font-weight: bold;
+            color: #1E3A8A;
+            margin-right: 20px;
+            font-family: 'Noto Serif KR', serif;
+        }
+        
+        .stat-text {
+            font-size: 1rem;
+            color: #6B7280;
+            line-height: 1.4;
+            max-width: 300px;
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(191, 219, 254, 0.3);
+            z-index: -1;
+        }
+        
+        .circle-1 {
+            width: 600px;
+            height: 600px;
+            top: -150px;
+            right: -150px;
+        }
+        
+        .circle-2 {
+            width: 400px;
+            height: 400px;
+            bottom: -100px;
+            left: 10%;
+        }
+        
+        .header-left, .header-center, .header-right {
+            font-family: 'Nanum Gothic Coding', monospace;
+        }
+        
+        .trend-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .trend-list li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .trend-list li::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #3B82F6;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+    </style>
 
-    body, html {
-        font-family: 'Noto Serif KR', serif;
-        overflow: hidden;
-    }
-
-    .slide-container {
-        width: 1280px;
-        height: 720px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .header-left, .header-center, .header-right {
-        font-family: 'Nanum Gothic Coding', monospace;
-        font-size: 14px;
-        color: #6b7280;
-    }
-
-    .content {
-        flex: 1;
-        display: flex;
-        padding: 40px;
-        gap: 40px;
-    }
-
-    .left-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-    }
-
-    .right-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    .title {
-        font-size: 48px;
-        font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 30px;
-        line-height: 1.2;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .description {
-        font-size: 20px;
-        color: rgba(255, 255, 255, 0.9);
-        line-height: 1.6;
-        margin-bottom: 40px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .trend-section {
-        margin-bottom: 30px;
-    }
-
-    .trend-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 20px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .trend-list {
-        list-style-type: none;
-        padding-left: 0;
-    }
-
-    .trend-list li {
-        margin-bottom: 15px;
-        display: flex;
-        align-items: flex-start;
-        font-size: 16px;
-        line-height: 1.5;
-        color: rgba(255, 255, 255, 0.9);
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .trend-list li::before {
-        content: "•";
-        display: inline-block;
-        color: #fbbf24;
-        font-weight: bold;
-        font-size: 20px;
-        margin-right: 12px;
-        margin-top: 2px;
-        flex-shrink: 0;
-    }
-
-    .stats-section {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 30px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .stats-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 20px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        border-left: 4px solid #fbbf24;
-    }
-
-    .stat-number {
-        font-size: 36px;
-        font-weight: 700;
-        color: #fbbf24;
-        margin-right: 20px;
-        min-width: 80px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .stat-text {
-        font-size: 16px;
-        color: rgba(255, 255, 255, 0.9);
-        line-height: 1.4;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .circle {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        z-index: -1;
-    }
-
-    .circle-1 {
-        width: 400px;
-        height: 400px;
-        top: -200px;
-        right: -200px;
-    }
-
-    .circle-2 {
-        width: 300px;
-        height: 300px;
-        bottom: -150px;
-        left: -150px;
-    }
-</style>
 </head>
 <body>
 <div class="slide-container">
 <!-- Background Circles -->
 <div class="circle circle-1"></div>
 <div class="circle circle-2"></div>
-
 <!-- Header -->
 <div class="header">
 <div class="header-left">{{HEADER_LEFT}}</div>
-<div class="header-center">{{HEADER_CENTER}}</div>
-<div class="header-right">{{HEADER_RIGHT}}</div>
+<div class="header-center text-center">{{HEADER_CENTER}}</div>
+<div class="header-right text-right">{{HEADER_RIGHT}}</div>
 </div>
-
 <!-- Content -->
 <div class="content">
 <div class="left-content">
 <h1 class="title">{{TITLE}}</h1>
 <p class="description">{{DESCRIPTION}}</p>
-<div class="trend-section">
-<h2 class="trend-title">주요 트렌드</h2>
 <ul class="trend-list">
 {{TRENDS}}
 </ul>
 </div>
-</div>
 <div class="right-content">
-<div class="stats-section">
-<h2 class="stats-title">핵심 통계</h2>
-<div class="stat-item">
-<div class="stat-number">20%</div>
-<div class="stat-text">{{STATS}}</div>
+<div class="stat-container">
+{{STATS}}
 </div>
 </div>
 </div>
 </div>
-</div>
+
+<!-- 쿼리스트링으로 컨텍스트 변경 가능: ?topic=...&audience=...&purpose=...&date=...&brand=...&handle=... -->
+<script src="/slide-autofill.js" defer></script>
 </body>
 </html> 

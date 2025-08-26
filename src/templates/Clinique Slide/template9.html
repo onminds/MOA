@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="아래 입력만 사용하여 토큰을 채우세요. 다른 텍스트나 주석 금지.
+
+입력
+- 제목: {{SECTION_TITLE}}
+- 내용: {{SECTION_CONTENT}}
+- 키포인트: {{SECTION_KEYPOINTS}}
+
+토큰 규칙(섹션9 전용)
+- {{TITLE}}: 메인 제목(1줄)
+- {{SUBTITLE}}: 부제(1줄)
+- {{STEP1_TEXT}}: 첫 번째 아이템 제목(1줄)
+- {{STEP2_TEXT}}: 첫 번째 아이템 설명(약 4줄)
+- {{STEP3_TEXT}}: 두 번째 아이템 제목(1줄)
+- {{STEP4_TEXT}}: 두 번째 아이템 설명(약 4줄)
+- {{LEFT_ICON}}: 첫 번째 아이콘 클래스
+- {{RIGHT_ICON}}: 두 번째 아이콘 클래스
+"/>
+<title>{{TITLE}}</title>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Noto+Serif+KR:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+        body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #ececec; overflow: hidden; }
+        .slide-container { width: 1280px; min-height: 720px; position: relative; overflow: hidden; }
+        .main-content { padding: 3rem 4rem; }
+        .title { font-family: 'Noto Serif KR', serif; font-size: 3.5rem; font-weight: bold; color: #000000; margin-bottom: 0.5rem; }
+        .subtitle { font-family: 'Noto Serif KR', serif; font-size: 2.2rem; color: #000000; margin-top: 0.5rem; margin-bottom: 3rem; }
+        .content-grid { display: flex; justify-content: space-between; margin: 3rem 0; }
+        .content-item { display: flex; align-items: flex-start; width: 48%; }
+        .icon-container { background-color: #000000; color: #ffffff; width: 80px; height: 80px; border-radius: 15px; display: flex; justify-content: center; align-items: center; margin-right: 1.5rem; flex-shrink: 0; }
+        .content-text h3 { font-family: 'Noto Serif KR', serif; font-size: 1.6rem; margin-top: 0; margin-bottom: 0.7rem; color: #000000; }
+        .content-text p { font-family: 'Noto Sans KR', sans-serif; font-size: 1.1rem; line-height: 1.5; margin-top: 0; color: #000000; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+        .footer { position: absolute; bottom: 0; left: 0; width: 100%; background-color: #000000; color: #ffffff; padding: 0.5rem; text-align: center; font-family: 'Noto Sans KR', sans-serif; }
+        .corner-decoration { display: none; }
+        .bottom-decoration { display: none; }
+        .cross { margin: 0 5px; font-size: 1.2rem; color: #000000; opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+<!-- Decorative corner element -->
+<div class="corner-decoration">
+<svg height="100%" width="100%">
+<pattern height="20" id="pattern-crosses" patternunits="userSpaceOnUse" width="20" x="0" y="0">
+<path d="M 10,5 L 10,15 M 5,10 L 15,10" stroke="#000000" stroke-width="2"></path>
+</pattern>
+<rect fill="url(#pattern-crosses)" height="100%" width="100%" x="0" y="0"></rect>
+</svg>
+</div>
+<!-- Main content -->
+<div class="main-content">
+<h1 class="title">{{TITLE}}</h1>
+<h2 class="subtitle">{{SUBTITLE}}</h2>
+<div class="content-grid">
+<!-- First content item -->
+<div class="content-item">
+<div class="icon-container">
+<i class="{{LEFT_ICON}}" style="font-size: 2.5rem; color: #ffffff;"></i>
+</div>
+<div class="content-text">
+<h3>{{STEP1_TEXT}}</h3>
+<p>{{STEP2_TEXT}}</p>
+</div>
+</div>
+<!-- Second content item -->
+<div class="content-item">
+<div class="icon-container">
+<i class="{{RIGHT_ICON}}" style="font-size: 2.5rem; color: #ffffff;"></i>
+</div>
+<div class="content-text">
+<h3>{{STEP3_TEXT}}</h3>
+<p>{{STEP4_TEXT}}</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom decorative elements -->
+<div class="bottom-decoration">
+<div class="cross">✕</div>
+<div class="cross">✕</div>
+<div class="cross">✕</div>
+<div class="cross">✕</div>
+<div class="cross">✕</div>
+<div class="cross">✕</div>
+<div class="cross">✕</div>
+<div class="cross">✕</div>
+</div>
+<!-- Footer -->
+<div class="footer"></div>
+</div>
+<!-- 쿼리스트링으로 컨텍스트 변경 가능: ?topic=...&audience=...&purpose=...&date=...&brand=...&handle=... -->
+<script src="/slide-autofill.js" defer></script>
+<script>
+// 섹션 9 간단한 처리
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('섹션 9 로드 완료');
+});
+</script>
+
+</body>
+</html>

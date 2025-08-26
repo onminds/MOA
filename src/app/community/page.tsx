@@ -2,7 +2,7 @@
 
 import Header from '../components/Header';
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, MessageCircle, Heart, Search as SearchIcon, Flame, Users, Clock, Filter, HelpCircle } from 'lucide-react';
+import { Pencil, MessageCircle, Heart, Search as SearchIcon, Flame, Users, Clock, Filter, HelpCircle, Eye } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -12,10 +12,13 @@ interface Post {
   content: string;
   author_name: string;
   created_at: string;
+  updated_at?: string;
   comment_count: number;
   like_count: number;
+  view_count: number;
   category_name: string;
   author_id: number;
+  first_image_id?: number;
 }
 
 const categories = [
@@ -28,7 +31,7 @@ const categories = [
   { id: 7, name: '영상' }
 ];
 
-const sortOptions = ['최신', '인기'];
+const sortOptions = ['최신', '인기', '조회'];
 const POSTS_PER_PAGE = 10;
 
 // Toast 컴포넌트
@@ -46,12 +49,27 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('전체');
-  const [selectedSort, setSelectedSort] = useState('최신');
+  const [selectedSort, setSelectedSort] = useState('최신'); // 'latest'에서 '최신'으로 변경
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalPosts: 0,
+    hasNextPage: false,
+    hasPrevPage: false
+  });
   const [sideTab, setSideTab] = useState<'popular' | 'ranking' | 'comments'>('popular');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // 실시간 Best 상태 추가
+  const [bestPosts, setBestPosts] = useState({
+    popular: [] as Post[],
+    views: [] as Post[],
+    comments: [] as Post[]
+  });
+  const [bestLoading, setBestLoading] = useState(true);
 
   // 모달용 상태 추가
   const [showWriteForm, setShowWriteForm] = useState(false);
@@ -61,14 +79,80 @@ export default function CommunityPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isQuestionModal, setIsQuestionModal] = useState(false);
 
-  // 게시글 데이터 가져오기
+  // 실시간 Best 데이터 가져오기
+  useEffect(() => {
+    const fetchBestPosts = async () => {
+      try {
+        setBestLoading(true);
+        
+        // 인기, 조회수, 댓글 순으로 각각 가져오기
+        const [popularRes, viewsRes, commentsRes] = await Promise.all([
+          fetch('/api/community/posts/best?type=popular&limit=5'),
+          fetch('/api/community/posts/best?type=views&limit=5'),
+          fetch('/api/community/posts/best?type=comments&limit=5')
+        ]);
+        
+        const popularData = popularRes.ok ? await popularRes.json() : { posts: [] };
+        const viewsData = viewsRes.ok ? await viewsRes.json() : { posts: [] };
+        const commentsData = commentsRes.ok ? await commentsRes.json() : { posts: [] };
+        
+        setBestPosts({
+          popular: popularData.posts || [],
+          views: viewsData.posts || [],
+          comments: commentsData.posts || []
+        });
+      } catch (error) {
+        console.error('실시간 Best 조회 오류:', error);
+      } finally {
+        setBestLoading(false);
+      }
+    };
+
+    fetchBestPosts();
+  }, []);
+
+  // 게시글 데이터 가져오기 (서버 사이드 페이지네이션)
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await fetch('/api/community/posts');
+        setLoading(true);
+        
+        // 정렬 파라미터 매핑
+        const getSortParam = (sort: string) => {
+          switch (sort) {
+            case '최신': return 'latest';
+            case '인기': return 'popular';
+            case '조회': return 'views';
+            default: return 'latest';
+          }
+        };
+        
+        // URL 파라미터 구성
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: '10',
+          sort: getSortParam(selectedSort)
+        });
+        
+        if (selectedCategory !== '전체') {
+          params.append('category', selectedCategory);
+        }
+        
+        if (search.trim()) {
+          params.append('search', search.trim());
+        }
+        
+        const response = await fetch(`/api/community/posts?${params}`);
         if (response.ok) {
           const data = await response.json();
           setPosts(data.posts || []);
+          setPagination(data.pagination || {
+            currentPage: 1,
+            totalPages: 1,
+            totalPosts: 0,
+            hasNextPage: false,
+            hasPrevPage: false
+          });
         }
       } catch (error) {
         console.error('게시글 조회 오류:', error);
@@ -78,30 +162,7 @@ export default function CommunityPage() {
     };
 
     fetchPosts();
-  }, []);
-
-  // 필터링된 게시글
-  const filteredPosts = (posts || []).filter(
-    (post) =>
-      (selectedCategory === '전체' || post.category_name === selectedCategory) &&
-      (search === '' || post.title.includes(search) || post.author_name.includes(search))
-  );
-
-  // 정렬된 게시글
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    switch (selectedSort) {
-      case '최신':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case '인기':
-        return (b.like_count + b.comment_count) - (a.like_count + a.comment_count);
-      default:
-        return 0;
-    }
-  });
-
-  // 페이지네이션
-  const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
-  const paginatedPosts = sortedPosts.slice((page - 1) * POSTS_PER_PAGE, page * POSTS_PER_PAGE);
+  }, [page, selectedCategory, selectedSort, search]);
 
   // 페이지 변경 시 스크롤 상단 이동
   const handlePageChange = (newPage: number) => {
@@ -171,36 +232,7 @@ export default function CommunityPage() {
     }
   };
 
-  // 최근 24시간 내 게시글 필터링
-  const getRecentPosts = () => {
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    
-    return posts.filter(post => {
-      const postDate = new Date(post.created_at);
-      return postDate >= oneDayAgo;
-    });
-  };
-
-  const recentPosts = getRecentPosts();
-
-  // 인기 게시글 (좋아요 수 기준, 최근 24시간)
-  const popularPosts = recentPosts
-    .slice()
-    .sort((a, b) => b.like_count - a.like_count)
-    .slice(0, 5);
-
-  // 최다 조회 게시글 (조회수 기준 - 임시로 좋아요+댓글 수로 대체, 최근 24시간)
-  const mostViewedPosts = recentPosts
-    .slice()
-    .sort((a, b) => (b.like_count + b.comment_count * 2) - (a.like_count + a.comment_count * 2))
-    .slice(0, 5);
-
-  // 최다 댓글 게시글 (댓글 수 기준, 최근 24시간)
-  const mostCommentedPosts = recentPosts
-    .slice()
-    .sort((a, b) => b.comment_count - a.comment_count)
-    .slice(0, 5);
+  // 실시간 Best 데이터 (API에서 가져온 데이터 사용)
 
   const activeUsers = [
     { name: 'user123', posts: 12 },
@@ -210,24 +242,22 @@ export default function CommunityPage() {
     { name: 'skyblue', posts: 5 },
   ];
 
-  // 상대적 시간 표시 함수
-  const getRelativeTime = (dateString: string) => {
-    const now = new Date();
+  // 실제 시간 표시 함수 (서버 시간을 한국 시간으로 변환)
+  const getDateTime = (dateString: string) => {
     const postDate = new Date(dateString);
-    const diffInMs = now.getTime() - postDate.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-    if (diffInMinutes < 3) {
-      return '방금 전';
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes}분 전`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}시간 전`;
-    } else {
-      return postDate.toLocaleDateString('ko-KR');
-    }
+    
+    // 서버 시간을 한국 시간으로 변환 (9시간 차이 보정 - 빼기)
+    const koreanTime = new Date(postDate.getTime() - (9 * 60 * 60 * 1000));
+    
+    return koreanTime.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'Asia/Seoul'
+    });
   };
 
   const recentComments = [
@@ -289,14 +319,15 @@ export default function CommunityPage() {
                         <button
                           key={sort}
                           onClick={() => handleSortChange(sort)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                             selectedSort === sort 
-                              ? 'text-gray-900' 
-                              : 'text-gray-500 hover:text-gray-800'
+                              ? 'bg-black text-white shadow-md' 
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                           }`}
                         >
                           {sort === '최신' && <Clock className="w-4 h-4" />}
                           {sort === '인기' && <Flame className="w-4 h-4" />}
+                          {sort === '조회' && <Eye className="w-4 h-4" />}
                           {sort}
                         </button>
                       ))}
@@ -344,31 +375,69 @@ export default function CommunityPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
                     게시글을 불러오는 중...
                   </div>
-                ) : paginatedPosts.length === 0 ? (
+                ) : posts.length === 0 ? (
                   <div className="text-gray-500 text-center p-12">게시글이 없습니다.</div>
                 ) : (
                   <div className="divide-y divide-gray-200">
-                    {paginatedPosts.map(post => (
+                    {posts.map(post => (
                       <Link key={post.id} href={`/community/${post.id}`} className="block p-5 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                            {post.category_name}
-                          </span>
-                           <span className="text-xs text-gray-400">{getRelativeTime(post.created_at)}</span>
-                        </div>
-                        <h3 className="font-bold text-lg text-gray-900 mb-2.5 break-all">
-                          {post.title}
-                        </h3>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">by {post.author_name}</span>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" />
-                              <span>{post.like_count}</span>
+                        <div className="flex gap-4">
+                          {/* 게시글 정보 */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                {post.category_name}
+                              </span>
+                              <span className="text-xs text-gray-400">{getDateTime(post.created_at)}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" />
-                              <span>{post.comment_count}</span>
+                            <h3 className="font-bold text-lg text-gray-900 mb-2.5 break-all">
+                              {post.title}
+                            </h3>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">by {post.author_name}</span>
+                            </div>
+                          </div>
+                          
+                          {/* 이미지 미리보기와 통계 */}
+                          <div className="flex flex-col items-end gap-2">
+                            {post.first_image_id ? (
+                              <div className="flex-shrink-0">
+                                <div className="w-24 h-16 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                  <img
+                                    src={`/api/community/posts/images/${post.first_image_id}`}
+                                    alt="게시글 이미지"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      // 이미지 로드 실패 시 기본 아이콘 표시
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden w-full h-full flex items-center justify-center bg-gray-100">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              // 이미지가 없을 때 빈 공간을 만들어 높이 통일
+                              <div className="w-24 h-16"></div>
+                            )}
+                            
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Heart className="w-4 h-4" />
+                                <span>{post.like_count}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <MessageCircle className="w-4 h-4" />
+                                <span>{post.comment_count}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-4 h-4" />
+                                <span>{post.view_count}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -379,23 +448,62 @@ export default function CommunityPage() {
               </div>
 
               {/* 페이지네이션 */}
-              {totalPages > 1 && (
+              {pagination.totalPages > 1 && (
                 <div className="flex justify-center mt-6 gap-2">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                  {/* 이전 페이지 */}
+                  {pagination.hasPrevPage && (
                     <button
-                      key={num}
-                      onClick={() => handlePageChange(num)}
-                      className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
-                        page === num 
-                          ? 'bg-black text-white border-black' 
-                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                      }`}
+                      onClick={() => handlePageChange(page - 1)}
+                      className="px-3 py-2 rounded-lg border font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50 transition-colors"
                     >
-                      {num}
+                      이전
                     </button>
-                  ))}
+                  )}
+                  
+                  {/* 페이지 번호들 */}
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-2 rounded-lg border font-medium transition-colors ${
+                          pageNum === page
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  {/* 다음 페이지 */}
+                  {pagination.hasNextPage && (
+                    <button
+                      onClick={() => handlePageChange(page + 1)}
+                      className="px-3 py-2 rounded-lg border font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      다음
+                    </button>
+                  )}
                 </div>
               )}
+              
+              {/* 게시글 수 표시 */}
+              <div className="text-center text-sm text-gray-500 mt-4">
+                총 {pagination.totalPosts}개의 게시글
+              </div>
             </div>
 
             {/* 오른쪽 사이드바 */}
@@ -444,24 +552,35 @@ export default function CommunityPage() {
 
                 {/* 탭 내용 */}
                 <div className="p-4 pt-0">
-                  <ul className="space-y-3">
+                  {bestLoading ? (
+                    <div className="text-sm text-gray-400 text-center py-2">
+                      실시간 Best를 불러오는 중...
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">
                       {
-                        (sideTab === 'popular' ? popularPosts : sideTab === 'ranking' ? mostViewedPosts : mostCommentedPosts)
+                        (sideTab === 'popular' ? bestPosts.popular : sideTab === 'ranking' ? bestPosts.views : bestPosts.comments)
                         .map((post, idx) => (
                           <li key={post.id} className="flex items-center gap-3 text-sm">
                             <span className="font-bold text-gray-700 w-5 flex-shrink-0">{idx + 1}.</span>
                             <span className="font-medium text-gray-700 truncate flex-1 min-w-0 hover:underline">
                               <Link href={`/community/${post.id}`}>{post.title}</Link>
                             </span>
+                            <span className="text-xs text-gray-500 flex-shrink-0">
+                              {sideTab === 'popular' && `♥${post.like_count}`}
+                              {sideTab === 'ranking' && `👁${post.view_count}`}
+                              {sideTab === 'comments' && `💬${post.comment_count}`}
+                            </span>
                           </li>
                         ))
                       }
-                      {(popularPosts || []).length === 0 && (
+                      {(sideTab === 'popular' ? bestPosts.popular : sideTab === 'ranking' ? bestPosts.views : bestPosts.comments).length === 0 && (
                         <li className="text-sm text-gray-400 text-center py-2">
-                          최근 24시간 내 인기글이 없습니다.
+                          최근 24시간 내 {sideTab === 'popular' ? '인기' : sideTab === 'ranking' ? '조회' : '댓글'} 글이 없습니다.
                         </li>
                       )}
-                  </ul>
+                    </ul>
+                  )}
                 </div>
               </div>
 

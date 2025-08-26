@@ -261,6 +261,10 @@ ${requirements ? `**추가 요구사항**: ${requirements}` : ''}
 4. 언어별 모범 사례를 따르세요
 5. 가독성과 유지보수성을 중시하세요
 
+출력 언어:
+- explanation, usage, improvements 항목의 모든 텍스트와 relatedConcepts 배열의 값은 한국어로 작성하세요
+- JSON의 키 이름(code, explanation, usage, improvements, relatedConcepts)은 영어로 유지하세요
+
 응답 형식은 반드시 다음 JSON 형태로만 제공하세요:
 {
   "code": "실제 코드 (문자열, 줄바꿈은 \\n 사용)",
@@ -279,7 +283,7 @@ ${langConfig.name}로 ${codeType} 유형의 코드를 ${complexity} 수준으로
 `;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-5-mini",
     messages: [
       {
         role: "system",
@@ -290,8 +294,7 @@ ${langConfig.name}로 ${codeType} 유형의 코드를 ${complexity} 수준으로
         content: userPrompt
       }
     ],
-    max_tokens: 2500,
-    temperature: 0.7, // 창의적이면서도 일관성 있는 코드 생성
+    max_completion_tokens: 2500,
   });
 
   const response = completion.choices[0].message.content;

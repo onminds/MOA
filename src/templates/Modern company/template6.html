@@ -3,177 +3,196 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>{{TITLE}}</title>
+<meta name="template-prompt" content="당신은 프롬프트를 고품질 HTML 코드로 변환하는 전문 개발자입니다.
+
+변환 규칙:
+1. 기존 HTML 디자인과 CSS를 그대로 유지
+2. 텍스트가 들어갈 노드에만 data-slot 속성과 제약 조건 추가
+3. HTML5 시맨틱 태그 사용 (<header>, <nav>, <main>, <section>, <article>, <footer>)
+4. 반응형 디자인을 위한 CSS Grid/Flexbox 활용
+5. 접근성을 위한 ARIA 속성 추가
+6. SEO 최적화를 위한 메타태그 및 구조화
+7. 모던 브라우저 호환성 보장
+8. 성능 최적화 고려
+
+입력 프롬프트: 
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
+
+요구사항:
+1. 정확히 다음 8줄 형식으로 출력해주세요:
+
+출력 형식:
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{SECTION_TITLE}}</title>
+
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body, html {
-        font-family: 'Noto Serif KR', serif;
-        overflow: hidden;
-    }
-
-    .slide-container {
-        width: 1280px;
-        height: 720px;
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .header-left, .header-center, .header-right {
-        font-family: 'Nanum Gothic Coding', monospace;
-        font-size: 14px;
-        color: #6b7280;
-    }
-
-    .content {
-        flex: 1;
-        display: flex;
-        padding: 40px;
-        gap: 40px;
-    }
-
-    .left-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-    }
-
-    .right-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    .title {
-        font-size: 48px;
-        font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 30px;
-        line-height: 1.2;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .description {
-        font-size: 20px;
-        color: rgba(255, 255, 255, 0.9);
-        line-height: 1.6;
-        margin-bottom: 40px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .challenge-section {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 30px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .challenge-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 20px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .challenge-list {
-        list-style-type: none;
-        padding-left: 0;
-    }
-
-    .challenge-list li {
-        margin-bottom: 15px;
-        display: flex;
-        align-items: flex-start;
-        font-size: 16px;
-        line-height: 1.5;
-        color: rgba(255, 255, 255, 0.9);
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .challenge-list li::before {
-        content: "⚠";
-        display: inline-block;
-        color: #fbbf24;
-        font-weight: bold;
-        font-size: 18px;
-        margin-right: 12px;
-        margin-top: 2px;
-        flex-shrink: 0;
-    }
-
-    .circle {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        z-index: -1;
-    }
-
-    .circle-1 {
-        width: 400px;
-        height: 400px;
-        top: -200px;
-        right: -200px;
-    }
-
-    .circle-2 {
-        width: 300px;
-        height: 300px;
-        bottom: -150px;
-        left: -150px;
-    }
+  body, html { 
+    margin:0; 
+    padding:0; 
+    font-family:'Noto Sans KR', sans-serif; 
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+          .slide-container {
+            width: 1280px;
+            height: 720px;
+            background-color: #FFFFFF;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+  .header { display:grid; grid-template-columns:1fr 1fr 1fr; padding:15px 40px; color:#1E3A8A; border-bottom:1px solid rgba(30,58,138,.2); }
+  .content { padding:40px; height:calc(100% - 60px); }
+  .title { font-size:4rem; font-weight:bold; line-height:1.1; color:#1E3A8A; margin-bottom:60px; font-family:'Noto Serif KR', serif; }
+  .metrics-container { display:flex; justify-content:space-between; margin-bottom:40px; gap:20px; }
+  .metric-section { flex:1; max-width:380px; }
+  .icon-circle { width:60px; height:60px; background:#1E3A8A; border-radius:50%; display:flex; justify-content:center; align-items:center; margin-bottom:20px; }
+  .icon-circle i { color:white; font-size:1.5rem; }
+  .metric-value { font-size:3.2rem; font-weight:bold; color:#1E3A8A; margin-bottom:10px; font-family:'Noto Serif KR', serif; }
+  .metric-title { font-size:1.2rem; font-weight:bold; color:#1E40AF; margin-bottom:15px; font-family:'Noto Serif KR', serif; }
+  .metric-description { font-size:1rem; color:#6B7280; line-height:1.5; font-family:'Nanum Gothic Coding', monospace; }
+  .result-container { display:flex; align-items:center; justify-content:center; margin-top:30px; }
+  .arrow-container { width:60px; height:60px; border:2px solid #1E3A8A; border-radius:50%; display:flex; justify-content:center; align-items:center; }
+  .arrow-container i { color:#1E3A8A; font-size:1.5rem; }
+  .result-percentage { font-size:3.5rem; font-weight:bold; color:#1E3A8A; margin-left:20px; font-family:'Noto Serif KR', serif; }
+  .result-text { font-size:1rem; color:#6B7280; line-height:1.5; max-width:400px; margin-left:20px; font-family:'Nanum Gothic Coding', monospace; }
+  .circle { position:absolute; border-radius:50%; background:#BFDBFE; z-index:-1; }
+  .circle-1 { width:600px; height:600px; top:-150px; right:-150px; }
+  .circle-2 { width:400px; height:400px; bottom:-100px; left:10%; }
+  .circle-3 { width:300px; height:300px; top:30%; left:40%; }
 </style>
 </head>
 <body>
-<div class="slide-container">
-<!-- Background Circles -->
-<div class="circle circle-1"></div>
-<div class="circle circle-2"></div>
+<div class="slide-container" 
+     data-topic="{{SECTION_TITLE}}" 
+     data-audience="일반 성인, 정책 입안자, 교육 관계자" 
+     data-purpose="정책 제안 및 전망"
+     data-tone="객관적·전문">
+  <!-- Background Circles -->
+  <div class="circle circle-1"></div>
+  <div class="circle circle-2"></div>
+  <div class="circle circle-3"></div>
 
-<!-- Header -->
-<div class="header">
-<div class="header-left">{{HEADER_LEFT}}</div>
-<div class="header-center">{{HEADER_CENTER}}</div>
-<div class="header-right">{{HEADER_RIGHT}}</div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left" 
+         data-slot="header_left" 
+         data-type="text" 
+         data-max-chars="18">{{HEADER_LEFT}}</div>
+
+    <div class="header-center text-center" 
+         data-slot="header_center_date" 
+         data-type="date" 
+         data-format="YYYY-MM-DD">{{HEADER_CENTER}}</div>
+
+    <div class="header-right text-right" 
+         data-slot="header_right_handle" 
+         data-type="text" 
+         data-max-chars="16">{{HEADER_RIGHT}}</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <h1 class="title"
+        data-slot="title_lines" 
+        data-type="lines" 
+        data-lines-min="1" 
+        data-lines-max="2" 
+        data-max-chars="15" 
+        data-join-with="<br/>">{{TITLE}}</h1>
+    
+    <div class="metrics-container">
+      <div class="metric-section">
+        <div class="icon-circle">
+          <i class="fas fa-minus-circle"></i>
+        </div>
+        <div class="metric-value"
+             data-slot="metric1_value" 
+             data-type="number" 
+             data-max-chars="10">{{METRIC1_VALUE}}</div>
+        <div class="metric-title"
+             data-slot="metric1_title" 
+             data-type="text" 
+             data-max-chars="20">{{METRIC1_TITLE}}</div>
+        <div class="metric-description"
+             data-slot="metric1_description" 
+             data-type="text" 
+             data-max-chars="200">{{METRIC1_DESCRIPTION}}</div>
+      </div>
+      
+      <div class="metric-section">
+        <div class="icon-circle">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <div class="metric-value"
+             data-slot="metric2_value" 
+             data-type="number" 
+             data-max-chars="10">{{METRIC2_VALUE}}</div>
+        <div class="metric-title"
+             data-slot="metric2_title" 
+             data-type="text" 
+             data-max-chars="20">{{METRIC2_TITLE}}</div>
+        <div class="metric-description"
+             data-slot="metric2_description" 
+             data-type="text" 
+             data-max-chars="200">{{METRIC2_DESCRIPTION}}</div>
+      </div>
+      
+      <div class="metric-section">
+        <div class="icon-circle">
+          <i class="fas fa-sync"></i>
+        </div>
+        <div class="metric-value"
+             data-slot="metric3_value" 
+             data-type="percentage" 
+             data-max-chars="5">{{METRIC3_VALUE}}</div>
+        <div class="metric-title"
+             data-slot="metric3_title" 
+             data-type="text" 
+             data-max-chars="20">{{METRIC3_TITLE}}</div>
+        <div class="metric-description"
+             data-slot="metric3_description" 
+             data-type="text" 
+             data-max-chars="200">{{METRIC3_DESCRIPTION}}</div>
+      </div>
+    </div>
+    
+    <div class="result-container">
+      <div class="arrow-container">
+        <i class="fas fa-arrow-right"></i>
+      </div>
+      <div class="result-percentage"
+           data-slot="result_percentage" 
+           data-type="number" 
+           data-max-chars="10">{{RESULT_PERCENTAGE}}</div>
+      <div class="result-text"
+           data-slot="result_text" 
+           data-type="text" 
+           data-max-chars="300">{{RESULT_TEXT}}</div>
+    </div>
+  </div>
 </div>
 
-<!-- Content -->
-<div class="content">
-<div class="left-content">
-<h1 class="title">{{TITLE}}</h1>
-<p class="description">{{DESCRIPTION}}</p>
-</div>
-<div class="right-content">
-<div class="challenge-section">
-<h2 class="challenge-title">주요 문제점</h2>
-<ul class="challenge-list">
-{{CHALLENGES}}
-</ul>
-</div>
-</div>
-</div>
-</div>
+<!-- 쿼리스트링으로 컨텍스트 변경 가능: ?topic=...&audience=...&purpose=...&date=...&brand=...&handle=... -->
+<script src="/slide-autofill.js" defer></script>
+
 </body>
-</html> 
+</html>

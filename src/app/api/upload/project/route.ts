@@ -9,7 +9,6 @@ import { promisify } from 'util';
 
 // API Route 설정
 export const maxDuration = 60; // 60초
-export const runtime = 'nodejs';
 
 // 허용되는 파일 확장자
 const ALLOWED_EXTENSIONS = [

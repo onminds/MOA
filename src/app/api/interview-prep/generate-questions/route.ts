@@ -156,29 +156,48 @@ ${skills ? `- 핵심 스킬: ${skills}` : ''}${companyInfoSection}
 `;
 
   try {
+    const userPrompt = `위 지침에 따라 ${companyName}의 ${jobTitle} 직무(${careerLevelText[careerLevel]}) 면접 질문과 팁을 생성해주세요.`;
+
+    // 1) 기본 경로: Chat Completions
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
+      model: 'gpt-5-mini',
       messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: `위 지침에 따라 ${companyName}의 ${jobTitle} 직무(${careerLevelText[careerLevel]}) 면접 질문과 팁을 생성해주세요.`,
-        },
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' },
-      temperature: 0.8,
-      max_tokens: 3500,
+      max_completion_tokens: 3500,
     });
 
-    const result = completion.choices[0]?.message?.content;
-    if (!result) {
+    let result = completion.choices[0]?.message?.content || '';
+
+    // 2) 폴백: content가 비었을 경우 Responses API 사용
+    if (!result || result.trim().length === 0) {
+      try {
+        const resp = await (openai as any).responses.create({
+          model: 'gpt-5-mini',
+          input: `${systemPrompt}\n\n${userPrompt}`,
+          max_output_tokens: 3500,
+          text: { verbosity: 'low' },
+          reasoning: { effort: 'minimal' }
+        });
+        result = resp?.output_text || '';
+      } catch (fallbackErr) {
+        console.warn('Responses API 폴백 실패:', fallbackErr);
+      }
+    }
+
+    if (!result || result.trim().length === 0) {
       throw new Error('질문 생성 결과를 받지 못했습니다.');
     }
-    
-    const parsedResult = JSON.parse(result);
+
+    // 3) JSON 파싱 보강: 코드블록/여분 텍스트 제거 후 파싱
+    let cleaned = String(result).trim();
+    const codeBlock = cleaned.match(/```json[\s\S]*?```/i) || cleaned.match(/```[\s\S]*?```/);
+    if (codeBlock) cleaned = codeBlock[0].replace(/```json|```/gi, '').trim();
+    const braceMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (braceMatch) cleaned = braceMatch[0];
+
+    const parsedResult = JSON.parse(cleaned);
     // 안정성 강화: GPT가 반환할 수 있는 다양한 형식을 모두 처리 (e.g., {questions: [...]}, {response: [...]}, [...])
     const questions = parsedResult.questions || parsedResult.response || (Array.isArray(parsedResult) ? parsedResult : null);
 

@@ -1,180 +1,139 @@
 <!DOCTYPE html>
-<html data-theme="light" lang="ko">
+<html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>{{TITLE}}</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet"/>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      font-family: 'Noto Sans KR', sans-serif;
-    }
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="당신은 프롬프트를 고품질 HTML 코드로 변환하는 전문 개발자입니다.
 
-    .slide-container {
-      width: 1280px;
-      height: 720px;
-      background-color: #FFFFFF;
-      position: relative;
-      overflow: hidden;
-    }
+변환 규칙:
+1. 기존 HTML 디자인과 CSS를 그대로 유지
+2. 텍스트가 들어갈 노드에만 data-slot 속성과 제약 조건 추가
+3. HTML5 시맨틱 태그 사용 (<header>, <nav>, <main>, <section>, <article>, <footer>)
+4. 반응형 디자인을 위한 CSS Grid/Flexbox 활용
+5. 접근성을 위한 ARIA 속성 추가
+6. SEO 최적화를 위한 메타태그 및 구조화
+7. 모던 브라우저 호환성 보장
+8. 성능 최적화 고려
 
-    .header {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      padding: 15px 40px;
-      color: #1E3A8A;
-      border-bottom: 1px solid rgba(30, 58, 138, 0.2);
-    }
+입력 프롬프트: 
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
 
-    .content {
-      display: flex;
-      height: calc(100% - 60px);
-      padding: 40px;
-    }
+요구사항:
+1. 정확히 다음 8줄 형식으로 출력해주세요:
 
-    .left-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding-right: 40px;
-    }
+출력 형식:
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{SECTION_TITLE}}</title>
 
-    .right-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 
-    .title {
-      font-size: 4.5rem;
-      font-weight: bold;
-      color: #1E3A8A;
-      margin-bottom: 20px;
-      font-family: 'Noto Serif KR', serif;
-    }
-
-    .subtitle {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #3B82F6;
-      margin-bottom: 30px;
-      font-family: 'Noto Serif KR', serif;
-    }
-
-    .description {
-      font-size: 1.1rem;
-      color: #6B7280;
-      line-height: 1.6;
-      margin-bottom: 40px;
-      max-width: 500px;
-    }
-
-    .priority-circle {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
-      border-left: 6px solid #1E3A8A;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      position: relative;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-
-    .priority-circle:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.15);
-    }
-
-    .priority-circle::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #1E3A8A, #3B82F6, #10B981);
-    }
-
-    .priority-1 {
-      border-left-color: #1E3A8A;
-    }
-
-    .priority-2 {
-      border-left-color: #3B82F6;
-    }
-
-    .priority-3 {
-      border-left-color: #10B981;
-    }
-
-    .priority-number {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #1E3A8A;
-      margin-bottom: 12px;
-      font-family: 'Noto Sans KR', sans-serif;
-    }
-
-    .priority-text {
-      font-size: 1.1rem;
-      color: #374151;
-      line-height: 1.5;
-      font-weight: 500;
-    }
-
-    .circle {
-      position: absolute;
-      border-radius: 50%;
-      background-color: rgba(191, 219, 254, 0.3);
-      z-index: -1;
-    }
-
-    .circle-1 {
-      width: 600px;
-      height: 600px;
-      top: -150px;
-      left: -150px;
-    }
-
-    .circle-2 {
-      width: 400px;
-      height: 400px;
-      bottom: -100px;
-      right: -100px;
-    }
-  </style>
+<style>
+  body, html { 
+    margin:0; 
+    padding:0; 
+    font-family:'Noto Sans KR', sans-serif; 
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+  .slide-container { 
+    width:1280px; 
+    height:720px; 
+    background:#FFFFFF; 
+    position:absolute; 
+    top:50%;
+    left:50%;
+    transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+    overflow:hidden; 
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  .header { display:grid; grid-template-columns:1fr 1fr 1fr; padding:15px 40px; color:#1E3A8A; border-bottom:1px solid rgba(30,58,138,.2); font-family:'Nanum Gothic Coding', monospace; }
+  .content { display:flex; height:calc(100% - 60px); padding:40px; }
+  .left-content { flex:1; display:flex; flex-direction:column; justify-content:flex-start; padding-right:40px; }
+  .right-content { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; }
+  .title { font-size:4.5rem; font-weight:bold; line-height:1.1; color:#1E3A8A; margin-bottom:60px; font-family:'Noto Serif KR', serif; }
+  .subtitle { font-size:1.8rem; color:#1E3A8A; font-weight:bold; margin-bottom:15px; font-family:'Noto Serif KR', serif; }
+  .description { font-size:1.1rem; color:#6B7280; line-height:1.5; margin-bottom:20px; max-width:500px; font-family:'Nanum Gothic Coding', monospace; }
+  .strategy-container { width:100%; display:flex; flex-direction:column; gap:20px; position:relative; margin-top:20px; }
+  .strategy-row { display:flex; width:100%; gap:20px; position:relative; }
+  .strategy-box { border-radius:30px; padding:25px 20px; color:white; text-align:center; font-size:1.2rem; position:relative; font-family:'Nanum Gothic Coding', monospace; }
+  .strategy-box-1 { background-color:#1E40AF; width:100%; height:60px; display:flex; justify-content:center; align-items:center; }
+  .strategy-box-2 { background-color:#1E3A8A; width:calc(50% - 10px); height:60px; display:flex; justify-content:center; align-items:center; }
+  .strategy-box-3 { background-color:#3B82F6; width:calc(50% - 10px); height:60px; display:flex; justify-content:center; align-items:center; }
+  .strategy-box-4 { background-color:#60A5FA; width:100%; height:60px; display:flex; justify-content:center; align-items:center; }
+  .number-circle { width:36px; height:36px; background-color:white; color:#1E3A8A; border-radius:50%; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:1rem; position:absolute; top:-18px; left:50%; transform:translateX(-50%); border:2px solid #FFFFFF; font-family:'Nanum Gothic Coding', monospace; }
+  .circle { position:absolute; border-radius:50%; background:rgba(30,58,138,.1); z-index:-1; }
+  .circle-1 { width:600px; height:600px; top:-150px; right:-150px; }
+  .circle-2 { width:400px; height:400px; bottom:-100px; left:10%; }
+</style>
 </head>
 <body>
-  <div class="slide-container">
-    <!-- Background Circles -->
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
+<div class="slide-container" 
+     data-topic="{{SECTION_TITLE}}" 
+     data-audience="기업 임원, 정책 입안자, 교육자" 
+     data-purpose="요약 및 행동계획 제시"
+     data-tone="실용적·전략적">
+  <!-- Background Circles -->
+  <div class="circle circle-1"></div>
+  <div class="circle circle-2"></div>
 
-    <!-- Header -->
-    <div class="header">
-      <div class="header-left">{{HEADER_LEFT}}</div>
-      <div class="header-center text-center">{{HEADER_CENTER}}</div>
-      <div class="header-right text-right">{{HEADER_RIGHT}}</div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left" 
+         data-slot="header_left" 
+         data-type="text" 
+         data-max-chars="18">{{HEADER_LEFT}}</div>
+
+    <div class="header-center text-center" 
+         data-slot="header_center_date" 
+         data-type="date" 
+         data-format="YYYY-MM-DD">{{HEADER_CENTER}}</div>
+
+    <div class="header-right text-right" 
+         data-slot="header_right_handle" 
+         data-type="text" 
+         data-max-chars="16">{{HEADER_RIGHT}}</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="left-content">
+      <h1 class="title">{{TITLE}}</h1>
+      <h2 class="subtitle">{{SUBTITLE}}</h2>
+      <p class="description">{{DESCRIPTION}}</p>
     </div>
-
-    <!-- Content -->
-    <div class="content">
-      <div class="left-content">
-        <h1 class="title">{{TITLE}}</h1>
-        <h2 class="subtitle">{{SUBTITLE}}</h2>
-        <p class="description">{{DESCRIPTION}}</p>
-      </div>
-      <div class="right-content">
-        {{PRIORITY_CIRCLES}}
+    <div class="right-content">
+      <div class="strategy-container">
+        <div class="strategy-row">
+          <div class="strategy-box strategy-box-1">{{STEP1_TEXT}}<div class="number-circle">01</div></div>
+        </div>
+        <div class="strategy-row">
+          <div class="strategy-box strategy-box-2">{{STEP2_TEXT}}<div class="number-circle">02</div></div>
+          <div class="strategy-box strategy-box-3">{{STEP3_TEXT}}<div class="number-circle">03</div></div>
+        </div>
+        <div class="strategy-row">
+          <div class="strategy-box strategy-box-4">{{STEP4_TEXT}}<div class="number-circle">04</div></div>
+        </div>
       </div>
     </div>
   </div>
+</div>
+
+<!-- 쿼리스트링으로 컨텍스트 변경 가능: ?topic=...&audience=...&purpose=...&date=...&brand=...&handle=... -->
+<script src="/slide-autofill.js" defer></script>
+
+
 </body>
-</html> 
+</html>

@@ -272,3 +272,104 @@ export function getLanguageTag(language: string): string {
 
   return languageMap[language] || 'text';
 } 
+
+/**
+ * 월 초기화를 위한 다음 달 1일 계산 함수
+ * @param baseDate 기준 날짜 (기본값: 현재 날짜)
+ * @returns 다음 달 1일 00:00:00
+ */
+export function getNextMonthFirstDay(baseDate: Date = new Date()): Date {
+  const nextMonth = new Date(baseDate);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  nextMonth.setDate(1);
+  nextMonth.setHours(0, 0, 0, 0);
+  return nextMonth;
+}
+
+/**
+ * 한국 시간 기준으로 정확히 한 달 후 초기화 날짜 계산
+ * @param baseDate 기준 날짜 (기본값: 현재 날짜)
+ * @returns 한국 시간 기준 한 달 후 동일한 시간
+ */
+export function getNextMonthSameTime(baseDate: Date = new Date()): Date {
+  // 한국 시간대 오프셋 (UTC+9)
+  const KOREAN_OFFSET = 9 * 60 * 60 * 1000; // 9시간을 밀리초로
+  
+  // UTC 시간을 한국 시간으로 변환
+  const koreanTime = new Date(baseDate.getTime() + KOREAN_OFFSET);
+  
+  // 한 달 후로 설정
+  const nextMonth = new Date(koreanTime);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  
+  // 한국 시간을 다시 UTC로 변환하여 반환
+  return new Date(nextMonth.getTime() - KOREAN_OFFSET);
+}
+
+/**
+ * 계정 생성일 기준으로 첫 번째 초기화 날짜 계산 (한국 시간 기준)
+ * @param userCreatedAt 사용자 계정 생성일
+ * @returns 한국 시간 기준 정확히 한 달 후 동일한 시간
+ */
+export function getInitialResetDate(userCreatedAt: Date): Date {
+  // 한국 시간대 오프셋 (UTC+9)
+  const KOREAN_OFFSET = 9 * 60 * 60 * 1000; // 9시간을 밀리초로
+  
+  // UTC 시간을 한국 시간으로 변환
+  const koreanTime = new Date(userCreatedAt.getTime() + KOREAN_OFFSET);
+  
+  // 한 달 후로 설정
+  const resetDate = new Date(koreanTime);
+  resetDate.setMonth(resetDate.getMonth() + 1);
+  
+  // 한국 시간을 다시 UTC로 변환하여 반환
+  return new Date(resetDate.getTime() - KOREAN_OFFSET);
+}
+
+/**
+ * 현재 날짜가 초기화 날짜를 지났는지 확인 (한국 시간 기준)
+ * @param resetDate 초기화 날짜
+ * @returns 초기화 여부
+ */
+export function shouldResetUsage(resetDate: Date): boolean {
+  const now = new Date();
+  
+  // 한국 시간대 오프셋 (UTC+9)
+  const KOREAN_OFFSET = 9 * 60 * 60 * 1000; // 9시간을 밀리초로
+  
+  // 현재 시간과 초기화 시간을 모두 한국 시간으로 변환하여 비교
+  const koreanNow = new Date(now.getTime() + KOREAN_OFFSET);
+  const koreanReset = new Date(resetDate.getTime() + KOREAN_OFFSET);
+  
+  return koreanNow > koreanReset;
+} 
+
+/**
+ * 한국 시간 기준으로 현재 시간 가져오기
+ * @returns 한국 시간 기준 현재 시간
+ */
+export function getKoreanTimeNow(): Date {
+  const now = new Date();
+  const KOREAN_OFFSET = 9 * 60 * 60 * 1000; // 9시간을 밀리초로
+  return new Date(now.getTime() + KOREAN_OFFSET);
+}
+
+/**
+ * UTC 시간을 한국 시간으로 변환
+ * @param utcDate UTC 시간
+ * @returns 한국 시간
+ */
+export function convertUTCToKorean(utcDate: Date): Date {
+  const KOREAN_OFFSET = 9 * 60 * 60 * 1000; // 9시간을 밀리초로
+  return new Date(utcDate.getTime() + KOREAN_OFFSET);
+}
+
+/**
+ * 한국 시간을 UTC로 변환
+ * @param koreanDate 한국 시간
+ * @returns UTC 시간
+ */
+export function convertKoreanToUTC(koreanDate: Date): Date {
+  const KOREAN_OFFSET = 9 * 60 * 60 * 1000; // 9시간을 밀리초로
+  return new Date(koreanDate.getTime() - KOREAN_OFFSET);
+} 

@@ -307,7 +307,9 @@ export default function PresentationScript() {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: 문서 처리에 실패했습니다.`;
         console.error('API 오류:', errorMessage);
-        throw new Error(errorMessage);
+        console.error('오류 데이터:', errorData);
+        const combined = errorData.details ? `${errorMessage} (${errorData.details})` : errorMessage;
+        throw new Error(combined);
       }
       
       const data = await response.json();
@@ -810,11 +812,10 @@ export default function PresentationScript() {
           {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <Presentation className="w-12 h-12 text-blue-600 mr-3" />
               <h1 className="text-3xl font-bold text-gray-900">AI 발표 대본 생성</h1>
             </div>
             <p className="text-gray-600 text-lg mb-6">
-              발표 자료, 시간, 주제를 입력하면 AI가 대본을 완성합니다. 이미지를 붙여넣어 참고 자료로 활용할 수 있습니다.
+              발표 주제, 자료, 시간을 입력하면 AI가 대본을 완성합니다.
             </p>
           </div>
 

@@ -16,10 +16,8 @@ export async function safeFetchJson(url: string, options?: RequestInit): Promise
     
     // 응답 시간 로깅 (개발 환경에서만)
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📊 API 응답 시간: ${responseTime}ms - ${url}`);
-      
-      // 느린 응답 경고 (3초 이상)
-      if (responseTime > 3000) {
+      // 느린 응답 경고 (10초 이상) - AI 서비스 API는 데이터가 많아서 시간이 걸림
+      if (responseTime > 10000) {
         console.warn(`⚠️ 느린 API 응답: ${responseTime}ms - ${url}`);
       }
     }
@@ -54,7 +52,6 @@ export async function cachedFetchJson(
       
       // 캐시가 유효한지 확인
       if (cachedData.timestamp && (now - cachedData.timestamp) < cacheDuration) {
-        console.log(`📦 캐시된 데이터 사용: ${cacheKey}`);
         return cachedData.data;
       }
     } catch (error) {
@@ -63,16 +60,38 @@ export async function cachedFetchJson(
   }
   
   // 캐시가 없거나 만료된 경우 새로 요청
-  const data = await safeFetchJson(url, options);
+  // If-None-Match 지원: 저장된 etag가 있으면 보냄, 304면 캐시 재사용
+  let headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(options?.headers || {})
+  };
+  try {
+    const prev = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    const etag = prev?.etag;
+    if (etag) {
+      headers = { ...headers, 'If-None-Match': etag } as any;
+    }
+  } catch {}
+
+  const resp = await fetch(url, { ...(options || {}), headers });
+  if (resp.status === 304) {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached?.data) return cached.data;
+  }
+  if (!resp.ok) {
+    throw new Error(`HTTP error! status: ${resp.status}`);
+  }
+  const data = await resp.json();
+  const etag = resp.headers.get('ETag') || undefined;
   
   // 캐시에 저장
   try {
     const cacheData = {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      etag
     };
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    console.log(`💾 데이터 캐시 저장: ${cacheKey}`);
   } catch (error) {
     console.warn('캐시 저장 오류:', error);
   }

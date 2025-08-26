@@ -1,193 +1,175 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>{{TITLE}}</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      font-family: 'Nanum Gothic Coding', monospace;
-    }
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="당신은 프롬프트를 고품질 HTML 코드로 변환하는 전문 개발자입니다.
 
-    .slide-container {
-      width: 1280px;
-      height: 720px;
-      background-color: #FFFFFF;
-      position: relative;
-      overflow: hidden;
-    }
+변환 규칙:
+1. 기존 HTML 디자인과 CSS를 그대로 유지
+2. 텍스트가 들어갈 노드에만 data-slot 속성과 제약 조건 추가
+3. HTML5 시맨틱 태그 사용 (<header>, <nav>, <main>, <section>, <article>, <footer>)
+4. 반응형 디자인을 위한 CSS Grid/Flexbox 활용
+5. 접근성을 위한 ARIA 속성 추가
+6. SEO 최적화를 위한 메타태그 및 구조화
+7. 모던 브라우저 호환성 보장
+8. 성능 최적화 고려
 
-    .header {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      padding: 15px 40px;
-      color: #1E3A8A;
-      border-bottom: 1px solid rgba(30, 58, 138, 0.2);
-    }
+입력 프롬프트: 
+제목: {{SECTION_TITLE}}
+내용: {{SECTION_CONTENT}}
+키포인트: {{SECTION_KEYPOINTS}}
 
-    .content {
-      display: flex;
-      height: calc(100% - 60px);
-      padding: 40px;
-    }
+요구사항:
+1. 정확히 다음 8줄 형식으로 출력해주세요:
 
-    .left-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding-right: 40px;
-    }
+출력 형식:
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{SECTION_TITLE}}</title>
 
-    .right-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 
-    .title {
-      font-size: 4.5rem;
-      font-weight: bold;
-      color: #1E3A8A;
-      margin-bottom: 30px;
-      font-family: 'Noto Serif KR', serif;
-    }
-
-    .description {
-      font-size: 1.1rem;
-      color: #6B7280;
-      line-height: 1.6;
-      margin-bottom: 40px;
-      max-width: 500px;
-    }
-
-    .challenge-container {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .challenge-level {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      border-left: 4px solid #1E3A8A;
-      transition: transform 0.2s ease;
-    }
-
-    .challenge-level:hover {
-      transform: translateX(4px);
-    }
-
-    .level-1 {
-      border-left-color: #1E3A8A;
-    }
-
-    .level-2 {
-      border-left-color: #3B82F6;
-    }
-
-    .level-3 {
-      border-left-color: #10B981;
-    }
-
-    .level-4 {
-      border-left-color: #F59E0B;
-    }
-
-    .challenge-segment {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .challenge-segment .icon {
-      font-size: 1.2rem;
-      color: #1E3A8A;
-      width: 24px;
-      text-align: center;
-    }
-
-    .challenge-segment span {
-      font-weight: bold;
-      font-size: 1.1rem;
-      color: #1E3A8A;
-    }
-
-    .challenge-line {
-      height: 1px;
-      background: linear-gradient(to right, #1E3A8A, transparent);
-      margin: 8px 0;
-    }
-
-    .challenge-label {
-      font-size: 0.95rem;
-      color: #374151;
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-
-    .challenge-detail {
-      font-size: 0.9rem;
-      color: #6B7280;
-      line-height: 1.5;
-      font-weight: normal;
-    }
-
-    .circle {
-      position: absolute;
-      border-radius: 50%;
-      background-color: rgba(191, 219, 254, 0.3);
-      z-index: -1;
-    }
-
-    .circle-1 {
-      width: 600px;
-      height: 600px;
-      top: -150px;
-      left: -150px;
-    }
-
-    .circle-2 {
-      width: 400px;
-      height: 400px;
-      bottom: -100px;
-      right: -100px;
-    }
-  </style>
+<style>
+  body, html { 
+    margin:0; 
+    padding:0; 
+    font-family:'Noto Sans KR', sans-serif; 
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+  .slide-container { 
+    width:1280px; 
+    height:720px; 
+    background:#FFFFFF; 
+    position:absolute; 
+    top:50%;
+    left:50%;
+    transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+    overflow:hidden; 
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  .header { display:grid; grid-template-columns:1fr 1fr 1fr; padding:15px 40px; color:#1E3A8A; border-bottom:1px solid rgba(30,58,138,.2); font-family:'Nanum Gothic Coding', monospace; }
+  .content { display:flex; height:calc(100% - 60px); padding:40px; }
+  .left-content { flex:1; display:flex; flex-direction:column; justify-content:center; padding-right:40px; }
+  .right-content { flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .title { font-size:5rem; font-weight:bold; line-height:1.1; color:#1E3A8A; margin-bottom:30px; font-family:'Noto Serif KR', serif; }
+  .description { font-size:1.1rem; color:#6B7280; line-height:1.6; margin-bottom:40px; max-width:500px; }
+  .best-practices-title { font-size:1.8rem; color:#1E3A8A; font-weight:bold; margin-bottom:25px; font-family:'Noto Serif KR', serif; }
+  .practices-container { display:flex; align-items:flex-end; gap:20px; height:270px; }
+  .practice-bar { display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; padding:20px; text-align:center; width:170px; border-radius:5px 5px 0 0; }
+  .practice-number { font-size:2rem; font-weight:bold; margin-bottom:10px; opacity:0.7; font-family:'Noto Serif KR', serif; }
+  .practice-text { font-size:1rem; line-height:1.3; }
+  .practice-bar-1 { background:#1E3A8A; height:150px; }
+  .practice-bar-2 { background:#1E40AF; height:200px; }
+  .practice-bar-3 { background:#3B82F6; height:250px; }
+  .circle { position:absolute; border-radius:50%; background:rgba(30,58,138,.1); z-index:-1; }
+  .circle-1 { width:600px; height:600px; top:-150px; right:-150px; }
+  .circle-2 { width:400px; height:400px; bottom:-100px; left:10%; }
+</style>
 </head>
 <body>
-  <div class="slide-container">
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
+<div class="slide-container" 
+     data-topic="{{SECTION_TITLE}}" 
+     data-audience="기업 임원, 정책 입안자, 교육자" 
+     data-purpose="미래 준비 방안 제시"
+     data-tone="실용적·전략적">
+  <!-- Background Circles -->
+  <div class="circle circle-1"></div>
+  <div class="circle circle-2"></div>
 
-    <!-- Header -->
-    <div class="header">
-      <div class="header-left">{{HEADER_LEFT}}</div>
-      <div class="header-center text-center">{{HEADER_CENTER}}</div>
-      <div class="header-right text-right">{{HEADER_RIGHT}}</div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left" 
+         data-slot="header_left" 
+         data-type="text" 
+         data-max-chars="18">{{HEADER_LEFT}}</div>
+
+    <div class="header-center text-center" 
+         data-slot="header_center_date" 
+         data-type="date" 
+         data-format="YYYY-MM-DD">{{HEADER_CENTER}}</div>
+
+    <div class="header-right text-right" 
+         data-slot="header_right_handle" 
+         data-type="text" 
+         data-max-chars="16">{{HEADER_RIGHT}}</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="left-content">
+      <h1 class="title"
+          data-slot="title_lines" 
+          data-type="lines" 
+          data-lines-min="1" 
+          data-lines-max="2" 
+          data-max-chars="20" 
+          data-join-with="<br/>">{{TITLE}}</h1>
     </div>
-
-    <!-- Content -->
-    <div class="content">
-      <div class="left-content">
-        <h1 class="title">{{TITLE}}</h1>
-        <p class="description">{{DESCRIPTION}}</p>
-      </div>
-      <div class="right-content">
-        <div class="challenge-container">
-          {{POLICIES}}
+    
+    <div class="right-content">
+      <p class="description"
+         data-slot="description_text" 
+         data-type="text" 
+         data-max-chars="400">{{DESCRIPTION}}</p>
+      
+      <h2 class="best-practices-title"
+          data-slot="practices_title" 
+          data-type="text" 
+          data-max-chars="30">{{PRACTICES_TITLE}}</h2>
+      
+      <div class="practices-container">
+        <div class="practice-bar practice-bar-1">
+          <div class="practice-number"
+               data-slot="practice1_number" 
+               data-type="number" 
+               data-max-chars="5">{{PRACTICE1_NUMBER}}</div>
+          <div class="practice-text"
+               data-slot="practice1_text" 
+               data-type="text" 
+               data-max-chars="50">{{PRACTICE1_TEXT}}</div>
+        </div>
+        
+        <div class="practice-bar practice-bar-2">
+          <div class="practice-number"
+               data-slot="practice2_number" 
+               data-type="number" 
+               data-max-chars="5">{{PRACTICE2_NUMBER}}</div>
+          <div class="practice-text"
+               data-slot="practice2_text" 
+               data-type="text" 
+               data-max-chars="50">{{PRACTICE2_TEXT}}</div>
+        </div>
+        
+        <div class="practice-bar practice-bar-3">
+          <div class="practice-number"
+               data-slot="practice3_number" 
+               data-type="number" 
+               data-max-chars="5">{{PRACTICE3_NUMBER}}</div>
+          <div class="practice-text"
+               data-slot="practice3_text" 
+               data-type="text" 
+               data-max-chars="50">{{PRACTICE3_TEXT}}</div>
         </div>
       </div>
     </div>
   </div>
+</div>
+
+<!-- 쿼리스트링으로 컨텍스트 변경 가능: ?topic=...&audience=...&purpose=...&date=...&brand=...&handle=... -->
+<script src="/slide-autofill.js" defer></script>
+
+
 </body>
-</html> 
+</html>

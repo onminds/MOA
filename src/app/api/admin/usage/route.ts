@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest) {
             .input('service_type', serviceType)
             .query(`
               UPDATE usage 
-              SET usage_count = 0, next_reset_date = DATEADD(day, 7, GETDATE()), updated_at = GETDATE()
+              SET usage_count = 0, next_reset_date = DATEADD(month, 1, GETDATE()), updated_at = GETDATE()
               WHERE user_id = @user_id AND service_type = @service_type
             `);
         } else {
@@ -43,7 +43,7 @@ export async function PATCH(request: NextRequest) {
             .input('user_id', userId)
             .query(`
               UPDATE usage 
-              SET usage_count = 0, next_reset_date = DATEADD(day, 7, GETDATE()), updated_at = GETDATE()
+              SET usage_count = 0, next_reset_date = DATEADD(month, 1, GETDATE()), updated_at = GETDATE()
               WHERE user_id = @user_id
             `);
         }

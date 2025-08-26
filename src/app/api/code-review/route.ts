@@ -319,7 +319,7 @@ ${scopeInstruction ? `검사 범위: ${scopeInstruction}\n\n` : ''}
 `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-5-mini",
       messages: [
         {
           role: "system",
@@ -330,8 +330,7 @@ ${scopeInstruction ? `검사 범위: ${scopeInstruction}\n\n` : ''}
           content: prompt
         }
       ],
-      max_tokens: MAX_TOKENS_PER_REQUEST,
-      temperature: 0.3
+      max_completion_tokens: MAX_TOKENS_PER_REQUEST
     });
 
     const reviewContent = completion.choices[0]?.message?.content;
@@ -375,7 +374,7 @@ ${scopeInstruction ? `검사 범위: ${scopeInstruction}\n\n` : ''}
       positives: reviewData.positives || [],
       refactoredCode: reviewData.refactoredCode,
       detectedLanguage: finalDetectedLanguage,
-      model: 'gpt-4',
+      model: 'gpt-5-mini',
       timestamp: new Date().toISOString(),
       isTruncated: isTruncated,
       originalLength: code.length,

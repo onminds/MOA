@@ -145,7 +145,9 @@ export default function AdminPage() {
     const names: { [key: string]: string } = {
       'chat': 'AI 채팅',
       'image': '이미지 생성',
+      'image-generate': '이미지 생성',
       'video': '영상 생성',
+      'video-generate': '영상 생성',
       'code': '코드 생성',
       'summary': 'AI 요약'
     };
@@ -153,7 +155,37 @@ export default function AdminPage() {
   };
 
   const filterUsageByService = (usage: Usage[]) => {
-    return usage.filter(u => u.serviceType !== 'chat' || u.usageCount > 0);
+    // 중복된 서비스 타입 제거 (최신 것만 유지)
+    const uniqueUsage = new Map();
+    
+    usage.forEach(u => {
+      // 서비스 타입 정규화 (중복 제거)
+      let serviceKey = u.serviceType;
+      
+      // image-generate와 image는 같은 서비스
+      if (u.serviceType === 'image-generate') {
+        serviceKey = 'image';
+      }
+      // video-generate와 video는 같은 서비스
+      else if (u.serviceType === 'video-generate') {
+        serviceKey = 'video';
+      }
+      
+      // 이미 존재하는 서비스라면 한도가 더 많은 것을 유지 (새 플랜 우선)
+      if (uniqueUsage.has(serviceKey)) {
+        const existing = uniqueUsage.get(serviceKey);
+        if (u.limitCount > existing.limitCount) {
+          uniqueUsage.set(serviceKey, u);
+        }
+      } else {
+        uniqueUsage.set(serviceKey, u);
+      }
+    });
+    
+    // chat 서비스는 사용량이 있을 때만 표시
+    return Array.from(uniqueUsage.values()).filter(u => 
+      u.serviceType !== 'chat' || u.usageCount > 0
+    );
   };
 
   if (loading) {

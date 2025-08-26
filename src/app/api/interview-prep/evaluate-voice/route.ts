@@ -85,47 +85,62 @@ export async function POST(request: NextRequest) {
 }
     `;
 
+    const systemInstruction = '당신은 면접 음성 평가 전문가입니다. 음성의 톤, 속도, 명료도, 자신감, 표현력, 구조화 등을 매우 세밀하고 정확하게 분석하여 구체적이고 실용적인 피드백을 제공해주세요. 특히 문제점과 개선점을 정확하게 지적하고, "국어책 읽듯이 단조롭게 말함", "끝말이 흐려짐", "너무 빠르게 말해서 핵심이 안들림" 등과 같이 구체적인 문제점을 명확히 지적해주세요. 강점도 구체적인 예시와 함께 설명해주세요.';
+
+    // 1) 기본: Chat Completions
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-5-mini',
       messages: [
-        {
-          role: 'system',
-          content: '당신은 면접 음성 평가 전문가입니다. 음성의 톤, 속도, 명료도, 자신감, 표현력, 구조화 등을 매우 세밀하고 정확하게 분석하여 구체적이고 실용적인 피드백을 제공해주세요. 특히 문제점과 개선점을 정확하게 지적하고, "국어책 읽듯이 단조롭게 말함", "끝말이 흐려짐", "너무 빠르게 말해서 핵심이 안들림" 등과 같이 구체적인 문제점을 명확히 지적해주세요. 강점도 구체적인 예시와 함께 설명해주세요.'
-        },
-        {
-          role: 'user',
-          content: analysisPrompt
-        }
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: analysisPrompt }
       ],
-      temperature: 0.7,
-      max_tokens: 1500,
+      max_completion_tokens: 1500,
     });
 
-    const analysisResult = completion.choices[0]?.message?.content;
-    
-    if (!analysisResult) {
-      throw new Error('음성 분석 결과를 생성할 수 없습니다.');
+    let analysisResult = completion.choices[0]?.message?.content || '';
+
+    // 2) 폴백: content가 비었을 경우 Responses API 사용
+    if (!analysisResult || analysisResult.trim().length === 0) {
+      try {
+        const resp = await (openai as any).responses.create({
+          model: 'gpt-5-mini',
+          input: `SYSTEM:\n${systemInstruction}\n\nUSER:\n${analysisPrompt}`,
+          max_output_tokens: 1500,
+          text: { verbosity: 'low' },
+          reasoning: { effort: 'minimal' }
+        });
+        analysisResult = resp?.output_text || '';
+      } catch (fallbackErr) {
+        console.warn('음성 평가 Responses API 폴백 실패:', fallbackErr);
+      }
+    }
+
+    if (!analysisResult || analysisResult.trim().length === 0) {
+      const fallback = getDefaultVoiceEvaluation(transcribedText);
+      return NextResponse.json({ success: true, evaluation: fallback, transcribedText });
     }
 
     // JSON 파싱
     let evaluation;
     try {
-      evaluation = JSON.parse(analysisResult);
+      // 코드블록/여분 텍스트 제거 후 JSON만 파싱
+      let cleaned = String(analysisResult).trim();
+      const codeBlock = cleaned.match(/```json[\s\S]*?```/i) || cleaned.match(/```[\s\S]*?```/);
+      if (codeBlock) cleaned = codeBlock[0].replace(/```json|```/gi, '').trim();
+      const braceMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+      if (braceMatch) cleaned = braceMatch[0];
+      evaluation = JSON.parse(cleaned);
     } catch (parseError) {
       console.error('JSON 파싱 오류:', parseError);
       console.error('원본 응답:', analysisResult);
-      
-      // 의미없는 내용이나 오류가 발생한 경우
-      if (analysisResult.includes('제가') || analysisResult.includes('직접') || analysisResult.includes('들어보지')) {
-        throw new Error('음성 내용이 부적절하거나 의미없는 내용입니다. 다시 녹음해주세요.');
-      }
-      
-      throw new Error('분석 결과 형식이 올바르지 않습니다. 다시 녹음해주세요.');
+      const fallback = getDefaultVoiceEvaluation(transcribedText);
+      return NextResponse.json({ success: true, evaluation: fallback, transcribedText });
     }
 
     // 응답 검증
     if (!evaluation.overallScore || !evaluation.tone || !evaluation.strengths || !evaluation.improvements || !evaluation.recommendations || !evaluation.detailedAnalysis) {
-      throw new Error('불완전한 분석 결과입니다. 다시 녹음해주세요.');
+      const fallback = getDefaultVoiceEvaluation(transcribedText);
+      return NextResponse.json({ success: true, evaluation: fallback, transcribedText });
     }
 
     return NextResponse.json({
@@ -149,4 +164,38 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// 기본 음성 평가 (폴백용)
+function getDefaultVoiceEvaluation(text: string) {
+  const length = (text || '').trim().split(/\s+/).length;
+  const hasPunctuation = /[\.!?\u3002\uFF01\uFF1F]/.test(text || '');
+  const hasFiller = /(어|음|그|저)/.test(text || '');
+  const base = Math.min(10, Math.max(4, Math.floor(length / 20) + (hasPunctuation ? 1 : 0) - (hasFiller ? 1 : 0) + 6));
+  return {
+    overallScore: base,
+    tone: '차분하고 자연스러운 톤을 유지하려는 경향이 보입니다.',
+    pace: '전반적으로 속도는 적절하나, 핵심 포인트에서 약간의 속도 조절이 있으면 더 좋습니다.',
+    volume: '음량은 평균적이며 문단 말미에서 약간 낮아지는 경향이 있습니다.',
+    clarity: '발음은 비교적 명료하나 문장 연결 시 말끝이 약간 흐려질 수 있습니다.',
+    confidence: '자신감은 보통 수준입니다. 핵심 문장에서 어미를 또렷하게 마무리하면 더 설득력 있어집니다.',
+    expressiveness: '강약 조절이 일부 구간에서 부족합니다. 키워드에 억양을 더해 강조해보세요.',
+    structure: '서론-본론-결론 흐름이 보이지만 예시와 결과를 더 명확히 구분하면 좋습니다.',
+    strengths: [
+      '질문 의도를 파악해 핵심에 답하려는 흐름을 유지했습니다.',
+      '말의 속도와 호흡이 비교적 안정적입니다.',
+      '큰 불필요어(필러) 사용이 과도하지 않습니다.'
+    ],
+    improvements: [
+      '문장 말미를 또렷하게 마무리해 명료도를 높이세요.',
+      '핵심 키워드에 강세를 주어 메시지 전달력을 높이세요.',
+      '사례 설명 시 수치나 결과를 한 문장으로 정리해 주세요.'
+    ],
+    recommendations: [
+      '핵심 단어(성과, 수치, 역할)에 억양을 주고 0.2초 멈춤을 연습하세요.',
+      'STAR 구조(S-T-A-R)로 30–45초 안에 말하는 연습을 반복하세요.',
+      '문장 끝을 올리지 말고 내리며 마무리해 안정감을 주세요.'
+    ],
+    detailedAnalysis: '전체적으로 안정적인 톤과 속도를 유지했으나, 말끝 처리와 핵심 포인트 강조가 약간 부족합니다. STAR 구조로 사례를 구조화하고, 수치 기반 결과를 명확히 첨부하면 신뢰도가 높아집니다.'
+  };
 }

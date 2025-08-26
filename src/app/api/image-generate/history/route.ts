@@ -56,8 +56,8 @@ export async function GET(request: NextRequest) {
     const result = await pool.request()
       .input('userId', sql.Int, userId)
       .query(`
-        SELECT TOP 10
-          id, prompt, generated_image_url, model, size, style, quality, title, created_at, status
+        SELECT
+          id, prompt, generated_image_url, image_data, content_type, model, size, style, quality, title, created_at, status
         FROM image_generation_history
         WHERE user_id = @userId
         ORDER BY created_at DESC
@@ -66,18 +66,28 @@ export async function GET(request: NextRequest) {
     console.log('🔍 쿼리 결과 레코드 수:', result.recordset.length);
     console.log('🔍 쿼리 결과:', result.recordset);
 
-    const history = result.recordset.map(item => ({
-      id: item.id,
-      prompt: item.prompt,
-      generatedImageUrl: item.generated_image_url,
-      model: item.model,
-      size: item.size,
-      style: item.style,
-      quality: item.quality,
-      title: item.title,
-      createdAt: item.created_at,
-      status: item.status
-    }));
+    const history = result.recordset.map(item => {
+      // 모든 모델이 이제 DB에 바이너리로 저장되므로 내부 URL 사용
+      let imageUrl = item.generated_image_url;
+      
+      if (item.image_data) {
+        // 이미지 데이터가 있으면 내부 URL 사용 (모든 모델)
+        imageUrl = `/api/image/${item.id}`;
+      }
+      
+      return {
+        id: item.id,
+        prompt: item.prompt,
+        generatedImageUrl: imageUrl,
+        model: item.model,
+        size: item.size,
+        style: item.style,
+        quality: item.quality,
+        title: item.title,
+        createdAt: item.created_at,
+        status: item.status
+      };
+    });
 
     console.log('✅ 변환된 히스토리:', history);
 

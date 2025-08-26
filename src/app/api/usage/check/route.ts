@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { getConnection } from "@/lib/db";
+import { getKoreanTimeNow } from "@/lib/utils";
 
 // 이미지 생성 전용 사용량 체크
 async function checkImageGenerationUsage(userId: string) {
@@ -72,7 +73,8 @@ async function checkImageGenerationUsage(userId: string) {
     const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
     if (userCreatedAt) {
       const resetDate = new Date(userCreatedAt);
-      resetDate.setDate(resetDate.getDate() + 7);
+      // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
+      resetDate.setMonth(resetDate.getMonth() + 1);
       nextResetDate = resetDate;
       
       // DB에 next_reset_date 저장
@@ -89,13 +91,13 @@ async function checkImageGenerationUsage(userId: string) {
   }
   
   // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
-  const now = new Date();
+  const now = getKoreanTimeNow(); // 한국 시간 기준
   if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
     console.log(`사용자 ${userId}의 이미지 생성 사용량 초기화: ${currentUsage} -> 0`);
     
-    // 다음 초기화 시간을 기존 next_reset_date 기준으로 일주일 후로 설정
+    // 다음 초기화 시간을 정확히 한 달 후로 설정 (한국 시간 기준)
     const nextReset = new Date(nextResetDate);
-    nextReset.setDate(nextReset.getDate() + 7);
+    nextReset.setMonth(nextReset.getMonth() + 1);
     
     await db.request()
       .input('userId', userId)
@@ -194,7 +196,8 @@ async function checkVideoGenerationUsage(userId: string) {
     const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
     if (userCreatedAt) {
       const resetDate = new Date(userCreatedAt);
-      resetDate.setDate(resetDate.getDate() + 7);
+      // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
+      resetDate.setMonth(resetDate.getMonth() + 1);
       nextResetDate = resetDate;
       
       // DB에 next_reset_date 저장
@@ -211,13 +214,13 @@ async function checkVideoGenerationUsage(userId: string) {
   }
   
   // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
-  const now = new Date();
+  const now = getKoreanTimeNow(); // 한국 시간 기준
   if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
     console.log(`사용자 ${userId}의 영상 생성 사용량 초기화: ${currentUsage} -> 0`);
     
-    // 다음 초기화 시간을 기존 next_reset_date 기준으로 일주일 후로 설정
+    // 다음 초기화 시간을 정확히 한 달 후로 설정 (한국 시간 기준)
     const nextReset = new Date(nextResetDate);
-    nextReset.setDate(nextReset.getDate() + 7);
+    nextReset.setMonth(nextReset.getMonth() + 1);
     
     await db.request()
       .input('userId', userId)
@@ -258,7 +261,7 @@ async function checkUsageLimit(userId: string, serviceType: string) {
     // 사용량 정보가 없으면 생성
     const defaultLimit = getDefaultLimit(serviceType);
     
-    // 계정 생성일 기준으로 일주일 후 초기화 시간 설정
+    // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
     const userCreatedResult = await db.request()
       .input('userId', userId)
       .query('SELECT created_at FROM users WHERE id = @userId');
@@ -268,7 +271,8 @@ async function checkUsageLimit(userId: string, serviceType: string) {
     
     if (userCreatedAt) {
       const resetDate = new Date(userCreatedAt);
-      resetDate.setDate(resetDate.getDate() + 7);
+      // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
+      resetDate.setMonth(resetDate.getMonth() + 1);
       nextResetDate = resetDate;
     }
     
@@ -292,7 +296,7 @@ async function checkUsageLimit(userId: string, serviceType: string) {
   }
 
   const usage = usageResult.recordset[0];
-  const now = new Date();
+  const now = getKoreanTimeNow(); // 한국 시간 기준
   let nextResetDate = usage.next_reset_date;
   
   // next_reset_date가 없으면 계정 생성일 기준으로 설정
@@ -304,7 +308,8 @@ async function checkUsageLimit(userId: string, serviceType: string) {
     const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
     if (userCreatedAt) {
       const resetDate = new Date(userCreatedAt);
-      resetDate.setDate(resetDate.getDate() + 7);
+      // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
+      resetDate.setMonth(resetDate.getMonth() + 1);
       nextResetDate = resetDate;
       
       // DB에 next_reset_date 저장
@@ -324,9 +329,9 @@ async function checkUsageLimit(userId: string, serviceType: string) {
   if (nextResetDate && now > new Date(nextResetDate) && usage.usage_count > 0) {
     console.log(`사용자 ${userId}의 ${serviceType} 사용량 초기화: ${usage.usage_count} -> 0`);
     
-    // 다음 초기화 시간을 일주일 후로 설정
+    // 다음 초기화 시간을 정확히 한 달 후로 설정 (한국 시간 기준)
     const nextReset = new Date(nextResetDate);
-    nextReset.setDate(nextReset.getDate() + 7);
+    nextReset.setMonth(nextReset.getMonth() + 1);
     
     await db.request()
       .input('userId', userId)

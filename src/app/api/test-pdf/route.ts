@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
+export const runtime = 'nodejs';
 import path from 'path';
 
 export async function GET() {

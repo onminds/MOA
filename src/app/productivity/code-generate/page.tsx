@@ -60,28 +60,28 @@ export default function CodeGenerate() {
       id: 'simple-function',
       title: '간단한 함수 만들기',
       description: '두 숫자를 더하는 함수를 만들어주세요',
-      icon: <FileCode className="w-5 h-5 text-red-500" />,
+      icon: <FileCode className="w-5 h-5 text-gray-800" />,
       prompt: '두 숫자를 더하는 함수를 만들어주세요'
     },
     {
       id: 'data-processing',
       title: '데이터 처리하기',
       description: '학생들의 점수 평균을 계산하는 코드를 만들어주세요',
-      icon: <BarChart3 className="w-5 h-5 text-blue-500" />,
+      icon: <BarChart3 className="w-5 h-5 text-gray-800" />,
       prompt: '학생들의 점수 평균을 계산하는 코드를 만들어주세요'
     },
     {
       id: 'webpage',
       title: '웹페이지 만들기',
       description: '간단한 회원가입 폼을 만들어주세요',
-      icon: <Globe className="w-5 h-5 text-green-500" />,
+      icon: <Globe className="w-5 h-5 text-gray-800" />,
       prompt: '간단한 회원가입 폼을 만들어주세요'
     },
     {
       id: 'loop',
       title: '반복 작업하기',
       description: '1부터 100까지 숫자를 출력하는 코드를 만들어주세요',
-      icon: <RotateCcw className="w-5 h-5 text-purple-500" />,
+      icon: <RotateCcw className="w-5 h-5 text-gray-800" />,
       prompt: '1부터 100까지 숫자를 출력하는 코드를 만들어주세요'
     }
   ];
@@ -260,14 +260,14 @@ export default function CodeGenerate() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             {/* 입력 영역 */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-3 space-y-6">
               <div className="bg-white rounded-lg shadow-md p-8">
                 {/* 빠른 시작 */}
                 <div className="mb-8">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-green-600" />
+                    <Zap className="w-5 h-5 text-gray-800" />
                     어떤 코드가 필요하신가요?
                   </h2>
                   <p className="text-sm text-gray-600 mb-4">빠른 시작 (클릭하면 자동으로 입력됩니다)</p>
@@ -277,7 +277,7 @@ export default function CodeGenerate() {
                       <button
                         key={template.id}
                         onClick={() => handleQuickStart(template)}
-                        className="p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all text-left"
+                        className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all text-left"
                       >
                         <div className="flex items-center gap-3 mb-2">
                           {template.icon}
@@ -292,7 +292,7 @@ export default function CodeGenerate() {
                 {/* 직접 설명 */}
                 <div className="mb-8">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-green-600" />
+                    <MessageCircle className="w-5 h-5 text-gray-800" />
                     또는 직접 설명해주세요 *
                   </h2>
                   <textarea
@@ -300,9 +300,9 @@ export default function CodeGenerate() {
                     onChange={(e) => setRequest(e.target.value)}
                     placeholder="예: 학생 성적을 관리하는 프로그램을 만들어주세요"
                     rows={6}
-                    className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder:text-gray-500 text-black resize-none"
+                    className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-500 text-black resize-none"
                   />
-                  <div className="flex items-center gap-2 mt-2 text-sm text-yellow-600">
+                  <div className="flex items-center gap-2 mt-2 text-sm text-gray-700">
                     <Lightbulb className="w-4 h-4" />
                     팁: 구체적으로 설명할수록 더 정확한 코드를 만들어드려요!
                   </div>
@@ -311,7 +311,7 @@ export default function CodeGenerate() {
                 {/* 기본 설정 */}
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-green-600" />
+                    <Settings className="w-5 h-5 text-gray-800" />
                     기본 설정
                   </h2>
                   
@@ -324,7 +324,7 @@ export default function CodeGenerate() {
                       <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       >
                         {programmingLanguages.map((lang) => (
                           <option key={lang.value} value={lang.value}>
@@ -342,7 +342,7 @@ export default function CodeGenerate() {
                       <select
                         value={complexity}
                         onChange={(e) => setComplexity(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       >
                         <option value="easy">쉬운 버전 (처음 배우는 분께 추천)</option>
                         <option value="intermediate">일반 버전</option>
@@ -376,7 +376,7 @@ export default function CodeGenerate() {
                   <button
                     onClick={generateCode}
                     disabled={loading || !request.trim()}
-                    className="w-full bg-green-500 text-white py-4 rounded-xl hover:bg-green-600 transition-all font-semibold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
+                    className="w-full bg-blue-600 text-white py-4 rounded-xl hover:bg-blue-700 transition-all font-semibold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
                   >
                     {loading ? (
                       <>
@@ -435,26 +435,26 @@ export default function CodeGenerate() {
                     {/* 코드 설명 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="bg-blue-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                           <Lightbulb className="w-4 h-4" />
                           코드 설명
                         </h4>
                         <p className="text-blue-800 text-sm leading-relaxed">{generatedCode.explanation}</p>
                       </div>
 
-                      <div className="bg-green-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                           <Play className="w-4 h-4" />
                           사용 방법
                         </h4>
-                        <p className="text-green-800 text-sm leading-relaxed">{generatedCode.usage}</p>
+                        <p className="text-blue-800 text-sm leading-relaxed">{generatedCode.usage}</p>
                       </div>
                     </div>
 
                     {/* 개선 제안 */}
                     {generatedCode.improvements && generatedCode.improvements.length > 0 && (
                       <div className="bg-yellow-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-yellow-900 mb-3 flex items-center gap-2">
+                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                           <GitBranch className="w-4 h-4" />
                           개선 제안
                         </h4>
@@ -468,11 +468,11 @@ export default function CodeGenerate() {
 
                     {/* 관련 개념 */}
                     {generatedCode.relatedConcepts && generatedCode.relatedConcepts.length > 0 && (
-                      <div className="bg-green-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-green-900 mb-3">관련 개념</h4>
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 mb-3">관련 개념</h4>
                         <div className="flex flex-wrap gap-2">
                           {generatedCode.relatedConcepts.map((concept, idx) => (
-                            <span key={idx} className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm">
+                            <span key={idx} className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm">
                               {concept}
                             </span>
                           ))}
@@ -485,7 +485,7 @@ export default function CodeGenerate() {
             </div>
 
                          {/* 히스토리 패널 */}
-             <div className="lg:col-span-1">
+             <div className="lg:col-span-2">
                <div className="bg-white rounded-lg shadow-md p-6 sticky top-8">
                  <div className="flex items-center justify-between mb-4">
                    <h3 className="text-md font-semibold text-gray-900 flex items-center gap-2">
@@ -515,12 +515,12 @@ export default function CodeGenerate() {
                      </p>
                    </div>
                  ) : (
-                   <div className="space-y-3 max-h-96 overflow-y-auto">
+                   <div className="space-y-4 max-h-[36rem] overflow-y-auto">
                      {dbHistory.map((item) => (
-                       <div key={item.id} className="border border-gray-200 rounded-lg p-3 hover:border-green-300 transition-colors">
+                       <div key={item.id} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors">
                          <div className="flex items-center justify-between mb-2">
                            <div className="flex items-center gap-2">
-                             <FileCode className="w-4 h-4 text-green-600" />
+                             <FileCode className="w-4 h-4 text-gray-800" />
                              <span className="text-sm font-medium text-gray-900 truncate">
                                {item.requestText.substring(0, 25)}...
                              </span>
@@ -544,7 +544,7 @@ export default function CodeGenerate() {
                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                {item.language}
                              </span>
-                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                             <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                {item.complexity}
                              </span>
                            </div>
@@ -555,7 +555,7 @@ export default function CodeGenerate() {
                          </div>
                          <button
                            onClick={() => loadHistoryItem(item)}
-                           className="w-full mt-2 text-xs bg-green-100 text-green-800 py-1 rounded hover:bg-green-200 transition-colors"
+                           className="w-full mt-2 text-xs bg-blue-100 text-blue-800 py-1 rounded hover:bg-blue-200 transition-colors"
                          >
                            코드 보기
                          </button>

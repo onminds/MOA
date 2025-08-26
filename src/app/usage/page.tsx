@@ -23,12 +23,15 @@ interface UsageInfo {
   resetDate: string;
 }
 
-// UTC 시간을 한국 시간으로 변환하는 함수
-function convertToKoreanTime(utcDateString: string): string {
+// UTC 시간을 한국 시간으로 변환하는 함수 (더 이상 사용하지 않음)
+// API에서 이미 한국 시간으로 계산된 resetDate를 받아서 9시간을 빼서 정확한 시간 표시
+function formatDisplayTime(dateString: string): string {
   try {
-    const date = new Date(utcDateString);
-    return date.toLocaleString('ko-KR', {
-      timeZone: 'Asia/Seoul',
+    const date = new Date(dateString);
+    // 9시간을 빼서 정확한 시간 계산
+    const correctedDate = new Date(date.getTime() - (9 * 60 * 60 * 1000));
+    
+    return correctedDate.toLocaleString('ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -38,8 +41,8 @@ function convertToKoreanTime(utcDateString: string): string {
       hour12: false
     });
   } catch (error) {
-    console.error('시간 변환 오류:', error);
-    return utcDateString; // 변환 실패 시 원본 반환
+    console.error('시간 포맷팅 오류:', error);
+    return dateString; // 변환 실패 시 원본 반환
   }
 }
 
@@ -265,7 +268,7 @@ export default function UsagePage() {
                             <Clock className="w-4 h-4" />
                             <span>다음 초기화</span>
                           </div>
-                          <span>{convertToKoreanTime(usage.resetDate)}</span>
+                          <span>{formatDisplayTime(usage.resetDate)}</span>
                         </div>
                       </div>
                     </div>

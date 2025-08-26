@@ -7,10 +7,24 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, model } = await request.json();
+    const { prompt, model, translateOnly } = await request.json();
 
     if (!prompt) {
       return NextResponse.json({ error: '프롬프트가 필요합니다.' }, { status: 400 });
+    }
+
+    // 번역만 수행 옵션 처리
+    if (translateOnly) {
+      const translation = await openai.responses.create({
+        model: 'gpt-5-mini',
+        input: `Translate the following text to natural, fluent English.\n- Only translate.\n- Do not add adjectives or enhancements.\n- Preserve entities and technical terms.\n- If it's already English, return as-is.\n\nText:\n${prompt}`,
+        reasoning: { effort: 'low' }
+      });
+      const optimizedPrompt = (translation as any).output_text?.trim();
+      if (!optimizedPrompt) {
+        throw new Error('번역에 실패했습니다.');
+      }
+      return NextResponse.json({ optimizedPrompt, originalPrompt: prompt });
     }
 
     // 모델별 최적화 프롬프트 템플릿
@@ -23,32 +37,25 @@ export async function POST(request: NextRequest) {
 
     const optimization = modelOptimizations[model as keyof typeof modelOptimizations] || "";
 
-    // 모든 모델에 대해 최적화 수행
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You are a prompt optimization expert. Your task is to:
-1. Translate Korean text to English if the input contains Korean
-2. Optimize the prompt for the specified AI image generation model
-3. Add model-specific enhancements while keeping the original intent
+    // gpt-5-mini + Responses API로 최적화 수행 (간결/저지연 설정)
+    const instruction = [
+      "You are a prompt optimization expert.",
+      "Tasks:",
+      "1) Translate Korean to English if needed",
+      "2) Optimize for the specified AI image model",
+      "3) Add model-specific enhancements while preserving intent",
+      "\nModel:", String(model || ''),
+      "Model-specific optimizations:", String(optimization || ''),
+      "\nReturn only the optimized English prompt, nothing else."
+    ].join(' ');
 
-Model: ${model}
-Model-specific optimizations: ${optimization}
-
-Return only the optimized English prompt, nothing else.`
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: 200,
-      temperature: 0.7
+    const completion = await openai.responses.create({
+      model: 'gpt-5-mini',
+      input: `${instruction}\n\nUser prompt:\n${prompt}`,
+      reasoning: { effort: 'low' }
     });
 
-    const optimizedPrompt = completion.choices[0]?.message?.content?.trim();
+    const optimizedPrompt = (completion as any).output_text?.trim();
 
     if (!optimizedPrompt) {
       throw new Error('프롬프트 최적화에 실패했습니다.');

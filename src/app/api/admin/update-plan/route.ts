@@ -45,56 +45,94 @@ export async function POST(request: NextRequest) {
 
     const planLimits = limits[planType as keyof typeof limits];
 
-    // 결제 내역 생성 (수동 플랜 변경)
-    await db.request()
-      .input('user_id', userId)
-      .input('plan_type', planType)
-      .input('amount', 0) // 수동 변경이므로 0원
-      .input('payment_method', 'manual')
-      .input('status', 'completed')
+    // 기존 결제 내역 확인
+    const existingPaymentResult = await db.request()
+      .input('userId', userId)
       .query(`
-        INSERT INTO payments (user_id, plan_type, amount, payment_method, status, created_at, updated_at)
-        VALUES (@user_id, @plan_type, @amount, @payment_method, @status, GETDATE(), GETDATE())
+        SELECT TOP 1 id, plan_type, subscription_status 
+        FROM payments 
+        WHERE user_id = @userId 
+          AND status = 'completed'
+        ORDER BY created_at DESC
+      `);
+
+    if (existingPaymentResult.recordset.length > 0) {
+      const existingPayment = existingPaymentResult.recordset[0];
+      
+      // 활성 구독이 있는 경우 취소 처리
+      if (existingPayment.subscription_status === 'active') {
+        await db.request()
+          .input('paymentId', existingPayment.id)
+          .query(`
+            UPDATE payments 
+            SET subscription_status = 'canceled',
+                canceled_at = GETDATE(),
+                auto_renewal = 0,
+                updated_at = GETDATE()
+            WHERE id = @paymentId
+          `);
+      }
+    }
+
+    // 새로운 결제 내역 생성 (관리자 수동 플랜 변경)
+    const amount = planType === 'basic' ? 0 : (planType === 'standard' ? 15900 : 29000);
+    
+    await db.request()
+      .input('userId', userId)
+      .input('planType', planType)
+      .input('amount', amount)
+      .input('status', 'completed')
+      .input('paymentMethod', 'admin_manual')
+      .query(`
+        INSERT INTO payments (
+          user_id, plan_type, amount, status, payment_method, created_at, updated_at
+        )
+        VALUES (
+          @userId, @planType, @amount, @status, @paymentMethod, GETDATE(), GETDATE()
+        )
       `);
 
     // 사용량 한도 업데이트
     await db.request()
-      .input('user_id', userId)
-      .input('service_type', 'image-generate')
-      .input('limit_count', planLimits.image)
+      .input('userId', userId)
+      .input('imageLimit', planLimits.image)
+      .input('videoLimit', planLimits.video)
       .query(`
         MERGE usage AS target
-        USING (SELECT @user_id as user_id, @service_type as service_type) AS source
+        USING (SELECT @userId as user_id, 'image' as service_type) AS source
         ON target.user_id = source.user_id AND target.service_type = source.service_type
         WHEN MATCHED THEN
-          UPDATE SET limit_count = @limit_count, updated_at = GETDATE()
+          UPDATE SET limit_count = @imageLimit, updated_at = GETDATE()
         WHEN NOT MATCHED THEN
           INSERT (user_id, service_type, usage_count, limit_count, reset_date, created_at, updated_at)
-          VALUES (@user_id, @service_type, 0, @limit_count, GETDATE(), GETDATE(), GETDATE());
+          VALUES (@userId, 'image', 0, @imageLimit, DATEADD(MONTH, 1, GETDATE()), GETDATE(), GETDATE());
       `);
 
     await db.request()
-      .input('user_id', userId)
-      .input('service_type', 'video-generate')
-      .input('limit_count', planLimits.video)
+      .input('userId', userId)
+      .input('videoLimit', planLimits.video)
       .query(`
         MERGE usage AS target
-        USING (SELECT @user_id as user_id, @service_type as service_type) AS source
+        USING (SELECT @userId as user_id, 'video' as service_type) AS source
         ON target.user_id = source.user_id AND target.service_type = source.service_type
         WHEN MATCHED THEN
-          UPDATE SET limit_count = @limit_count, updated_at = GETDATE()
+          UPDATE SET limit_count = @videoLimit, updated_at = GETDATE()
         WHEN NOT MATCHED THEN
           INSERT (user_id, service_type, usage_count, limit_count, reset_date, created_at, updated_at)
-          VALUES (@user_id, @service_type, 0, @limit_count, GETDATE(), GETDATE(), GETDATE());
+          VALUES (@userId, 'video', 0, @videoLimit, DATEADD(MONTH, 1, GETDATE()), GETDATE(), GETDATE());
       `);
 
-    return NextResponse.json({ 
-      message: `사용자 플랜이 ${planType}으로 업데이트되었습니다`,
-      planType,
-      limits: planLimits
+    console.log('관리자 플랜 변경 완료:', { userId, planType, amount });
+
+    return NextResponse.json({
+      success: true,
+      message: '플랜이 성공적으로 변경되었습니다.',
+      planType: planType,
+      amount: amount
     });
+
   } catch (error) {
-    console.error('플랜 업데이트 실패:', error);
-    return NextResponse.json({ error: '서버 오류가 발생했습니다' }, { status: 500 });
+    console.error('관리자 플랜 변경 오류:', error);
+    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
   }
 } 

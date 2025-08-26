@@ -1,6 +1,7 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions";
-import { getConnection } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./authOptions";
+import { getConnection } from "./db";
+import { getKoreanTimeNow } from "./utils";
 
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
@@ -33,7 +34,8 @@ export async function checkUsageLimit(userId: string, serviceType: string) {
       
       if (userCreatedAt) {
         const resetDate = new Date(userCreatedAt);
-        resetDate.setDate(resetDate.getDate() + 7);
+        // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
+        resetDate.setMonth(resetDate.getMonth() + 1);
         nextResetDate = resetDate;
       }
       
@@ -55,7 +57,7 @@ export async function checkUsageLimit(userId: string, serviceType: string) {
     }
 
     // 주간 리셋 체크 (계정 생성일 기준 일주일마다)
-    const now = new Date();
+    const now = getKoreanTimeNow(); // 한국 시간 기준
     let nextResetDate = usage.next_reset_date;
     
     // next_reset_date가 없으면 계정 생성일 기준으로 설정
@@ -67,7 +69,8 @@ export async function checkUsageLimit(userId: string, serviceType: string) {
       const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
       if (userCreatedAt) {
         const resetDate = new Date(userCreatedAt);
-        resetDate.setDate(resetDate.getDate() + 7);
+        // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
+        resetDate.setMonth(resetDate.getMonth() + 1);
         nextResetDate = resetDate;
         
         // DB에 next_reset_date 저장
@@ -87,9 +90,9 @@ export async function checkUsageLimit(userId: string, serviceType: string) {
     if (nextResetDate && now > new Date(nextResetDate) && usage.usage_count > 0) {
       console.log(`사용자 ${userId}의 ${serviceType} 사용량 초기화: ${usage.usage_count} -> 0`);
       
-      // 다음 초기화 시간을 일주일 후로 설정
+      // 다음 초기화 시간을 정확히 한 달 후로 설정 (한국 시간 기준)
       const nextReset = new Date(nextResetDate);
-      nextReset.setDate(nextReset.getDate() + 7);
+      nextReset.setMonth(nextReset.getMonth() + 1);
       
       await db.request()
         .input('userId', userId)

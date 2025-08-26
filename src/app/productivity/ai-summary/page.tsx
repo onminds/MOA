@@ -17,7 +17,6 @@ export default function AISummary() {
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [inputType, setInputType] = useState<'auto' | 'youtube' | 'document' | 'website' | 'text'>('auto');
   const [showSpeechBubble, setShowSpeechBubble] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -26,13 +25,15 @@ export default function AISummary() {
   const [showInput, setShowInput] = useState(true);
   const [youtubeVideoInfo, setYoutubeVideoInfo] = useState<{title: string, thumbnail: string, duration: string, channel: string, url: string} | null>(null);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [embedIndex, setEmbedIndex] = useState(0);
+  const [embedError, setEmbedError] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      setIsLoginModalOpen(true);
+      // setIsLoginModalOpen(true); // Removed as per edit hint
     }
   }, [status]);
 
@@ -98,18 +99,34 @@ export default function AISummary() {
   };
 
   const extractVideoId = (url: string): string | null => {
+    if (!url) return null;
+    
+    console.log('extractVideoId 호출됨, URL:', url);
+    
     const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-      /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+      // youtube.com/watch?v=VIDEO_ID
+      /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+      // youtu.be/VIDEO_ID
+      /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+      // youtube.com/embed/VIDEO_ID
+      /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      // youtube.com/watch?v=VIDEO_ID&other_params
+      /(?:youtube\.com\/watch\?.*v=)([a-zA-Z0-9_-]{11})/,
+      // 더 일반적인 패턴
+      /[?&]v=([a-zA-Z0-9_-]{11})/,
     ];
 
-    for (const pattern of patterns) {
+    for (let i = 0; i < patterns.length; i++) {
+      const pattern = patterns[i];
       const match = url.match(pattern);
-      if (match) {
+      console.log(`패턴 ${i + 1} 시도:`, pattern, '결과:', match);
+      if (match && match[1]) {
+        console.log('비디오 ID 추출 성공:', match[1]);
         return match[1];
       }
     }
-
+    
+    console.log('비디오 ID 추출 실패');
     return null;
   };
 
@@ -125,33 +142,62 @@ export default function AISummary() {
         setYoutubeInfo({ title: data.title, url });
         setYoutubeVideoInfo({
           title: data.title,
-          thumbnail: data.thumbnail || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+          thumbnail: data.thumbnail || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
           duration: data.duration || '',
           channel: data.channel || '',
           url: url
         });
       } else {
+        // API 키가 없거나 실패한 경우 기본 정보로 fallback
         const errorData = await response.json();
-        console.error('API 오류:', errorData);
+        console.log('YouTube API 실패, 기본 정보 사용:', errorData);
+        
+        // 기본 YouTube 정보 설정
+        setYoutubeInfo({ title: 'YouTube 영상', url });
+        setYoutubeVideoInfo({
+          title: 'YouTube 영상',
+          thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          duration: '',
+          channel: 'YouTube',
+          url: url
+        });
       }
     } catch (error) {
-      console.error('YouTube 정보 가져오기 실패:', error);
+      console.log('YouTube 정보 가져오기 실패, 기본 정보 사용:', error);
+      
+      // 에러 발생 시에도 기본 정보 설정
+      const videoId = extractVideoId(url);
+      if (videoId) {
+        setYoutubeInfo({ title: 'YouTube 영상', url });
+        setYoutubeVideoInfo({
+          title: 'YouTube 영상',
+          thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          duration: '',
+          channel: 'YouTube',
+          url: url
+        });
+      }
     }
   };
 
   const extractWebsiteInfo = async (url: string) => {
     try {
-      const response = await fetch(`/api/website-info?url=${encodeURIComponent(url)}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setWebsiteInfo({ title: data.title, url, favicon: data.favicon });
-      } else {
-        const errorData = await response.json();
-        console.error('API 오류:', errorData);
+      // 프리뷰는 link-preview를 사용하고, JSON이 아닐 가능성 방지
+      const response = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`프리뷰 API 오류 (${response.status}): ${text.substring(0, 120)}`);
       }
+      const ct = response.headers.get('content-type') || '';
+      if (!/application\/json/i.test(ct)) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`JSON 응답이 아님: ${text.substring(0, 120)}`);
+      }
+      const data = await response.json();
+      setWebsiteInfo({ title: data.title || '웹사이트', url, favicon: data.image || '' });
     } catch (error) {
       console.error('웹사이트 정보 가져오기 실패:', error);
+      setWebsiteInfo({ title: '웹사이트', url, favicon: '' });
     }
   };
 
@@ -167,7 +213,7 @@ export default function AISummary() {
       if (videoId) {
         setYoutubeVideoInfo({
           title: 'YouTube 영상',
-          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+          thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
           duration: '10:30',
           channel: 'YouTube',
           url: value
@@ -191,7 +237,7 @@ export default function AISummary() {
 
   const handleGenerateSummary = async () => {
     if (!session) {
-      setIsLoginModalOpen(true);
+      // setIsLoginModalOpen(true); // Removed as per edit hint
       return;
     }
 
@@ -344,42 +390,185 @@ export default function AISummary() {
                     <div className="flex justify-center mb-3">
                       {showVideoPlayer ? (
                         <div className="relative">
-                          <iframe
-                            width="800"
-                            height="450"
-                            src={`https://www.youtube.com/embed/${extractVideoId(youtubeVideoInfo.url)}?autoplay=1`}
-                            title={youtubeVideoInfo.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="rounded-lg shadow-xl"
-                          ></iframe>
+                          {(() => {
+                            const videoId = extractVideoId(youtubeVideoInfo.url);
+                            console.log('플레이어 렌더링 - videoId:', videoId);
+                            console.log('플레이어 렌더링 - URL:', youtubeVideoInfo.url);
+                            
+                            if (!videoId) {
+                              return (
+                                <div className="w-[800px] h-[450px] bg-gray-200 rounded-lg flex items-center justify-center">
+                                  <div className="text-center">
+                                    <p className="text-gray-600 mb-2">영상을 불러올 수 없습니다.</p>
+                                    <p className="text-sm text-gray-500">URL: {youtubeVideoInfo.url}</p>
+                                    <button 
+                                      onClick={() => window.open(youtubeVideoInfo.url, '_blank')}
+                                      className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                    >
+                                      YouTube에서 보기
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // 여러 embed URL 옵션 시도
+                            const embedOptions = [
+                              `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`,
+                              `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`,
+                              `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`,
+                              `https://www.youtube.com/embed/${videoId}`
+                            ];
+                            
+                            const embedUrl = embedOptions[embedIndex];
+                            console.log('임베드 URL 시도 중:', embedUrl, '인덱스:', embedIndex);
+                            
+                            const handleIframeError = () => {
+                              console.log('iframe 에러 발생, 다음 옵션 시도');
+                              setEmbedError(true);
+                              if (embedIndex < embedOptions.length - 1) {
+                                setTimeout(() => {
+                                  setEmbedIndex(prev => prev + 1);
+                                  setEmbedError(false);
+                                }, 1000);
+                              }
+                            };
+                            
+                            const handleIframeLoad = () => {
+                              console.log('iframe 로드 완료:', embedUrl);
+                              setEmbedError(false);
+                            };
+                            
+                            if (embedError && embedIndex >= embedOptions.length - 1) {
+                              return (
+                                <div className="w-[800px] h-[450px] bg-gray-100 rounded-lg flex items-center justify-center">
+                                  <div className="text-center">
+                                    <p className="text-gray-600 mb-4">내장 플레이어를 불러올 수 없습니다.</p>
+                                    <div className="space-y-2">
+                                      <button 
+                                        onClick={() => window.open(youtubeVideoInfo.url, '_blank')}
+                                        className="block mx-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                      >
+                                        YouTube에서 보기
+                                      </button>
+                                      <button 
+                                        onClick={() => {
+                                          setEmbedIndex(0);
+                                          setEmbedError(false);
+                                        }}
+                                        className="block mx-auto px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                                      >
+                                        다시 시도
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <div className="w-[800px] h-[450px] bg-black rounded-lg overflow-hidden relative">
+                                {embedError && (
+                                  <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+                                    <div className="text-center">
+                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-2"></div>
+                                      <p className="text-gray-600">다른 방법으로 로딩 중...</p>
+                                    </div>
+                                  </div>
+                                )}
+                                <iframe
+                                  key={`${videoId}-${embedIndex}`}
+                                  width="800"
+                                  height="450"
+                                  src={embedUrl}
+                                  title={youtubeVideoInfo.title}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                                  allowFullScreen
+                                  className="w-full h-full"
+                                  onLoad={handleIframeLoad}
+                                  onError={handleIframeError}
+                                  style={{ border: 'none' }}
+                                ></iframe>
+                              </div>
+                            );
+                          })()}
                           <button
-                            onClick={() => setShowVideoPlayer(false)}
-                            className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-70 text-white rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all"
+                            onClick={() => {
+                              console.log('플레이어 닫기 클릭');
+                              setShowVideoPlayer(false);
+                              setEmbedIndex(0);
+                              setEmbedError(false);
+                            }}
+                            className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-70 text-white rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all z-10"
                           >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ) : (
-                        <div className="relative cursor-pointer bg-gray-100 rounded-lg p-4" onClick={() => setShowVideoPlayer(true)}>
+                        <div 
+                          className="relative cursor-pointer bg-gray-100 rounded-lg p-4 group" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const videoId = extractVideoId(youtubeVideoInfo.url);
+                            console.log('썸네일 클릭됨');
+                            console.log('URL:', youtubeVideoInfo.url);
+                            console.log('추출된 videoId:', videoId);
+                            if (videoId) {
+                              // 플레이어 상태 초기화
+                              setEmbedIndex(0);
+                              setEmbedError(false);
+                              setShowVideoPlayer(true);
+                            } else {
+                              console.error('비디오 ID를 추출할 수 없습니다:', youtubeVideoInfo.url);
+                            }
+                          }}
+                        >
                           <img 
                             src={youtubeVideoInfo.thumbnail} 
                             alt={youtubeVideoInfo.title}
                             className="w-[600px] h-[338px] rounded-lg object-cover shadow-xl hover:shadow-2xl transition-shadow"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = `https://img.youtube.com/vi/${extractVideoId(youtubeVideoInfo.url)}/hqdefault.jpg`;
+                              const videoId = extractVideoId(youtubeVideoInfo.url);
+                              if (videoId) {
+                                // 여러 썸네일 옵션을 순차적으로 시도
+                                if (target.src.includes('maxresdefault')) {
+                                  target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                                } else if (target.src.includes('hqdefault')) {
+                                  target.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+                                } else if (target.src.includes('mqdefault')) {
+                                  target.src = `https://img.youtube.com/vi/${videoId}/default.jpg`;
+                                } else {
+                                  // 마지막 폴백: 기본 YouTube 로고
+                                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjMzOCIgdmlld0JveD0iMCAwIDYwMCAzMzgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMzM4IiBmaWxsPSIjRkY0NDQ0Ii8+CjxwYXRoIGQ9Ik0yNDAgMTY5TDM2MCAyMzlMMjQwIDMwOVYxNjlaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+                                }
+                              }
                             }}
                           />
                           <div className="absolute bottom-3 right-3 bg-black bg-opacity-80 text-white text-sm px-3 py-1 rounded">
                             {youtubeVideoInfo.duration || '10:30'}
                           </div>
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                            <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center">
-                              <svg className="w-12 h-12 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                              </svg>
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20 rounded-lg">
+                            <div className="flex gap-3">
+                              <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors">
+                                <svg className="w-10 h-10 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M8 5v14l11-7z"/>
+                                </svg>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(youtubeVideoInfo.url, '_blank');
+                                }}
+                                className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700 transition-colors"
+                                title="YouTube에서 보기"
+                              >
+                                <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/>
+                                </svg>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -589,48 +778,7 @@ export default function AISummary() {
       )}
 
       {/* 로그인 모달 */}
-      {isLoginModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">로그인이 필요합니다</h2>
-              <button
-                onClick={() => setIsLoginModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="text-gray-600 mb-6">
-              <p className="mb-4">AI 완벽요약 기능을 사용하려면 로그인이 필요합니다.</p>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-2">플랜별 사용량</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• <strong>Basic:</strong> 2회</li>
-                  <li>• <strong>Standard:</strong> 무제한</li>
-                  <li>• <strong>Pro:</strong> 무제한</li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={() => router.push('/auth/signin')}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                로그인하기
-              </button>
-              <button
-                onClick={() => setIsLoginModalOpen(false)}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-              >
-                나중에
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Removed as per edit hint */}
 
       {/* 토스트 메시지 */}
       {showToast && (

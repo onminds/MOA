@@ -15,6 +15,7 @@ import {
   Search as SearchIcon
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
 
 interface QuestionItem {
   id: string;
@@ -36,7 +37,8 @@ export default function CoverLetterPage() {
   const [loadingCompanyInfo, setLoadingCompanyInfo] = useState(false);
   const [isAnalyzingCompany, setIsAnalyzingCompany] = useState(false);
   const [companyAnalysis, setCompanyAnalysis] = useState<any>(null);
-  const [writingStyle, setWritingStyle] = useState<'connected' | 'separated'>('connected');
+  // 작성 방식 선택 제거: 항상 질문별(분리형)
+  const [manualInputMode, setManualInputMode] = useState(false);
 
   const addQuestion = () => {
     const newQuestion: QuestionItem = {
@@ -172,8 +174,7 @@ export default function CoverLetterPage() {
       if (companyAnalysis) {
         formData.append('companyAnalysis', JSON.stringify(companyAnalysis));
       }
-      
-      formData.append('writingStyle', writingStyle);
+      // 작성 방식 전송 제거 (항상 분리형)
 
       const response = await fetch("/api/cover-letter", {
         method: "POST",
@@ -202,7 +203,7 @@ export default function CoverLetterPage() {
     <>
       <Header />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-screen-2xl mx-auto">
           {/* 뒤로가기 버튼 */}
           <div className="mb-6">
             <button
@@ -245,9 +246,9 @@ export default function CoverLetterPage() {
                     disabled={isLoading}
                   />
                   
-                  {/* 회사 분석 버튼 */}
+                  {/* 회사 분석 버튼 + 수동 입력 토글 */}
                   {(companyName.trim() || companyAnalysis) && (
-                    <div className="mb-4">
+                    <div className="mb-4 flex items-center gap-3">
                       <button
                         onClick={analyzeCompany}
                         disabled={isAnalyzingCompany || !companyName.trim()}
@@ -265,6 +266,30 @@ export default function CoverLetterPage() {
                           </>
                         )}
                       </button>
+                      {!manualInputMode && (
+                        <button
+                          onClick={() => {
+                            setManualInputMode(prev => {
+                              const next = !prev;
+                              if (next && !companyAnalysis) {
+                                setCompanyAnalysis({
+                                  coreValues: [],
+                                  idealCandidate: '',
+                                  vision: '',
+                                  companyCulture: '',
+                                  businessAreas: [],
+                                  keyCompetencies: [],
+                                  originalCompanyName: companyName.trim()
+                                });
+                              }
+                              return next;
+                            });
+                          }}
+                          className={`px-3 py-2 rounded-md border transition-colors bg-white text-gray-700 border-gray-300 hover:bg-gray-50`}
+                        >
+                          수동 입력
+                        </button>
+                      )}
                     </div>
                   )}
                   
@@ -292,8 +317,8 @@ export default function CoverLetterPage() {
                     </div>
                   )}
 
-                  {/* 회사 분석 결과 */}
-                  {companyAnalysis && (
+                  {/* 회사 분석 결과 또는 수동 편집 */}
+                  {companyAnalysis && !manualInputMode && (
                     <div className="bg-blue-50 rounded-md p-4 border border-blue-200">
                       <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
                         <Globe className="w-4 h-4" />
@@ -321,6 +346,132 @@ export default function CoverLetterPage() {
                           <h4 className="font-medium text-blue-900 mb-1 text-sm">🌟 비전/미션</h4>
                           <p className="text-xs text-blue-800">{companyAnalysis.vision}</p>
                         </div>
+
+                        {Array.isArray(companyAnalysis.businessAreas) && companyAnalysis.businessAreas.length > 0 && (
+                          <div className="bg-white rounded p-3 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-1 text-sm">💼 주요 사업분야</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {companyAnalysis.businessAreas.map((area: string, idx: number) => (
+                                <span key={idx} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">{area}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {companyAnalysis.companyCulture && (
+                          <div className="bg-white rounded p-3 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-1 text-sm">🏢 회사 문화</h4>
+                            <p className="text-xs text-blue-800">{companyAnalysis.companyCulture}</p>
+                          </div>
+                        )}
+
+                        {Array.isArray(companyAnalysis.keyCompetencies) && companyAnalysis.keyCompetencies.length > 0 && (
+                          <div className="bg-white rounded p-3 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-1 text-sm">💪 중요 역량</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {companyAnalysis.keyCompetencies.map((c: string, idx: number) => (
+                                <span key={idx} className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">{c}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-3 text-right">
+                        <button
+                          onClick={() => setManualInputMode(true)}
+                          className="inline-flex items-center text-blue-700 hover:text-blue-900 text-xs font-medium underline underline-offset-2"
+                        >
+                          편집하기
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {companyAnalysis && manualInputMode && (
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-md p-4 border border-gray-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Globe className="w-4 h-4" />
+                          {companyAnalysis.originalCompanyName || companyName || '회사'} 분석 정보 직접 입력
+                        </h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">🎯 핵심가치</h4>
+                          <textarea
+                            placeholder="쉼표(,)로 구분 (예: 혁신, 성장, 협업)"
+                            value={(companyAnalysis.coreValues || []).join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, coreValues: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">👤 인재상</h4>
+                          <textarea
+                            placeholder="회사가 원하는 인재상"
+                            value={companyAnalysis.idealCandidate || ''}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, idealCandidate: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">🌟 비전/미션</h4>
+                          <textarea
+                            placeholder="회사 비전/미션"
+                            value={companyAnalysis.vision || ''}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, vision: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">🏢 회사 문화</h4>
+                          <textarea
+                            placeholder="회사 문화"
+                            value={companyAnalysis.companyCulture || ''}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, companyCulture: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">💼 주요 사업분야</h4>
+                          <textarea
+                            placeholder="쉼표(,)로 구분 (예: AI, 클라우드)"
+                            value={(companyAnalysis.businessAreas || []).join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, businessAreas: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">💪 중요 역량</h4>
+                          <textarea
+                            placeholder="쉼표(,)로 구분 (예: 문제해결능력, 소통능력)"
+                            value={(companyAnalysis.keyCompetencies || []).join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, keyCompetencies: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-3 text-right">
+                        <button
+                          onClick={() => setManualInputMode(false)}
+                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700"
+                        >
+                          저장하기
+                        </button>
                       </div>
                     </div>
                   )}
@@ -487,43 +638,7 @@ export default function CoverLetterPage() {
                 </div>
               </div>
 
-              {/* 작성 방식 선택 */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">작성 방식 선택</h2>
-                <p className="text-sm text-gray-600 mb-4">자기소개서를 어떤 방식으로 작성할지 선택해주세요</p>
-                
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="writingStyle"
-                      value="connected"
-                      checked={writingStyle === 'connected'}
-                      onChange={(e) => setWritingStyle(e.target.value as 'connected' | 'separated')}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">연결형</div>
-                      <div className="text-sm text-gray-600">모든 질문을 하나의 자연스러운 자기소개서로 연결</div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="writingStyle"
-                      value="separated"
-                      checked={writingStyle === 'separated'}
-                      onChange={(e) => setWritingStyle(e.target.value as 'connected' | 'separated')}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">분리형</div>
-                      <div className="text-sm text-gray-600">각 질문별로 개별 답변 작성 (CJ제일제당, 삼성웰스토리 등)</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
+              {/* 작성 방식 선택 제거: 항상 질문별(분리형)로 작성 */}
 
               {/* 인터넷 검색 결과 활용 */}
               <div className="bg-white rounded-lg shadow-md p-6">
@@ -571,11 +686,153 @@ export default function CoverLetterPage() {
             {/* 결과 영역 */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold mb-4">자기소개서 결과</h2>
-              {coverLetter ? (
+              {isLoading ? (
+                <div className="text-center text-blue-700 py-8">
+                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                  <p className="font-medium">자기소개서 생성 중...</p>
+                  <p className="text-sm text-gray-500 mt-1">질문별 답변을 작성하고 있어요</p>
+                </div>
+              ) : coverLetter ? (
                 <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-800">{coverLetter}</pre>
-                  </div>
+                  {
+                    // 질문별 블록 파싱 렌더링 (패턴 미일치 시 원문 표시)
+                  }
+                  {(() => {
+                    const blocks: { index: number; title: string; answer: string }[] = [];
+                    try {
+                      console.log('🔍 자기소개서 파싱 시작:', coverLetter.substring(0, 200));
+                      
+                      // 여러 패턴으로 시도하여 답변 추출 (줄바꿈 없이도 동작하도록 \n 제거)
+                      const patterns = [
+                        /\[질문\s+(\d+)\]\s*([^\n]*?)\s*\[답변\s*시작\]\s*([\s\S]*?)(?=\s*\[질문\s+\d+\]|$)/g,
+                        /\[질문\s+(\d+)\]\s*([^\n]*?)\s*([\s\S]*?)(?=\s*\[질문\s+\d+\]|$)/g,
+                      ];
+                      
+                      for (let i = 0; i < patterns.length; i++) {
+                        const pattern = patterns[i];
+                        console.log(`🔍 패턴 ${i + 1} 시도:`, pattern.source);
+                        
+                        const regex = new RegExp(pattern.source, 'g');
+                        let match: RegExpExecArray | null;
+                        while ((match = regex.exec(coverLetter)) !== null) {
+                          const idx = parseInt(match[1], 10);
+                          const title = (match[2] || '').trim() || `질문 ${idx}`;
+                          const answer = (match[3] || '').trim();
+                          console.log(`✅ 패턴 ${i + 1} 매칭 성공:`, { idx, title: title.substring(0, 50), answerLength: answer.length });
+                          if (answer && answer.length > 5) {
+                            blocks.push({ index: idx, title, answer });
+                          }
+                        }
+                        if (blocks.length > 0) break; // 하나라도 찾으면 해당 패턴 사용
+                      }
+                      
+                      // 패턴 매칭이 실패한 경우, 수동으로 분리 시도
+                      if (blocks.length === 0) {
+                        console.log('🔍 패턴 매칭 실패, 수동 분리 시도');
+                        
+                        // 방법 1: 질문 마커로 직접 분리 (더 정확한 방법)
+                        const questionMatches = coverLetter.match(/\[질문\s+\d+\][^\n]*/g) || [];
+                        console.log('🔍 질문 마커 찾기 결과:', questionMatches);
+                        
+                        if (questionMatches.length > 0) {
+                          console.log('✅ 질문 마커로 직접 분리 시작');
+                          
+                          for (let i = 0; i < questionMatches.length; i++) {
+                            const qMatch = questionMatches[i];
+                            const questionIndex = i + 1;
+                            const questionTitle = qMatch.replace(/\[질문\s+\d+\]\s*/, '').trim();
+                            
+                            const currentStart = coverLetter.indexOf(qMatch);
+                            const nextStart = i < questionMatches.length - 1 
+                              ? coverLetter.indexOf(questionMatches[i + 1])
+                              : coverLetter.length;
+                            
+                            const answerStart = currentStart + qMatch.length;
+                            const answer = coverLetter.substring(answerStart, nextStart).trim();
+                            
+                            console.log(`🔍 질문 ${questionIndex} 처리:`, {
+                              title: questionTitle.substring(0, 50),
+                              answerStart,
+                              answerEnd: nextStart,
+                              answerLength: answer.length,
+                              answerPreview: answer.substring(0, 100)
+                            });
+                            
+                            if (answer && answer.length > 5) {
+                              const cleanAnswer = answer.replace(/^\[답변\s*시작\]\s*/, '');
+                              blocks.push({
+                                index: questionIndex,
+                                title: questionTitle,
+                                answer: cleanAnswer
+                              });
+                              console.log(`✅ 질문 ${questionIndex} 블록 추가 완료`);
+                            }
+                          }
+                        }
+                        
+                        // 방법 2: 섹션 분리 (백업)
+                        if (blocks.length === 0) {
+                          console.log('🔎 방법 1 실패, 방법 2 시도');
+                          const questionSections = coverLetter.split(/\[질문\s+\d+\]/).filter(section => section.trim());
+                          console.log('🔍 질문 섹션 분리 결과:', questionSections.length, '개');
+                          
+                          if (questionSections.length > 1) {
+                            for (let i = 1; i < questionSections.length; i++) {
+                              const section = questionSections[i];
+                              const questionIndex = i;
+                              const lines = section.split('\n').filter(line => line.trim());
+                              if (lines.length > 0) {
+                                const questionTitle = lines[0].trim();
+                                const answer = lines.slice(1).join('\n').trim();
+                                if (answer && answer.length > 5) {
+                                  const cleanAnswer = answer.replace(/^\[답변\s*시작\]\s*/, '');
+                                  blocks.push({ index: questionIndex, title: questionTitle, answer: cleanAnswer });
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      // 인덱스 기준 정렬 및 중복 제거
+                      const seen = new Set<number>();
+                      const deduped = blocks
+                        .filter(b => !seen.has(b.index) && seen.add(b.index))
+                        .sort((a, b) => a.index - b.index);
+                      
+                      if (deduped.length === 0) {
+                        console.log('⚠️ 블록 파싱 실패, 원문 표시');
+                        return (
+                          <div className="bg-gray-50 p-4 rounded-md">
+                            <pre className="whitespace-pre-wrap text-base leading-7 text-gray-800">{coverLetter}</pre>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-4">
+                          {deduped.map(b => (
+                            <div key={b.index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                              <div className="flex items-start justify-between">
+                                <h3 className="text-base font-semibold text-gray-900">[질문 {b.index}] {b.title}</h3>
+                              </div>
+                              <div className="mt-3 text-gray-800 text-base leading-7 whitespace-pre-wrap">
+                                {b.answer}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } catch (error) {
+                      console.error('자기소개서 파싱 오류:', error);
+                      return (
+                        <div className="bg-gray-50 p-4 rounded-md">
+                          <pre className="whitespace-pre-wrap text-base leading-7 text-gray-800">{coverLetter}</pre>
+                        </div>
+                      );
+                    }
+                  })()}
+
                   <div className="flex gap-2">
                     <button
                       onClick={handleCopy}
@@ -585,21 +842,129 @@ export default function CoverLetterPage() {
                       복사
                     </button>
                     <button
-                      onClick={() => {
-                        const blob = new Blob([coverLetter], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${companyName}_자기소개서.txt`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
+                      onClick={async () => {
+                        try {
+                          // 질문별 블록 파싱
+                          const blocks: { index: number; title: string; answer: string }[] = [];
+                          try {
+                            // 화면 렌더링과 동일한 파싱 로직 사용 (줄바꿈 비의존)
+                            const patterns = [
+                              /\[질문\s+(\d+)\]\s*([^\n]*?)\s*\[답변\s*시작\]\s*([\s\S]*?)(?=\s*\[질문\s+\d+\]|$)/g,
+                              /\[질문\s+(\d+)\]\s*([^\n]*?)\s*([\s\S]*?)(?=\s*\[질문\s+\d+\]|$)/g,
+                            ];
+                            
+                            for (let i = 0; i < patterns.length; i++) {
+                              const regex = new RegExp(patterns[i].source, 'g');
+                              let m: RegExpExecArray | null;
+                              while ((m = regex.exec(coverLetter)) !== null) {
+                                const idx = parseInt(m[1], 10);
+                                const title = (m[2] || '').trim() || `질문 ${idx}`;
+                                const answer = (m[3] || '').trim();
+                                if (answer && answer.length > 5) {
+                                  blocks.push({ index: idx, title, answer });
+                                }
+                              }
+                              if (blocks.length > 0) break;
+                            }
+                            
+                            // 패턴 매칭 실패 시: 질문 마커 기반 분리
+                            if (blocks.length === 0) {
+                              const questionMatches = coverLetter.match(/\[질문\s+\d+\][^\n]*/g) || [];
+                              if (questionMatches.length > 0) {
+                                for (let i = 0; i < questionMatches.length; i++) {
+                                  const qMatch = questionMatches[i];
+                                  const questionIndex = i + 1;
+                                  const questionTitle = qMatch.replace(/\[질문\s+\d+\]\s*/, '').trim();
+                                  const currentStart = coverLetter.indexOf(qMatch);
+                                  const nextStart = i < questionMatches.length - 1 ? coverLetter.indexOf(questionMatches[i + 1]) : coverLetter.length;
+                                  const answerStart = currentStart + qMatch.length;
+                                  const answer = coverLetter.substring(answerStart, nextStart).trim();
+                                  if (answer && answer.length > 5) {
+                                    blocks.push({ index: questionIndex, title: questionTitle, answer: answer.replace(/^\[답변\s*시작\]\s*/, '') });
+                                  }
+                                }
+                              }
+                            }
+                            
+                            // 백업: 섹션 분리
+                            if (blocks.length === 0) {
+                              const sections = coverLetter.split(/\[질문\s+\d+\]/).filter(s => s.trim());
+                              if (sections.length > 1) {
+                                for (let i = 1; i < sections.length; i++) {
+                                  const lines = sections[i].split('\n').filter(l => l.trim());
+                                  const questionIndex = i;
+                                  if (lines.length > 0) {
+                                    const questionTitle = lines[0].trim();
+                                    const answer = lines.slice(1).join('\n').trim();
+                                    if (answer && answer.length > 5) {
+                                      blocks.push({ index: questionIndex, title: questionTitle, answer: answer.replace(/^\[답변\s*시작\]\s*/, '') });
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Word 다운로드 파싱 오류:', error);
+                          }
+
+                          // 인덱스 기준 정렬 및 중복 제거
+                          const seenIdx = new Set<number>();
+                          const docBlocks = blocks
+                            .filter(b => !seenIdx.has(b.index) && seenIdx.add(b.index))
+                            .sort((a, b) => a.index - b.index);
+
+                          const children: Paragraph[] = [];
+                          children.push(new Paragraph({
+                            text: '자기소개서 결과',
+                            heading: HeadingLevel.TITLE
+                          }));
+                          children.push(new Paragraph({ text: ' ' }));
+
+                          if (docBlocks.length === 0) {
+                            // 원문 전체
+                            coverLetter.split(/\n/).forEach(line => {
+                              children.push(new Paragraph({ children: [new TextRun(line)] }));
+                            });
+                          } else {
+                            docBlocks.forEach(b => {
+                              children.push(new Paragraph({
+                                text: `[질문 ${b.index}] ${b.title}`,
+                                heading: HeadingLevel.HEADING_2
+                              }));
+                              b.answer.split(/\n/).forEach(line => {
+                                children.push(new Paragraph({ children: [new TextRun(line)] }));
+                              });
+                              children.push(new Paragraph({ text: ' ' }));
+                            });
+                          }
+
+                          const doc = new Document({ sections: [{ children }] });
+                          const blob = await Packer.toBlob(doc);
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${companyName || '자기소개서'}_AI.docx`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        } catch (e) {
+                          // 폴백: 텍스트 다운로드
+                          const blob = new Blob([coverLetter], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${companyName}_자기소개서.txt`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }
                       }}
                       className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
                     >
                       <Download className="w-4 h-4" />
-                      다운로드
+                      Word로 다운로드
                     </button>
                   </div>
                 </div>

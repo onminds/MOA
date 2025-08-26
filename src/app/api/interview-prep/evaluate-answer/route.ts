@@ -110,7 +110,7 @@ JSON만 응답하고 다른 텍스트는 포함하지 마세요.`;
 위 답변을 평가하고 피드백을 제공해주세요.`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-5-mini",
     messages: [
       {
         role: "system",
@@ -121,8 +121,7 @@ JSON만 응답하고 다른 텍스트는 포함하지 마세요.`;
         content: userPrompt
       }
     ],
-    max_tokens: 1500,
-    temperature: 0.3, // 일관성 있는 평가를 위해 낮은 값 사용
+    max_completion_tokens: 1500,
   });
 
   const response = completion.choices[0].message.content;
