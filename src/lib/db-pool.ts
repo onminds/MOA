@@ -175,15 +175,20 @@ export async function executeQuerySingle<T = any>(
   return results.length > 0 ? results[0] : null;
 }
 
-// 프로세스 종료 시 연결 풀 정리
-process.on('SIGINT', async () => {
-  console.log('프로세스 종료 중, 데이터베이스 연결 풀 정리...');
-  await closePool();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('프로세스 종료 중, 데이터베이스 연결 풀 정리...');
-  await closePool();
-  process.exit(0);
-}); 
+// 프로세스 종료 시 연결 풀 정리 (개발 HMR 환경에서 중복 등록 방지)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const __g: any = globalThis as any;
+if (!__g.__dbPoolListenersRegistered) {
+  try { (process as any).setMaxListeners?.(0); } catch {}
+  const tidy = async () => {
+    try { console.log('프로세스 종료 중, 데이터베이스 연결 풀 정리...'); } catch {}
+    try { await closePool(); } catch {}
+    // 개발(HMR)에서는 프로세스 종료하지 않음
+    if (process.env.NODE_ENV === 'production') {
+      try { process.exit(0); } catch {}
+    }
+  };
+  process.once('SIGINT', tidy);
+  process.once('SIGTERM', tidy);
+  __g.__dbPoolListenersRegistered = true;
+}

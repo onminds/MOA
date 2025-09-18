@@ -1,5 +1,7 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import Head from 'next/head';
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from '../components/Header';
 import { cachedFetchJson } from '@/lib/client-utils';
@@ -7,25 +9,37 @@ import {
   Search, Star, ExternalLink, Filter, Grid, List as ListIcon, Heart, Share2, Download,
   MessageCircle, Users, TrendingUp, Zap, Brain, Palette, Music, Video, FileText, Globe
 } from 'lucide-react';
+import Logo from '../../components/Logo';
+import { getCategoryLabelKo } from '@/config/aiCategories';
 
 interface AIService {
-  id: number;
+  pageId?: string;
+  id: string; // unique_id는 문자열이므로 string으로 변경
   name: string;
-  description: string;
+  summary: string; // 한줄평
+  description: string; // 상세 설명
   category: string;
-  rating: number;
+  rating: number; // DB에서 가져올 예정
   url: string;
-  features: string[];
-  pricing: string;
-  source: string;
   icon?: string;
-  userCount?: number;
+  features: string[]; // '태그' (multi-select)
+  pricing: string[]; // '가격 형태' (multi-select)
+  source: string; // 'Notion DB'로 고정값 설정 예정
+  userCount?: number; // Notion에 없으므로 선택적
+
+  // Notion의 추가 속성들
+  koreanSupport: boolean;
+  isKoreanService: boolean;
+  apiSupport: boolean;
+  loginMethods: string[]; // '로그인 방식' (multi-select)
 }
 
 export default function AIList() {
   const router = useRouter();
-  const [services, setServices] = useState<AIService[]>([]);
   const [filteredServices, setFilteredServices] = useState<AIService[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -39,8 +53,14 @@ export default function AIList() {
   
   // 페이지네이션 상태 추가
   const [currentPage, setCurrentPage] = useState(1);
+  const hasSyncedFromUrlRef = useRef(false);
+  const isRestoringRef = useRef(false);
   const [itemsPerPage] = useState(20);
   const [servicesCache, setServicesCache] = useState<AIService[]>([]);
+  const [resultFallback, setResultFallback] = useState<'none' | 'relaxed' | 'keyword' | null>(null);
+  const scrollSavedRef = useRef(false);
+  const inflightIdRef = useRef(0);
+  const initialLoadedRef = useRef(false);
 
   const categories = [
     { id: 'all', name: '전체' },
@@ -48,6 +68,7 @@ export default function AIList() {
     { id: 'image', name: '이미지 생성' },
     { id: 'video', name: '영상 생성' },
     { id: 'audio', name: '음성/음악' },
+    { id: 'avatar', name: '아바타/디지털휴먼' },
     { id: 'writing', name: '글쓰기' },
     { id: 'coding', name: '코딩' },
     { id: 'productivity', name: '생산성' }
@@ -56,8 +77,11 @@ export default function AIList() {
   const pricingOptions = [
     { id: 'all', name: '전체' },
     { id: 'free', name: '무료' },
-    { id: 'freemium', name: '프리미엄' },
-    { id: 'paid', name: '유료' }
+    { id: 'trial', name: '무료체험' },
+    { id: 'paid', name: '유료' },
+    { id: 'partial', name: '부분유료' },
+    { id: 'subscription', name: '구독형태' },
+    { id: 'usage', name: '사용자기반' }
   ];
 
   const sortOptions = [
@@ -66,43 +90,217 @@ export default function AIList() {
     { id: 'users', name: '사용자순' }
   ];
 
+  // 서버에서 페이지 단위로 데이터 로드 (초기 복원 이후에만)
   useEffect(() => {
+    if (!ready) return;
     fetchServices();
+  }, [ready, currentPage, debouncedQuery, selectedCategory, selectedPricing, sortBy, selectedTags]);
+
+  // 페이지 변경 시 스켈레톤 표시를 위해 loading 플래그를 즉시 true로 설정
+  useEffect(() => {
+    if (!ready) return;
+    setLoading(true);
+  }, [currentPage, debouncedQuery, selectedCategory, selectedPricing, sortBy, selectedTags, ready]);
+
+  // 검색어 디바운스 (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // 총 페이지 수 계산 (서버 total 기반)
+  const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
+
+  // 최초 마운트 시 URL/세션에서 페이지 복원
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { if ('scrollRestoration' in window.history) { window.history.scrollRestoration = 'manual'; } } catch {}
+    const url = new URL(window.location.href);
+    const param = url.searchParams.get('page');
+    const paramNum = parseInt(param || '', 10);
+    if (!Number.isNaN(paramNum) && paramNum > 0) {
+      isRestoringRef.current = true;
+      setCurrentPage(paramNum);
+      setTimeout(() => { isRestoringRef.current = false; }, 0);
+      hasSyncedFromUrlRef.current = true;
+      // 스크롤 복원
+      const savedY = parseInt(window.sessionStorage.getItem('ai-list:scrollY') || '', 10);
+      if (!Number.isNaN(savedY)) { window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior }); }
+      // 초기 필터 동기화
+      const q = url.searchParams.get('q') || '';
+      const cat = url.searchParams.get('category') || 'all';
+      const pri = url.searchParams.get('pricing') || 'all';
+      const srt = url.searchParams.get('sort') || 'rating';
+      const tgs = (url.searchParams.get('tags') || '').split(',').map(t => t.trim()).filter(Boolean);
+      setSearchQuery(q);
+      setDebouncedQuery(q);
+      setSelectedCategory(cat);
+      setSelectedPricing(pri);
+      setSortBy(srt as any);
+      if (tgs.length > 0) setSelectedTags(Array.from(new Set(tgs)).sort((a,b)=>a.localeCompare(b)));
+      setReady(true);
+      return;
+    }
+    const saved = window.sessionStorage.getItem('ai-list:page');
+    const savedNum = parseInt(saved || '', 10);
+    if (!Number.isNaN(savedNum) && savedNum > 0) {
+      isRestoringRef.current = true;
+      setCurrentPage(savedNum);
+      setTimeout(() => { isRestoringRef.current = false; }, 0);
+    }
+    hasSyncedFromUrlRef.current = true;
+    const savedY = parseInt(window.sessionStorage.getItem('ai-list:scrollY') || '', 10);
+    if (!Number.isNaN(savedY)) { window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior }); }
+    // 초기 필터 동기화(없으면 기본값 유지)
+    const q = url.searchParams.get('q') || '';
+    const cat = url.searchParams.get('category') || 'all';
+    const pri = url.searchParams.get('pricing') || 'all';
+    const srt = url.searchParams.get('sort') || 'rating';
+    const tgs = (url.searchParams.get('tags') || '').split(',').map(t => t.trim()).filter(Boolean);
+    if (q) { setSearchQuery(q); setDebouncedQuery(q); }
+    if (cat) setSelectedCategory(cat);
+    if (pri) setSelectedPricing(pri);
+    if (srt) setSortBy(srt as any);
+    if (tgs.length > 0) setSelectedTags(Array.from(new Set(tgs)).sort((a,b)=>a.localeCompare(b)));
+    setReady(true);
   }, []);
 
+  // 페이지 변경 시(URL과 세션 저장). 초기 동기화 전에는 쓰지 않음
   useEffect(() => {
-    filterServices();
-  }, [services, searchQuery, selectedCategory, selectedPricing, sortBy, selectedTags]);
+    if (typeof window !== 'undefined' && hasSyncedFromUrlRef.current) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', String(currentPage));
+      const nextHref = `${url.pathname}?${url.searchParams.toString()}`;
+      try {
+        if (isRestoringRef.current) {
+          // 초기 복원 시에는 replace로 기록만 갱신
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (router as any).replace?.(nextHref, { scroll: false });
+        } else {
+          // 사용자가 페이지 버튼을 눌러 이동한 경우 push로 히스토리 남김
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (router as any).push?.(nextHref, { scroll: false });
+        }
+      } catch {
+        // fallback
+        if (isRestoringRef.current) {
+          window.history.replaceState({}, '', nextHref);
+        } else {
+          window.history.pushState({}, '', nextHref);
+        }
+      }
+      window.sessionStorage.setItem('ai-list:page', String(currentPage));
+    }
+  }, [currentPage]);
 
-  // 페이지네이션된 데이터 계산
-  const paginatedServices = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredServices.slice(startIndex, endIndex);
-  }, [filteredServices, currentPage, itemsPerPage]);
-
-  // 총 페이지 수 계산
-  const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
-
-  // 페이지 변경 시 현재 페이지를 1로 리셋
+  // 브라우저 뒤로가기/앞으로가기(popstate) 및 BFCache 복원(pageshow) 대응
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncFromUrl = () => {
+      const url = new URL(window.location.href);
+      const param = url.searchParams.get('page');
+      const num = parseInt(param || '', 10);
+      if (!Number.isNaN(num) && num > 0) {
+        setCurrentPage(num);
+      } else {
+        const saved = window.sessionStorage.getItem('ai-list:page');
+        const savedNum = parseInt(saved || '', 10);
+        if (!Number.isNaN(savedNum) && savedNum > 0) {
+          setCurrentPage(savedNum);
+        } else {
+          setCurrentPage(1);
+        }
+      }
+    };
+
+    const onPopState = () => { syncFromUrl();
+      const savedY = parseInt(window.sessionStorage.getItem('ai-list:scrollY') || '', 10);
+      if (!Number.isNaN(savedY)) { window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior }); }
+    };
+    const onPageShow = () => { syncFromUrl();
+      const savedY = parseInt(window.sessionStorage.getItem('ai-list:scrollY') || '', 10);
+      if (!Number.isNaN(savedY)) { window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior }); }
+    };
+    const onPageHide = () => {
+      try {
+        window.sessionStorage.setItem('ai-list:page', String(currentPage));
+        window.sessionStorage.setItem('ai-list:scrollY', String(window.scrollY));
+      } catch {}
+    };
+
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('pagehide', onPageHide);
+    document.addEventListener('visibilitychange', onPageHide);
+
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('pagehide', onPageHide);
+      document.removeEventListener('visibilitychange', onPageHide);
+    };
+  }, [currentPage]);
+
+  // 현재 페이지 변경 시 스크롤 위치 저장
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onScroll = () => {
+      if (!scrollSavedRef.current) {
+        try {
+          window.sessionStorage.setItem('ai-list:scrollY', String(window.scrollY));
+        } catch {}
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [currentPage]);
+
+  // 필터/검색 변경 시 페이지 1로 이동 (초기 동기화 이후, 디바운스 검색 기준)
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!ready) return;
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedPricing, sortBy, selectedTags]);
+  }, [ready, debouncedQuery, selectedCategory, selectedPricing, sortBy, selectedTags]);
 
   const fetchServices = async () => {
     try {
-      // 캐시 확인
-      if (servicesCache.length > 0) {
-        setServices(servicesCache);
-        setLoading(false);
-        return;
+      const myId = ++inflightIdRef.current;
+      setLoading(true);
+      // 페이지 전환/필터 변경 시 이전 목록을 즉시 비워 사용자에게 변화가 시작됐음을 명확히 전달
+      if (initialLoadedRef.current) {
+        setFilteredServices([]);
+      }
+      const params = new URLSearchParams();
+      params.set('thin', '1');
+      params.set('source', 'sql');
+      params.set('page', String(currentPage));
+      params.set('limit', String(itemsPerPage));
+      const qn = (debouncedQuery || '').trim();
+      if (qn) params.set('q', qn);
+      if (selectedCategory && selectedCategory !== 'all') params.set('category', selectedCategory);
+      if (selectedPricing && selectedPricing !== 'all') params.set('pricing', selectedPricing);
+      if (sortBy) params.set('sort', sortBy);
+      if (selectedTags.length > 0) {
+        const normalizedTags = Array.from(new Set(selectedTags.map(t => t.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+        params.set('tags', normalizedTags.join(','));
       }
 
-      const response = await cachedFetchJson('/api/ai-services', 'ai-services-cache');
+      const url = `/api/ai-services?${params.toString()}`;
+      const cacheKey = `ai-services:v3:${params.toString()}`;
+      const response = await cachedFetchJson(url, cacheKey);
+      if (myId !== inflightIdRef.current) return; // stale 응답 무시
       const data = response.services || [];
-      
-      setServices(data);
-      setServicesCache(data); // 캐시에 저장
+      const total = Number(response.total || 0);
+      const fb = (response.fallback || 'none') as 'none' | 'relaxed' | 'keyword';
+
+      setFilteredServices(data);
+      setTotalCount(total);
+      setResultFallback(fb);
+      initialLoadedRef.current = true;
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch services:', error);
@@ -110,56 +308,6 @@ export default function AIList() {
     }
   };
 
-  const filterServices = () => {
-    let filtered = [...services];
-
-    // 검색어 필터링
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(service => 
-        service.name.toLowerCase().includes(query) ||
-        service.description.toLowerCase().includes(query) ||
-        service.features.some(feature => feature.toLowerCase().includes(query))
-      );
-    }
-
-    // 카테고리 필터링
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(service => service.category === selectedCategory);
-    }
-
-    // 가격 필터링
-    if (selectedPricing !== 'all') {
-      filtered = filtered.filter(service => service.pricing === selectedPricing);
-    }
-
-    // 태그 필터링
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter(service => 
-        selectedTags.every(tag => 
-          service.features.some(feature => 
-            feature.toLowerCase().includes(tag.toLowerCase())
-          )
-        )
-      );
-    }
-
-    // 정렬
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'rating':
-          return b.rating - a.rating;
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'users':
-          return (b.userCount || 0) - (a.userCount || 0);
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredServices(filtered);
-  };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -177,18 +325,63 @@ export default function AIList() {
   const getPricingBadge = (pricing: string) => {
     switch (pricing) {
       case 'free':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">무료</span>;
-      case 'freemium':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">프리미엄</span>;
+        return '무료';
+      case 'trial':
+        return '무료체험';
       case 'paid':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">유료</span>;
+        return '유료';
+      case 'partial':
+        return '부분유료';
+      case 'subscription':
+        return '구독형태';
+      case 'usage':
+        return '사용자기반';
       default:
-        return null;
+        return pricing;
     }
   };
 
+  const getCategoryLabel = (category: string) => getCategoryLabelKo(category);
+
+  const getPricingBadgeClass = (p: string) => (
+    `inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ` +
+    (
+      p === 'free' ? 'border-green-300 text-green-700 bg-green-50' :
+      p === 'trial' ? 'border-yellow-300 text-yellow-700 bg-yellow-50' :
+      p === 'paid' ? 'border-rose-300 text-rose-700 bg-rose-50' :
+      p === 'partial' ? 'border-amber-300 text-amber-700 bg-amber-50' :
+      p === 'subscription' ? 'border-blue-300 text-blue-700 bg-blue-50' :
+      p === 'usage' ? 'border-purple-300 text-purple-700 bg-purple-50' :
+      'border-gray-300 text-gray-700 bg-gray-50'
+    )
+  );
+
+  // 현재 페이지를 기준으로 페이지 버튼 윈도우 생성 (최대 5개)
+  const getPageNumbers = () => {
+    const maxButtons = 5;
+    if (totalPages <= maxButtons) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let end = start + maxButtons - 1;
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - maxButtons + 1);
+    }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
+
   const handleServiceClick = (service: AIService) => {
-    router.push(`/ai-tool/${service.id}`);
+    const toDomain = (u: string) => {
+      try {
+        const urlObj = new URL(u.startsWith('http') ? u : `https://${u}`);
+        return urlObj.hostname.replace(/^www\./, '');
+      } catch {
+        return u;
+      }
+    };
+    const pathId = service.url ? toDomain(service.url) : service.id;
+    router.push(`/ai-tool/${pathId}`);
   };
 
   const formatUserCount = (userCount?: number) => {
@@ -203,8 +396,8 @@ export default function AIList() {
 
   const getAllTags = () => {
     const allTags = new Map<string, number>();
-    services.forEach(service => {
-      service.features.forEach(feature => {
+    filteredServices.forEach(service => {
+      (Array.isArray(service.features) ? service.features : []).forEach(feature => {
         const words = feature.toLowerCase().split(/\s+/);
         words.forEach(word => {
           if (word.length > 2) {
@@ -255,7 +448,7 @@ export default function AIList() {
     setSelectedTags(selectedTags.filter(t => t !== tag));
   };
 
-  if (loading) {
+  if (loading && !initialLoadedRef.current) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -270,6 +463,31 @@ export default function AIList() {
 
   return (
     <>
+      <Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "name": "AI Tools List",
+            "itemListElement": filteredServices.map((svc, idx) => ({
+              "@type": "ListItem",
+              "position": idx + 1,
+              "item": {
+                "@type": "SoftwareApplication",
+                "name": svc.name,
+                "url": svc.url,
+                "applicationCategory": svc.category,
+                "aggregateRating": svc.rating ? {
+                  "@type": "AggregateRating",
+                  "ratingValue": svc.rating,
+                  "reviewCount": svc.userCount || 0
+                } : undefined
+              }
+            }))
+          }) }}
+        />
+      </Head>
       <Header />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
         <div className="max-w-7xl mx-auto">
@@ -426,27 +644,39 @@ export default function AIList() {
           </div>
 
           {/* 결과 통계 */}
-          <div className="mb-6">
+          <div className="mb-6 flex items-center gap-3 flex-wrap">
             <p className="text-gray-600">
-              총 <span className="font-semibold text-gray-900">{filteredServices.length}</span>개의 AI 도구를 찾았습니다
+              총 <span className="font-semibold text-gray-900">{totalCount}</span>개의 AI 도구를 찾았습니다
             </p>
+            {resultFallback && resultFallback !== 'none' && (
+              <span
+                className={
+                  `inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ` +
+                  (resultFallback === 'relaxed'
+                    ? 'border-amber-300 text-amber-700 bg-amber-50'
+                    : 'border-indigo-300 text-indigo-700 bg-indigo-50')
+                }
+                title={resultFallback === 'relaxed' ? '조건을 완화해 유사한 결과를 추천합니다' : '키워드 유사도를 기준으로 추천합니다'}
+              >
+                {resultFallback === 'relaxed' ? '추천 결과(필터 완화)' : '추천 결과(키워드)'}
+              </span>
+            )}
           </div>
 
           {/* AI 도구 목록 */}
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {paginatedServices.map((service) => (
-                <div
+              {filteredServices.map((service) => (
+                <Link
                   key={service.id}
-                  onClick={() => handleServiceClick(service)}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  href={service.url ? `/ai-tool/${(() => { try { const u=new URL(service.url.startsWith('http')?service.url:`https://${service.url}`); return u.hostname.replace(/^www\./,''); } catch { return service.id; } })()}` : `/ai-tool/${service.id}`}
+                  aria-label={`${service.name} 상세 보기`}
+                  className="block bg-white rounded-lg p-6 border border-gray-300 ring-1 ring-gray-200 shadow-md hover:shadow-lg hover:ring-blue-200 transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:-translate-y-0.5 transform"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        {getCategoryIcon(service.category)}
-                      </div>
-                      <div>
+                      <Logo url={service.url} icon={service.icon} alt={`${service.name} 로고`} size={40} className="shrink-0" />
+                      <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 text-lg">{service.name}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <div className="flex items-center">
@@ -460,50 +690,54 @@ export default function AIList() {
                             </div>
                           )}
                         </div>
+                        {/* 카테고리/가격 배지 */}
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <span className={getPricingBadgeClass('other')}>
+                            {getCategoryLabel(service.category)}
+                          </span>
+                          {(Array.isArray(service.pricing) ? service.pricing : [service.pricing].filter(Boolean)).map((p, index) => (
+                            <span key={index} className={getPricingBadgeClass(p)}>
+                              {getPricingBadge(p)}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    {getPricingBadge(service.pricing)}
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{service.description}</p>
+                  <p className="text-gray-700 text-sm mb-4 line-clamp-2">{service.summary}</p>
 
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {service.features.slice(0, 3).map((feature, index) => (
+                  <div className="flex flex-wrap gap-1">
+                    {(Array.isArray(service.features) ? service.features : []).slice(0, 3).map((feature, index) => (
                       <span
                         key={index}
-                        className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                        className="inline-block px-2 py-1 bg-gray-50 border border-gray-200 text-gray-700 rounded text-xs"
                       >
                         {feature}
                       </span>
                     ))}
-                    {service.features.length > 3 && (
-                      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                        +{service.features.length - 3}
+                    {(Array.isArray(service.features) ? service.features : []).length > 3 && (
+                      <span className="inline-block px-2 py-1 bg-gray-50 border border-gray-200 text-gray-700 rounded text-xs">
+                        +{(Array.isArray(service.features) ? service.features : []).length - 3}
                       </span>
                     )}
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{service.source}</span>
-                    <ExternalLink className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
             <div className="space-y-4">
-              {paginatedServices.map((service) => (
-                <div
+              {filteredServices.map((service) => (
+                <Link
                   key={service.id}
-                  onClick={() => handleServiceClick(service)}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  href={service.url ? `/ai-tool/${(() => { try { const u=new URL(service.url.startsWith('http')?service.url:`https://${service.url}`); return u.hostname.replace(/^www\./,''); } catch { return service.id; } })()}` : `/ai-tool/${service.id}`}
+                  aria-label={`${service.name} 상세 보기`}
+                  className="block bg-white rounded-lg p-6 border border-gray-300 ring-1 ring-gray-200 shadow-md hover:shadow-lg hover:ring-blue-200 transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:-translate-y-0.5 transform"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        {getCategoryIcon(service.category)}
-                      </div>
-                      <div>
+                      <Logo url={service.url} icon={service.icon} alt={`${service.name} 로고`} size={48} className="shrink-0" />
+                      <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 text-xl">{service.name}</h3>
                         <div className="flex items-center gap-4 mt-1">
                           <div className="flex items-center">
@@ -516,41 +750,35 @@ export default function AIList() {
                               {formatUserCount(service.userCount)}
                             </div>
                           )}
-                          <span className="text-sm text-gray-500">{service.source}</span>
+                        </div>
+                        {/* 카테고리/가격 배지 */}
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <span className={getPricingBadgeClass('other')}>
+                            {getCategoryLabel(service.category)}
+                          </span>
+                          {(Array.isArray(service.pricing) ? service.pricing : [service.pricing].filter(Boolean)).map((p, index) => (
+                            <span key={index} className={getPricingBadgeClass(p)}>
+                              {getPricingBadge(p)}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     </div>
-                    {getPricingBadge(service.pricing)}
                   </div>
 
-                  <p className="text-gray-600 mb-4">{service.description}</p>
+                  <p className="text-gray-600 mb-4">{service.summary}</p>
 
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {service.features.map((feature, index) => (
+                  <div className="flex flex-wrap gap-2">
+                    {(Array.isArray(service.features) ? service.features : []).map((feature, index) => (
                       <span
                         key={index}
-                        className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                        className="inline-block px-3 py-1 bg-gray-50 border border-gray-200 text-gray-700 rounded-full text-sm"
                       >
                         {feature}
                       </span>
                     ))}
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                        <Heart className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-blue-500 transition-colors">
-                        <Share2 className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-green-500 transition-colors">
-                        <Download className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <ExternalLink className="w-5 h-5 text-gray-400" />
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -566,9 +794,16 @@ export default function AIList() {
             </div>
           )}
 
-          {/* 페이지네이션 컨트롤 */}
-          {filteredServices.length > 0 && totalPages > 1 && (
+          {/* 페이지네이션 컨트롤 (기존 방식 유지) */}
+          {totalCount > 0 && totalPages > 1 && (
             <div className="flex justify-center items-center space-x-2 mt-8">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                맨 앞으로
+              </button>
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
@@ -578,22 +813,19 @@ export default function AIList() {
               </button>
               
               <div className="flex space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md ${
-                        currentPage === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+                {getPageNumbers().map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-2 text-sm font-medium rounded-md ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
               </div>
               
               <button
@@ -602,6 +834,13 @@ export default function AIList() {
                 className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 다음
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                맨뒤로
               </button>
             </div>
           )}

@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/authOptions';
 import { getConnection } from '@/lib/db';
 import sharp from 'sharp';
 import sql from 'mssql';
+import { requireAuth } from "@/lib/auth";
+import { getKoreanTimeNow } from "@/lib/utils";
 
 // Replicate 클라이언트 초기화
 const replicate = new Replicate();
@@ -46,7 +48,7 @@ async function checkVideoGenerationLimit(userId: string) {
       WHERE user_id = @userId AND service_type = @serviceType
     `);
 
-  let maxLimit = 1; // 기본 (로그인만)
+  let maxLimit = 1; // 영상 생성: Basic 1회
   let planType = 'basic';
   
   // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
@@ -54,11 +56,14 @@ async function checkVideoGenerationLimit(userId: string) {
     planType = user.plan_type;
     
     switch (planType) {
+      case 'basic':
+        maxLimit = 1;
+        break;
       case 'standard':
-        maxLimit = 30;
+        maxLimit = 20;
         break;
       case 'pro':
-        maxLimit = 100;
+        maxLimit = 40;
         break;
       default:
         maxLimit = 1;
@@ -73,7 +78,7 @@ async function checkVideoGenerationLimit(userId: string) {
   let currentUsage = usageResult.recordset[0]?.usage_count || 0;
   let nextResetDate = usageResult.recordset[0]?.next_reset_date;
   
-  // next_reset_date가 없으면 계정 생성일 기준으로 일주일 후로 설정
+  // next_reset_date가 없으면 계정 생성일 기준으로 월 초기화로 설정
   if (!nextResetDate) {
     const userCreatedResult = await db.request()
       .input('userId', userIdInt)
@@ -81,9 +86,9 @@ async function checkVideoGenerationLimit(userId: string) {
     
     const userCreatedAt = userCreatedResult.recordset[0]?.created_at;
     if (userCreatedAt) {
-      // 계정 생성일 + 7일로 설정
+      // 계정 생성일 기준으로 정확히 한 달 후로 설정
       const resetDate = new Date(userCreatedAt);
-      resetDate.setDate(resetDate.getDate() + 7);
+      resetDate.setMonth(resetDate.getMonth() + 1);
       nextResetDate = resetDate;
       
       // DB에 next_reset_date 저장
@@ -99,15 +104,15 @@ async function checkVideoGenerationLimit(userId: string) {
     }
   }
   
-  const now = new Date();
+  const now = getKoreanTimeNow(); // 한국 시간 기준
   
   // 초기화 시간이 지났으면 사용량 리셋하고 다음 초기화 시간 설정
   if (nextResetDate && now > new Date(nextResetDate) && currentUsage > 0) {
     console.log(`사용자 ${userId}의 영상 생성 사용량 초기화: ${currentUsage} -> 0`);
     
-    // 다음 초기화 시간을 기존 next_reset_date 기준으로 일주일 후로 설정
+    // 다음 초기화 시간을 정확히 한 달 후로 설정 (한국 시간 기준)
     const nextReset = new Date(nextResetDate);
-    nextReset.setDate(nextReset.getDate() + 7);
+    nextReset.setMonth(nextReset.getMonth() + 1);
     
     await db.request()
       .input('userId', userIdInt)
@@ -174,7 +179,8 @@ async function incrementVideoUsage(userId: string) {
     
     if (userCreatedAt) {
       const resetDate = new Date(userCreatedAt);
-      resetDate.setDate(resetDate.getDate() + 7);
+      // 계정 생성일 기준으로 정확히 한 달 후 초기화 시간 설정
+      resetDate.setMonth(resetDate.getMonth() + 1);
       nextResetDate = resetDate;
     }
     
@@ -300,6 +306,16 @@ async function resizeImageForVideo(imageBuffer: ArrayBuffer, targetWidth: number
   });
 
   return resizedImageBuffer;
+}
+
+// 비디오 다운로드 및 바이너리 변환
+async function downloadAndSaveVideo(videoUrl: string): Promise<Buffer> {
+  const response = await fetch(videoUrl);
+  if (!response.ok) {
+    throw new Error(`비디오 다운로드 실패: ${response.status} ${response.statusText}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
 
 export async function POST(request: NextRequest) {
@@ -450,11 +466,15 @@ export async function POST(request: NextRequest) {
 
       const videoUrl = completedPrediction.output;
       console.log('kling 영상 생성 성공:', videoUrl);
+      const videoBuffer = await downloadAndSaveVideo(videoUrl);
 
       // 사용량 증가
       await incrementVideoUsage(userId.toString());
 
       // 영상 생성 히스토리 저장
+      let newId: number | null = null;
+      let internalUrl: string | null = null;
+      
       try {
         // 현재 히스토리 개수 확인
         const countResult = await db.request()
@@ -480,16 +500,14 @@ export async function POST(request: NextRequest) {
           console.log('✅ 오래된 영상 히스토리 삭제 완료');
         }
 
-        // 새로운 영상 생성 히스토리 저장
+        // 새로운 영상 생성 히스토리 저장 (video_data 포함)
         console.log('💾 새 영상 히스토리 저장 중...');
-        
-        // 제목을 사용자가 입력한 원본 프롬프트로 설정 (50자 제한)
         const title = originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt;
-        
+
         const insertResult = await db.request()
           .input('userId', sql.BigInt, userId)
           .input('prompt', sql.NVarChar, optimizedPrompt)
-          .input('generatedVideoUrl', sql.NVarChar, videoUrl)
+          .input('generatedVideoUrl', sql.NVarChar, videoUrl) // 임시로 외부 URL 저장 후 업데이트
           .input('model', sql.NVarChar, model)
           .input('size', sql.NVarChar, size)
           .input('duration', sql.NVarChar, duration)
@@ -497,21 +515,32 @@ export async function POST(request: NextRequest) {
           .input('style', sql.NVarChar, 'unknown')
           .input('quality', sql.NVarChar, 'standard')
           .input('title', sql.NVarChar, title)
+          .input('videoData', sql.VarBinary(sql.MAX), videoBuffer)
           .query(`
             INSERT INTO video_generation_history 
-            (user_id, prompt, generated_video_url, model, size, duration, resolution, style, quality, title, created_at, status)
-            VALUES (@userId, @prompt, @generatedVideoUrl, @model, @size, @duration, @resolution, @style, @quality, @title, GETDATE(), 'success');
+            (user_id, prompt, generated_video_url, model, size, duration, resolution, style, quality, title, created_at, status, video_data)
+            VALUES (@userId, @prompt, @generatedVideoUrl, @model, @size, @duration, @resolution, @style, @quality, @title, GETDATE(), 'success', @videoData);
             SELECT SCOPE_IDENTITY() as id;
           `);
 
-        console.log('✅ 영상 히스토리가 DB에 저장되었습니다. ID:', insertResult.recordset[0]?.id);
+        newId = insertResult.recordset[0]?.id;
+        internalUrl = `/api/video/${newId}`;
+        await db.request()
+          .input('id', sql.Int, newId)
+          .input('internalUrl', sql.NVarChar, internalUrl)
+          .query(`UPDATE video_generation_history SET generated_video_url = @internalUrl WHERE id = @id`);
+
+        console.log('✅ 영상 히스토리가 DB에 저장되었습니다. ID:', newId);
       } catch (dbError) {
         console.error('❌ DB 저장 실패:', dbError);
         // DB 저장 실패는 영상 생성 성공에 영향을 주지 않음
       }
 
+      // DB 저장 성공 여부와 관계없이 응답 반환
+      const finalUrl = internalUrl || videoUrl; // 내부 URL이 있으면 사용, 없으면 원본 URL 사용
+      
       return NextResponse.json({ 
-        url: videoUrl,
+        url: finalUrl,
         usage: await checkVideoGenerationLimit(userId.toString())
       });
 
@@ -615,12 +644,16 @@ export async function POST(request: NextRequest) {
       }
 
       const videoUrl = completedPrediction.output;
+      const videoBuffer = await downloadAndSaveVideo(videoUrl);
       console.log('Minimax 영상 생성 성공:', videoUrl);
 
       // 사용량 증가
       await incrementVideoUsage(userId.toString());
 
       // 영상 생성 히스토리 저장
+      let newId: number | null = null;
+      let internalUrl: string | null = null;
+      
       try {
         // 현재 히스토리 개수 확인
         const countResult = await db.request()
@@ -663,21 +696,32 @@ export async function POST(request: NextRequest) {
           .input('style', sql.NVarChar, 'unknown')
           .input('quality', sql.NVarChar, 'standard')
           .input('title', sql.NVarChar, title)
+          .input('videoData', sql.VarBinary(sql.MAX), videoBuffer)
           .query(`
             INSERT INTO video_generation_history 
-            (user_id, prompt, generated_video_url, model, size, duration, resolution, style, quality, title, created_at, status)
-            VALUES (@userId, @prompt, @generatedVideoUrl, @model, @size, @duration, @resolution, @style, @quality, @title, GETDATE(), 'success');
+            (user_id, prompt, generated_video_url, model, size, duration, resolution, style, quality, title, created_at, status, video_data)
+            VALUES (@userId, @prompt, @generatedVideoUrl, @model, @size, @duration, @resolution, @style, @quality, @title, GETDATE(), 'success', @videoData);
             SELECT SCOPE_IDENTITY() as id;
           `);
 
-        console.log('✅ 영상 히스토리가 DB에 저장되었습니다. ID:', insertResult.recordset[0]?.id);
+        newId = insertResult.recordset[0]?.id;
+        internalUrl = `/api/video/${newId}`;
+        await db.request()
+          .input('id', sql.Int, newId)
+          .input('internalUrl', sql.NVarChar, internalUrl)
+          .query(`UPDATE video_generation_history SET generated_video_url = @internalUrl WHERE id = @id`);
+
+        console.log('✅ 영상 히스토리가 DB에 저장되었습니다. ID:', newId);
       } catch (dbError) {
         console.error('❌ DB 저장 실패:', dbError);
         // DB 저장 실패는 영상 생성 성공에 영향을 주지 않음
       }
 
+      // DB 저장 성공 여부와 관계없이 응답 반환
+      const finalUrl = internalUrl || videoUrl; // 내부 URL이 있으면 사용, 없으면 원본 URL 사용
+      
       return NextResponse.json({ 
-        url: videoUrl,
+        url: finalUrl,
         usage: await checkVideoGenerationLimit(userId.toString())
       });
 
@@ -871,11 +915,15 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('Runway 영상 생성 성공:', videoUrl);
+      const videoBuffer = await downloadAndSaveVideo(videoUrl);
 
       // 사용량 증가
       await incrementVideoUsage(userId.toString());
 
       // 영상 생성 히스토리 저장
+      let newId: number | null = null;
+      let internalUrl: string | null = null;
+      
       try {
         // 현재 히스토리 개수 확인
         const countResult = await db.request()
@@ -918,21 +966,32 @@ export async function POST(request: NextRequest) {
           .input('style', sql.NVarChar, 'unknown')
           .input('quality', sql.NVarChar, 'standard')
           .input('title', sql.NVarChar, title)
+          .input('videoData', sql.VarBinary(sql.MAX), videoBuffer)
           .query(`
             INSERT INTO video_generation_history 
-            (user_id, prompt, generated_video_url, model, size, duration, resolution, style, quality, title, created_at, status)
-            VALUES (@userId, @prompt, @generatedVideoUrl, @model, @size, @duration, @resolution, @style, @quality, @title, GETDATE(), 'success');
+            (user_id, prompt, generated_video_url, model, size, duration, resolution, style, quality, title, created_at, status, video_data)
+            VALUES (@userId, @prompt, @generatedVideoUrl, @model, @size, @duration, @resolution, @style, @quality, @title, GETDATE(), 'success', @videoData);
             SELECT SCOPE_IDENTITY() as id;
           `);
 
-        console.log('✅ 영상 히스토리가 DB에 저장되었습니다. ID:', insertResult.recordset[0]?.id);
+        newId = insertResult.recordset[0]?.id;
+        internalUrl = `/api/video/${newId}`;
+        await db.request()
+          .input('id', sql.Int, newId)
+          .input('internalUrl', sql.NVarChar, internalUrl)
+          .query(`UPDATE video_generation_history SET generated_video_url = @internalUrl WHERE id = @id`);
+
+        console.log('✅ 영상 히스토리가 DB에 저장되었습니다. ID:', newId);
       } catch (dbError) {
         console.error('❌ DB 저장 실패:', dbError);
         // DB 저장 실패는 영상 생성 성공에 영향을 주지 않음
       }
 
+      // DB 저장 성공 여부와 관계없이 응답 반환
+      const finalUrl = internalUrl || videoUrl; // 내부 URL이 있으면 사용, 없으면 원본 URL 사용
+      
       return NextResponse.json({ 
-        url: videoUrl,
+        url: finalUrl,
         usage: await checkVideoGenerationLimit(userId.toString())
       });
 

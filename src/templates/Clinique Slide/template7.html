@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="아래 입력만 사용하여 토큰을 채우세요. 다른 텍스트나 주석 금지.
+
+입력
+- 제목: {{SECTION_TITLE}}
+- 내용: {{SECTION_CONTENT}}
+- 키포인트: {{SECTION_KEYPOINTS}}
+
+토큰 규칙(섹션7 전용)
+- {{TITLE}}: 메인 제목(1줄)
+- {{SUBTITLE}}: 부제(1줄)
+- {{TECH1_TITLE}}, {{TECH2_TITLE}}, {{TECH3_TITLE}}: 각 콘텐츠 박스 텍스트(2줄 권장)
+"/>
+<title>{{TITLE}}</title>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Noto+Serif+KR:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+        body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #ececec; overflow: hidden; }
+        .slide-container { width: 1280px; min-height: 720px; position: relative; overflow: hidden; }
+        .main-content { padding: 3rem; }
+        .title { font-family: 'Noto Serif KR', serif; font-size: 3.5rem; font-weight: bold; color: #000000; margin-bottom: 0.5rem; }
+        .subtitle { font-family: 'Noto Serif KR', serif; font-size: 2rem; color: #000000; margin-top: 0.5rem; margin-bottom: 3rem; }
+        .content-row { display: flex; align-items: center; margin: 1.5rem 0; }
+        /* 블랙 박스: 높이와 줄 수를 일정하게 유지 (2줄) */
+        .content-box { 
+          background-color: #000000; 
+          color: #ffffff; 
+          padding: 1.2rem 1.8rem; 
+          border-radius: 1rem; 
+          max-width: 780px; 
+          text-align: left; 
+          font-size: 1.15rem; 
+          line-height: 1.6; 
+          font-family: 'Noto Sans KR', sans-serif; 
+          min-height: 3.4em; /* 정확히 2줄 높이 보장 */
+          max-height: 3.4em; /* 2줄 초과 내용 숨김 */
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: block;
+          word-break: keep-all;
+          white-space: normal;
+        }
+        .content-box br { display: inline; }
+        .content-box::before { content: "• "; color:#9ae6b4; margin-right:.2rem; }
+        .icon-container { margin-left: 1.5rem; font-size: 3rem; color: #000000; width: 80px; text-align: center; }
+        .footer { position: absolute; bottom: 0; left: 0; width: 100%; background-color: #000000; color: #ffffff; padding: 0.5rem; text-align: center; font-family: 'Noto Sans KR', sans-serif; }
+        .corner-decoration { position: absolute; top: 0; right: 0; width: 150px; height: 150px; opacity: 0.3; }
+        .circle-decoration { position: absolute; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.1); }
+</style>
+</head>
+<body>
+<div class="slide-container">
+<!-- Background decorative elements -->
+<div class="circle-decoration" style="width: 200px; height: 200px; bottom: -100px; left: -100px;"></div>
+<div class="circle-decoration" style="width: 300px; height: 300px; top: -150px; right: -150px;"></div>
+<div class="corner-decoration">
+<svg height="100%" width="100%">
+<g stroke="#000" stroke-width="1">
+<line x1="100" x2="150" y1="10" y2="10"></line>
+<line x1="90" x2="150" y1="20" y2="20"></line>
+<line x1="80" x2="150" y1="30" y2="30"></line>
+<line x1="70" x2="150" y1="40" y2="40"></line>
+<line x1="60" x2="150" y1="50" y2="50"></line>
+<line x1="50" x2="150" y1="60" y2="60"></line>
+<line x1="40" x2="150" y1="70" y2="70"></line>
+<line x1="30" x2="150" y1="80" y2="80"></line>
+<line x1="20" x2="150" y1="90" y2="90"></line>
+<line x1="10" x2="150" y1="100" y2="100"></line>
+</g>
+</svg>
+
+</div>
+<!-- Main content -->
+<div class="main-content">
+<h1 class="title">{{TITLE}}</h1>
+<h2 class="subtitle">{{SUBTITLE}}</h2>
+
+<!-- First content box with icon -->
+<div class="content-row">
+<div class="content-box">{{TECH1_TITLE}}</div>
+<div class="icon-container">
+<i class="fas fa-robot"></i>
+</div>
+</div>
+
+<!-- Second content box with icon -->
+<div class="content-row">
+<div class="content-box">{{TECH2_TITLE}}</div>
+<div class="icon-container">
+<i class="fas fa-cogs"></i>
+</div>
+</div>
+
+<!-- Third content box with icon -->
+<div class="content-row">
+<div class="content-box">{{TECH3_TITLE}}</div>
+<div class="icon-container">
+<i class="fas fa-chart-line"></i>
+</div>
+</div>
+
+</div>
+<!-- Footer (비워둠: 하드코딩 금지) -->
+<div class="footer"></div>
+</div>
+
+<!-- 쿼리스트링으로 컨텍스트 변경 가능: ?topic=...&audience=...&purpose=...&date=...&brand=...&handle=... -->
+<script src="/slide-autofill.js" defer></script>
+
+</body>
+</html>

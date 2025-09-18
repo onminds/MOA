@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import zlib from 'zlib';
 
 interface PDFObject {
   objectNumber: number;
@@ -47,8 +48,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '유효하지 않은 PDF 파일입니다.' }, { status: 400 });
       }
 
-      // PDF 내부 구조 파싱
-      const pdfContent = buffer.toString('utf8', 0, Math.min(buffer.length, 1000000));
+      // PDF 내부 구조 파싱 (텍스트 기반 우선)
+      const pdfContent = buffer.toString('latin1', 0, Math.min(buffer.length, 2_000_000));
       console.log('📄 PDF 내부 구조 파싱 시작...');
       
       // 1. PDF 객체 추출
@@ -102,12 +103,30 @@ export async function POST(request: NextRequest) {
         }
       }
       
+      const successPages = pages.filter(p => p.text.length > 0).length;
+      console.log('📊 1차 결과:', { 총페이지: pages.length, 성공페이지: successPages });
+
+      if (successPages === 0) {
+        // 압축된 스트림(FlateDecode)에서 텍스트 추출 시도
+        console.log('🔄 압축 스트림(FlateDecode)에서 텍스트 추출 시도...');
+        const inflatedText = extractTextFromFlateStreams(buffer);
+        console.log('📝 인플레이트 추출 길이:', inflatedText.length);
+        if (inflatedText.length > 0) {
+          return NextResponse.json({
+            success: true,
+            totalPages: 1,
+            pages: [{ pageNumber: 1, text: inflatedText, images: [], pageType: 'text', objects: [] }],
+            environment: process.env.VERCEL === '1' ? 'Vercel' : '호스트'
+          });
+        }
+      }
+
       console.log('📊 최종 처리 결과:', {
         총페이지: pages.length,
         성공페이지: pages.filter(p => p.text.length > 0).length,
         실패페이지: pages.filter(p => p.text.length === 0).length
       });
-      
+
       return NextResponse.json({
         success: true,
         totalPages: pages.length,
@@ -356,3 +375,48 @@ function determinePageType(text: string, images: string[]): 'text' | 'image' | '
     return 'mixed';
   }
 } 
+
+// FlateDecode 스트림에서 텍스트 후보 추출
+function extractTextFromFlateStreams(buffer: Buffer): string {
+  try {
+    const content = buffer.toString('latin1');
+    const streamPattern = /stream\s*\r?\n([\s\S]*?)\r?\nendstream/g;
+    const objPattern = /<<([\s\S]*?)>>/;
+    let match: RegExpExecArray | null;
+    let collected = '';
+    while ((match = streamPattern.exec(content)) !== null) {
+      const streamStartIndex = match.index;
+      // 객체 헤더 영역 찾아서 /Filter 확인
+      const headerSearchStart = Math.max(0, streamStartIndex - 400);
+      const headerChunk = content.slice(headerSearchStart, streamStartIndex);
+      const headerMatch = objPattern.exec(headerChunk);
+      const header = headerMatch ? headerMatch[1] : '';
+      if (!/\/Filter\s*\/FlateDecode/.test(header)) continue;
+
+      // 바이너리 바디 추출
+      const bodyLatin1 = match[1];
+      const bodyBytes = Buffer.from(bodyLatin1, 'latin1');
+      try {
+        const inflated = zlib.inflateSync(bodyBytes);
+        let text = inflated.toString('utf8');
+        if (!/\w|[가-힣]/.test(text)) {
+          // UTF-16 추정
+          if (inflated.length % 2 === 0) {
+            let be = '';
+            for (let i = 0; i + 1 < inflated.length; i += 2) {
+              be += String.fromCharCode((inflated[i] << 8) | inflated[i + 1]);
+            }
+            text = be;
+          }
+        }
+        text = cleanExtractedText(text);
+        if (text.length > 50) {
+          collected += text + '\n';
+        }
+      } catch {}
+    }
+    return collected.trim();
+  } catch {
+    return '';
+  }
+}

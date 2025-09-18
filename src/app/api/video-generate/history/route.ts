@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
     const userId = userResult.recordset[0].id;
     console.log('📊 사용자 ID:', userId);
 
-    // 최근 5개의 영상 생성 히스토리 조회
+    // 모든 영상 생성 히스토리 조회
     const historyResult = await pool.request()
       .input('userId', sql.BigInt, userId)
       .query(`
-        SELECT TOP 5 
+        SELECT 
           id,
           prompt,
           generated_video_url,

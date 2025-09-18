@@ -5,11 +5,12 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Search, Keyboard, Mic, ScanSearch,
   Image as ImageIcon, Video, Wand2, Users,
-  Paperclip, Send, Grid, MessageCircle,
+  Paperclip, Send, Grid,
   Sparkles, Palette, Camera, Zap
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Header from './components/Header';
+import OnboardingTour from '@/components/OnboardingTour';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSession } from 'next-auth/react';
 
@@ -59,13 +60,27 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showFeatureIcons, setShowFeatureIcons] = useState(true);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
   const { t, currentBackground } = useLanguage();
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 첫 로그인 사용자를 위한 온보딩 투어 표시
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (status === 'authenticated') {
+      const done = localStorage.getItem('moa_onboarding_done_v1');
+      const force = localStorage.getItem('moa_onboarding_force');
+      if (!done || force === '1') {
+        setTimeout(() => setIsTourOpen(true), 300);
+      }
+    }
+  }, [status]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +101,13 @@ export default function Home() {
   const toggleFeatureIcons = () => {
     setShowFeatureIcons(!showFeatureIcons);
   };
+
+  // 빠른 프롬프트 칩
+  const quickPrompts = [
+    '블로그 아이디어 3개 제안',
+    'PPT 제작을 위한 AI 추천',
+    '오늘의 점심 추천'
+  ];
 
   // 기능 버튼 클릭 핸들러
   const handleFeatureClick = (path: string) => {
@@ -268,35 +290,45 @@ export default function Home() {
               }
             >{t('search_subtitle') || '당신에게 맞는 AI를 찾아보세요'}</p>
             
-            {/* 새로운 입력창 - 이미지와 같은 느낌 */}
+            {/* 새로운 입력창 - 강화된 UI */}
             <div className="w-full max-w-2xl mb-4 relative">
               {/* 1. 입력창 영역 (고정) */}
-              <div className={`relative z-20 bg-white border border-gray-200 shadow-lg p-4 transition-all duration-300 ${showFeatureIcons ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
-                <form onSubmit={handleSearch} className="flex flex-col justify-between min-h-[104px]">
-                  {/* 상단 입력 영역 */}
+              <div className={`relative z-20 bg-white/90 backdrop-blur-sm border ${isInputFocused ? 'border-blue-300 ring-4 ring-blue-100' : 'border-gray-200'} shadow-xl p-4 transition-all duration-300 ${showFeatureIcons ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
+                <form onSubmit={handleSearch} className="flex flex-col justify-between min-h-[124px]">
+                  {/* 상단: 빠른 프롬프트 칩 */}
+                  <div className="mb-2 -mt-1 flex flex-wrap gap-2">
+                    {quickPrompts.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setSearchQuery(q)}
+                        className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors border border-gray-200"
+                        title="클릭하여 입력창에 넣기"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 중단: 입력 영역 */}
                   <div className="flex-1 mb-3 relative">
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={handleSearchInput}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
                       placeholder="메시지를 입력하세요..."
-                      className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-400 text-base pr-12"
+                      className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-400 text-base pr-24"
+                      data-tour="search-input"
                     />
-                    <button type="button" className="absolute top-0 right-0 p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="w-5 h-5 text-gray-500 flex items-center justify-center">
-                        <span className="text-xl font-bold">+</span>
-                      </div>
-                    </button>
                   </div>
-                  {/* 하단 버튼 영역 */}
+
+                  {/* 하단: 보조 버튼 + 글자 수 + 전송 */}
                   <div className="flex items-center justify-between">
-                    <button type="button" className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                      <span className="text-sm text-gray-700">GPT-4o</span>
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    <button type="submit" className="p-2 rounded-lg bg-black hover:bg-gray-800 transition-colors">
+                    <div className="flex items-center gap-2"></div>
+
+                    <button type="submit" className="px-3 py-2 rounded-lg bg-black hover:bg-gray-800 transition-colors">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                       </svg>
@@ -305,39 +337,62 @@ export default function Home() {
                 </form>
               </div>
 
-              {/* 2. 확장되는 기능 아이콘 영역 */}
-              {showFeatureIcons && (
-                <div className="absolute w-full top-full left-0 z-10 -mt-2">
-                  <div className="bg-white border-x border-b border-gray-200 rounded-b-2xl shadow-lg px-4 pt-8 pb-1">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full px-8">
-                      {featureButtons.map((btn, index) => (
-                        <button
-                          key={btn.label}
-                          className="group rounded-xl px-4 py-1 flex flex-col items-center text-center"
-                          type="button"
-                          onClick={() => handleFeatureClick(btn.path)}
-                        >
-                          <div className="mb-3 flex justify-center">{btn.icon}</div>
-                          <h3 className="font-bold text-gray-800 text-sm group-hover:text-gray-900 transition-colors">
-                            {btn.label}
-                          </h3>
-                        </button>
-                      ))}
-                    </div>
-                    {/* 올리기 아이콘 */}
-                    <div className="flex justify-center mt-2">
+              {/* 2. 확장되는 기능 아이콘 영역 (슬라이드 애니메이션) */}
+              <div
+                className={`absolute w-full top-full left-0 z-10 -mt-2 overflow-hidden transition-all duration-500 ${
+                  showFeatureIcons ? 'max-h-[360px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'
+                }`}
+                aria-hidden={!showFeatureIcons}
+              >
+                <div className={`bg-white border-x border-b border-gray-200 rounded-b-2xl shadow-lg px-4 pb-1 ${showFeatureIcons ? 'pt-8' : 'pt-0'}`}>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full px-8">
+                    {featureButtons.map((btn, index) => (
                       <button
-                        onClick={toggleFeatureIcons}
-                        className="w-10 h-10 flex items-center justify-center hover:scale-110 transition-transform duration-200 cursor-pointer"
+                        key={btn.label}
+                        className="group rounded-xl px-4 py-1 flex flex-col items-center text-center"
+                        type="button"
+                        onClick={() => handleFeatureClick(btn.path)}
+                        data-tour={
+                          btn.path === '/image-create' ? 'btn-image' :
+                          btn.path === '/video-create' ? 'btn-video' :
+                          btn.path === '/productivity' ? 'btn-productivity' :
+                          btn.path === '/community' ? 'btn-community' : undefined
+                        }
                       >
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
+                        <div className="mb-3 flex justify-center">{btn.icon}</div>
+                        <h3 className="font-bold text-gray-800 text-sm group-hover:text-gray-900 transition-colors">
+                          {btn.label}
+                        </h3>
                       </button>
-                    </div>
+                    ))}
+                  </div>
+                  {/* 올리기 아이콘 */}
+                  <div className="flex justify-center mt-2">
+                    <button
+                      onClick={toggleFeatureIcons}
+                      aria-expanded={showFeatureIcons}
+                      aria-label="패널 토글"
+                      className="w-10 h-10 relative flex items-center justify-center hover:scale-105 transition-transform duration-200 cursor-pointer"
+                      data-tour="feature-toggle"
+                    >
+                      {/* 펼쳐진 상태: 위쪽 화살표 */}
+                      <svg
+                        className={`w-5 h-5 text-gray-600 transition-all duration-200 ${showFeatureIcons ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                      {/* 접힌 상태: 아래쪽 화살표 */}
+                      <svg
+                        className={`w-5 h-5 text-gray-600 transition-all duration-200 absolute ${showFeatureIcons ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* 3. 기능 바로가기 버튼 (확장 토글) */}
               {!showFeatureIcons && (
@@ -406,16 +461,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* 우측 플로팅 버튼들 */}
-        <div className="fixed right-6 top-1/2 transform -translate-y-1/2 space-y-4 z-10">
-          <button className="w-12 h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-            <Grid className="w-6 h-6 text-gray-700" />
-          </button>
-          <button className="w-12 h-12 bg-purple-500 rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
-            <MessageCircle className="w-6 h-6 text-white" />
-          </button>
-        </div>
       </div>
 
       {/* 푸터 */}
@@ -457,6 +502,91 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      
+      {/* 온보딩 투어 */}
+      <OnboardingTour
+        open={isTourOpen}
+        onClose={() => {
+          setIsTourOpen(false);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('moa_onboarding_done_v1', '1');
+            localStorage.removeItem('moa_onboarding_force');
+          }
+        }}
+        characterImageSrc="/MOA.ico"
+        steps={[
+          {
+            selector: '[data-tour="search-input"]',
+            title: 'AI 검색 시작',
+            content: '여기에 원하는 작업을 자연어로 입력해 보세요. 예: "무료 이미지 생성 AI 추천"',
+          },
+          {
+            selector: '[data-tour="hdr-logo"]',
+            title: '상단바 - 로고',
+            content: 'MOA 로고를 클릭하면 언제든지 홈으로 돌아올 수 있어요.',
+          },
+          {
+            selector: '[data-tour="hdr-home"]',
+            title: '상단바 - 홈',
+            content: '홈으로 이동합니다. 검색/추천 시작점이에요.',
+          },
+          {
+            selector: '[data-tour="hdr-ai-list"]',
+            title: '상단바 - AI 목록',
+            content: '카테고리/필터로 다양한 AI 도구를 탐색하세요.',
+          },
+          {
+            selector: '[data-tour="hdr-usage"]',
+            title: '상단바 - 사용량',
+            content: '이미지/비디오/생산성 도구 사용량과 초기화 일정을 볼 수 있어요.',
+          },
+          {
+            selector: '[data-tour="hdr-plan"]',
+            title: '상단바 - 플랜',
+            content: '요금제/혜택을 확인하고 업그레이드할 수 있어요.',
+          },
+          {
+            selector: '[data-tour="hdr-community"]',
+            title: '상단바 - 커뮤니티',
+            content: '팁과 결과물을 공유하고 소통해요.',
+          },
+          {
+            selector: '[data-tour="hdr-contact"]',
+            title: '상단바 - 문의',
+            content: '문제가 있거나 제안이 있다면 언제든지 문의해주세요.',
+          },
+          {
+            selector: '[data-tour="hdr-profile"]',
+            title: '상단바 - 프로필',
+            content: '프로필/설정/로그아웃을 사용할 수 있어요.',
+          },
+          {
+            selector: '[data-tour="feature-toggle"]',
+            title: '기능 패널',
+            content: '이 버튼으로 주요 기능 패널을 열고 닫을 수 있어요.',
+          },
+          {
+            selector: '[data-tour="btn-image"]',
+            title: '이미지 생성',
+            content: '텍스트로 이미지를 생성할 수 있어요. 사용량 한도는 플랜에 따라 달라요.',
+          },
+          {
+            selector: '[data-tour="btn-video"]',
+            title: '비디오 생성',
+            content: '문장을 입력하면 동영상을 만들어드립니다.',
+          },
+          {
+            selector: '[data-tour="btn-productivity"]',
+            title: '생산성 도구 모음',
+            content: '보고서/자소서/코드 리뷰 등 업무 효율을 높이는 도구들을 모았어요.',
+          },
+          {
+            selector: '[data-tour="btn-community"]',
+            title: '커뮤니티',
+            content: '유저들과 팁을 공유하고 영감을 얻어보세요.',
+          },
+        ]}
+      />
     </>
   );
 }

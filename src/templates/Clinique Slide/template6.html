@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta name="template-prompt" content="아래 입력만 사용하여 토큰을 채우세요. 다른 텍스트/주석 금지.
+
+입력
+- 제목: {{SECTION_TITLE}}
+- 내용: {{SECTION_CONTENT}}
+- 키포인트: {{SECTION_KEYPOINTS}}
+
+토큰 규칙(섹션6 전용)
+- {{TITLE}}: 1줄(타이틀)
+- 배너 이미지는 디자인만 유지(이미지 없으면 회색 박스)
+- 좌측 불릿 4개: {{BULLET1_TEXT}}~{{BULLET4_TEXT}}
+- 푸터: {{FOOTER_TEXT}}
+"/>
+  <title>{{TITLE}}</title>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { margin:0; padding:0; font-family:'Noto Sans KR',sans-serif; background:#ececec; overflow:hidden; }
+    .slide-container { width:1280px; min-height:720px; position:relative; overflow:hidden; }
+    .header { background:#ececec; padding:2rem 4rem; }
+    .title { font-family:'Noto Serif KR',serif; font-size:3.5rem; font-weight:bold; color:#000; margin-bottom:.5rem; }
+    .subtitle { font-family:'Noto Serif KR',serif; font-size:2.0rem; color:#000; margin-top:.5rem; }
+    /* 중앙 배너 제거: 내용만 표시 */
+    .image-banner { display:none; width:100%; height:0; }
+    .image-banner img { display:none; }
+    .content { background:#ececec; padding:2rem 4rem; position:relative; display:flex; }
+    .bullet-points { width:70%; }
+    .bullet-points ul { list-style:none; padding-left:0; }
+    .bullet-points li { font-family:'Noto Sans KR',sans-serif; font-size:1.2rem; margin-bottom:1.2rem; display:flex; align-items:center; color:#000; }
+    .bullet-points li:before { content:"•"; color:#000; font-weight:bold; margin-right:1rem; }
+    .decoration { width:30%; position:relative; }
+    .circle { position:absolute; border-radius:50%; background:#000; }
+    .circle-1 { width:100px; height:100px; top:20px; right:30px; opacity:.8; }
+    .circle-2 { width:80px; height:80px; top:70px; right:110px; background:#fff; border:2px solid #000; opacity:.9; }
+    .circle-3 { width:60px; height:60px; top:130px; right:50px; opacity:.7; }
+    .plus { position:absolute; color:#000; font-size:1.5rem; font-weight:bold; }
+    .plus-1 { top:10px; right:150px; }
+    .plus-2 { top:50px; right:20px; }
+    .plus-3 { top:150px; right:130px; }
+    .plus-4 { top:180px; right:40px; }
+    .footer { position:absolute; bottom:0; left:0; width:100%; background:#000; color:#fff; padding:.8rem; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <!-- Header Section -->
+    <div class="header">
+      <h1 class="title">{{TITLE}}</h1>
+      <h2 class="subtitle">{{RESULT_TEXT}}</h2>
+    </div>
+    <!-- Image Banner -->
+    <div class="image-banner">
+      <!-- 디자인 유지용 배경 박스; 이미지 필요 시 향후 {{IMAGE_URL}} 주입 가능 -->
+    </div>
+    <!-- Content Section -->
+    <div class="content">
+      <!-- Bullet Points -->
+      <div class="bullet-points">
+        <ul>
+          <li>{{METRIC1_TITLE}}: {{METRIC1_DESCRIPTION}}</li>
+          <li>{{METRIC2_TITLE}}: {{METRIC2_DESCRIPTION}}</li>
+          <li>{{METRIC3_TITLE}}: {{METRIC3_DESCRIPTION}}</li>
+          <li>{{RESULT_PERCENTAGE}}</li>
+        </ul>
+      </div>
+      <!-- Decorative Elements -->
+      <div class="decoration">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+        <div class="plus plus-1">+</div>
+        <div class="plus plus-2">+</div>
+        <div class="plus plus-3">+</div>
+        <div class="plus plus-4">+</div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="footer"></div>
+  </div>
+  <script src="/slide-autofill.js" defer></script>
+</body>
+</html>

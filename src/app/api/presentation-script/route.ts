@@ -6,6 +6,8 @@ import { extractStructure } from '@/lib/extractStructure';
 import { buildPrompt } from '@/lib/promptBuilder';
 import { handleOpenAIError } from '@/lib/handleOpenAIError';
 import { audienceMap, purposeMap, toneMap } from '@/config/mappings';
+import { requireAuth } from '@/lib/auth';
+import { checkUsageLimit, incrementUsage } from '@/lib/auth';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -15,6 +17,13 @@ export async function POST(request: NextRequest) {
   let body: any = {};
   
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
     console.log('=== 발표 대본 생성 API 호출됨 ===');
     console.log('🕐 호출 시간:', new Date().toISOString());
     console.log('🌐 환경:', process.env.VERCEL === '1' ? 'Vercel' : '로컬/호스트');
@@ -168,9 +177,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🚀 OpenAI API 호출 시작...');
-    console.log('🤖 사용 모델: gpt-3.5-turbo');
+    const model = 'gpt-5-mini';
+    const allowTemperature = model !== 'gpt-5-mini';
+    console.log('🤖 사용 모델:', model);
     console.log('📏 최대 토큰: 4000');
-    console.log('🌡️ 온도: 0.7');
+    console.log('🌡️ 온도:', allowTemperature ? '0.7' : '사용 불가(모델 정책)');
     console.log('⏱️ 타임아웃: 30초');
     console.log('📝 프롬프트 길이:', prompt.length);
     
@@ -181,35 +192,28 @@ export async function POST(request: NextRequest) {
       setTimeout(() => reject(new Error('OpenAI API 호출 시간이 초과되었습니다.')), 30000);
     });
     
-    const completionPromise = openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // 더 빠른 모델로 변경
-      messages: [
-        {
-          role: "system",
-          content: "당신은 전문적인 발표 코치이자 스피치 라이터입니다. PDF 자료가 제공된 경우, PDF의 내용을 그대로 발표 주제로 사용하고, PDF에 나온 제목, 저자, 목표, 내용을 발표 대본에 정확히 반영해주세요. PDF의 구조와 정보를 그대로 활용하여 체계적인 발표 대본을 작성해주세요. PDF 내용을 바탕으로 한 실용적이고 자연스러운 발표 대본을 작성해주세요. 기본 지침을 준수하여 청중의 이해를 돕는 명확하고 자연스러운 발표 대본을 작성합니다."
-        },
-        {
-          role: "user", 
-          content: `제목: ${topic}\n청중: ${audience}\n시간: ${duration}분\n목적: ${purpose}\n키워드: ${validKeyPoints.join(', ')}\n\n${prompt}`
-        }
-      ],
-      max_tokens: 4000, // 토큰 수 증가 (2000 → 4000)
-      temperature: 0.7
-    });
+    const requestPayload: any = {
+      model,
+      input: `당신은 전문적인 발표 코치이자 스피치 라이터입니다. PDF 자료가 제공된 경우, PDF의 내용을 그대로 발표 주제로 사용하고, PDF에 나온 제목, 저자, 목표, 내용을 발표 대본에 정확히 반영해주세요. PDF의 구조와 정보를 그대로 활용하여 체계적인 발표 대본을 작성해주세요. PDF 내용을 바탕으로 한 실용적이고 자연스러운 발표 대본을 작성해주세요. 기본 지침을 준수하여 청중의 이해를 돕는 명확하고 자연스러운 발표 대본을 작성합니다.\n\n제목: ${topic}\n청중: ${audience}\n시간: ${duration}분\n목적: ${purpose}\n키워드: ${validKeyPoints.join(', ')}\n\n${prompt}`,
+      reasoning: { effort: 'minimal' }
+    };
+    if (allowTemperature) {
+      requestPayload.temperature = 0.7;
+    }
+    let completionPromise = openai.responses.create(requestPayload);
     
-    // 타임아웃과 API 호출을 경쟁시킴
+    // 타임아웃과 API 호출을 경쟁시킴 (gpt-5-mini 전용)
     const completion = await Promise.race([completionPromise, timeoutPromise]) as any;
 
     const endTime = Date.now();
     console.log('✅ OpenAI API 응답 받음');
     console.log('⏱️ API 호출 시간:', endTime - startTime, 'ms');
     console.log('📊 응답 정보:', {
-      model: completion.model,
-      usage: completion.usage,
-      finishReason: completion.choices[0]?.finish_reason
+      model: completion?.model,
+      usage: completion?.usage
     });
 
-    const script = completion.choices[0]?.message?.content;
+    const script = completion?.output_text;
 
     if (!script) {
       console.error('❌ OpenAI에서 대본을 생성하지 못함');
@@ -264,8 +268,32 @@ export async function POST(request: NextRequest) {
     console.log('🎉 대본 생성 성공, 길이:', script.length);
     console.log('📄 대본 미리보기:', script.substring(0, 200) + '...');
     console.log('📄 대본 전체 내용:', script);
-    
-    return NextResponse.json({ script });
+
+    // 사용량 체크
+    const usageCheck = await checkUsageLimit(user.id, 'presentation-script');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: '발표 대본 생성 사용량 한도에 도달했습니다.',
+        currentUsage: usageCheck.limit - usageCheck.remaining,
+        maxLimit: usageCheck.limit,
+        resetDate: usageCheck.resetDate
+      }, { status: 429 });
+    }
+
+    // 사용량 증가
+    await incrementUsage(user.id, 'presentation-script');
+
+    // 증가된 사용량 정보 가져오기
+    const updatedUsageCheck = await checkUsageLimit(user.id, 'presentation-script');
+
+    return NextResponse.json({ 
+      script,
+      usage: {
+        current: updatedUsageCheck.limit - updatedUsageCheck.remaining,
+        limit: updatedUsageCheck.limit,
+        remaining: updatedUsageCheck.remaining
+      }
+    });
 
   } catch (error) {
     return handleOpenAIError(error, {

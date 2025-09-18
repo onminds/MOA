@@ -19,10 +19,19 @@ export async function GET(request: NextRequest) {
     // YouTube Data API를 사용한 정보 가져오기
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ 
-        error: 'YouTube API 키가 설정되지 않았습니다.',
-        fallback: true 
-      }, { status: 400 });
+      // API 키가 없으면 기본 정보 반환
+      console.log('⚠️ YouTube API 키가 없습니다. 기본 정보를 반환합니다.');
+      return NextResponse.json({
+        title: 'YouTube 영상',
+        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        duration: '',
+        channel: 'YouTube',
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        description: '',
+        viewCount: '',
+        likeCount: '',
+        fallback: true
+      });
     }
 
     const response = await fetch(
@@ -30,7 +39,19 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error(`YouTube API 오류: ${response.status}`);
+      // API 호출 실패 시에도 기본 정보 반환
+      console.log('⚠️ YouTube API 호출 실패. 기본 정보를 반환합니다.');
+      return NextResponse.json({
+        title: 'YouTube 영상',
+        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        duration: '',
+        channel: 'YouTube',
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        description: '',
+        viewCount: '',
+        likeCount: '',
+        fallback: true
+      });
     }
 
     const data = await response.json();
@@ -48,14 +69,37 @@ export async function GET(request: NextRequest) {
         likeCount: video.statistics.likeCount
       });
     } else {
-      return NextResponse.json({ error: '영상을 찾을 수 없습니다.' }, { status: 404 });
+      // 영상을 찾을 수 없어도 기본 정보 반환
+      console.log('⚠️ 영상을 찾을 수 없습니다. 기본 정보를 반환합니다.');
+      return NextResponse.json({
+        title: 'YouTube 영상',
+        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        duration: '',
+        channel: 'YouTube',
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        description: '',
+        viewCount: '',
+        likeCount: '',
+        fallback: true
+      });
     }
 
   } catch (error) {
     console.error('YouTube 정보 가져오기 오류:', error);
-    return NextResponse.json({ 
-      error: 'YouTube 정보를 가져오는 중 오류가 발생했습니다.',
-      fallback: true 
-    }, { status: 500 });
+    // 오류 발생 시에도 기본 정보 반환
+    const { searchParams } = new URL(request.url);
+    const videoId = searchParams.get('videoId');
+    
+    return NextResponse.json({
+      title: 'YouTube 영상',
+      thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '',
+      duration: '',
+      channel: 'YouTube',
+      url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : '',
+      description: '',
+      viewCount: '',
+      likeCount: '',
+      fallback: true
+    });
   }
 }

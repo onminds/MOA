@@ -70,15 +70,10 @@ async function generateReport(topic: string, pageCount: number, files: File[], u
       urlContents += `\n\n[참고 URL: ${url}]`;
     }
 
-    // 페이지 수에 따른 토큰 수 조정
-    const maxTokens = Math.min(4000, pageCount * 800); // 페이지당 약 800 토큰
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `당신은 학술적이고 전문적인 레포트 작성 전문가입니다. 주어진 주제에 대해 체계적이고 상세한 레포트를 작성해주세요.
+    // GPT-5-mini를 사용한 새로운 Responses API 호출
+    const response = await openai.responses.create({
+      model: "gpt-5-mini",
+      input: `당신은 학술적이고 전문적인 레포트 작성 전문가입니다. 주어진 주제에 대해 체계적이고 상세한 레포트를 작성해주세요.
 
 다음 형식과 구조로 작성해주세요:
 
@@ -126,29 +121,26 @@ async function generateReport(topic: string, pageCount: number, files: File[], u
 4. 논리적 구조와 일관성 유지
 5. 지정된 페이지 수에 맞게 적절한 분량으로 작성
 6. 각 섹션별로 적절한 소제목 사용
-7. 첨부된 보충자료와 URL을 참고하여 내용을 보강
+7. 첨부된 참고자료와 URL을 참고하여 내용을 보강
 8. 서론과 결론을 명확하게 구분하여 작성
 9. 각 섹션이 자연스럽게 연결되도록 구성
-10. 마크다운 헤더 표시(##)를 사용하지 말고 일반 텍스트로 섹션 제목을 작성`
-        },
-        {
-          role: "user",
-          content: `다음 주제에 대해 위의 형식에 따라 체계적이고 상세한 레포트를 작성해주세요:
+10. 마크다운 헤더 표시(##)를 사용하지 말고 일반 텍스트로 섹션 제목을 작성
+
+다음 주제에 대해 위의 형식에 따라 체계적이고 상세한 레포트를 작성해주세요:
 
 주제: ${topic}
 페이지 수: ${pageCount}페이지
-${fileContents ? `\n보충자료:\n${fileContents}` : ''}
+${fileContents ? `\n참고자료:\n${fileContents}` : ''}
 ${urlContents ? `\n참고 URL:\n${urlContents}` : ''}
 
 레포트는 학술적이면서도 실용적이고, 현재 동향과 미래 전망을 포함하여 작성해주세요. 
-페이지 수에 맞게 적절한 분량으로 작성하고, 서론과 결론을 명확하게 구분하여 작성해주세요.`
-        }
-      ],
-      max_tokens: maxTokens,
-      temperature: 0.7,
+페이지 수에 맞게 적절한 분량으로 작성하고, 서론과 결론을 명확하게 구분하여 작성해주세요.`,
+      reasoning: {
+        effort: "medium" // 중간 수준의 추론으로 균형잡힌 성능 제공
+      }
     });
 
-    return completion.choices[0]?.message?.content || '레포트를 생성할 수 없습니다.';
+    return response.output_text || '레포트를 생성할 수 없습니다.';
   } catch (error) {
     console.error('레포트 생성 오류:', error);
     throw new Error('레포트 생성에 실패했습니다.');

@@ -2,9 +2,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import Header from '../../components/Header';
 import {
-  ArrowLeft, Eye, Copy, Loader2, FileCode, CheckCircle, Bug, AlertCircle, TrendingUp, MessageCircle, Zap, Settings, Search, Sun, Brain, Rocket, ToggleLeft, ToggleRight, History, Clock
+  ArrowLeft, Eye, Copy, Loader2, FileCode, CheckCircle, Bug, AlertCircle, TrendingUp, MessageCircle, Zap, Settings, Search, Sun, Rocket, ToggleLeft, ToggleRight, History, Clock, Trash2, Lightbulb
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useToast } from "@/contexts/ToastContext";
+import { createUsageToastData, createUsageToastMessage } from "@/lib/toast-utils";
 
 interface CodeReviewResult {
   detectedLanguage?: string;
@@ -69,6 +71,7 @@ interface CodeGenerationHistory {
 
 export default function CodeReview() {
   const router = useRouter();
+  const { showToast } = useToast();
   const resultRef = useRef<HTMLDivElement>(null);
   const [code, setCode] = useState('');
   const [codeDescription, setCodeDescription] = useState('');
@@ -140,11 +143,15 @@ export default function CodeReview() {
         }),
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || '코드 검사에 실패했습니다.');
-      }
+             const data = await response.json();
+       
+       // 디버깅: API 응답 확인
+       console.log('🔍 API 응답 데이터:', data);
+       console.log('🔍 usage 데이터:', data.usage);
+       
+       if (!response.ok) {
+         throw new Error(data.error || '코드 검사에 실패했습니다.');
+       }
       
       if (data.review) {
         // API 응답을 프론트엔드 형식에 맞게 변환
@@ -178,6 +185,26 @@ export default function CodeReview() {
         
         setReviewResult(result);
         
+        // 사용량 증가 Toast 알림 표시 (실제 사용량 데이터 사용)
+        if (data.usage) {
+          const toastData = createUsageToastData('code-review', data.usage.current, data.usage.limit);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        } else {
+          // Fallback to hardcoded values if usage data is not available
+          const toastData = createUsageToastData('code-review', 0, 30);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        }
+        
         // DB에 저장
         await saveReviewResult(result);
         
@@ -204,7 +231,7 @@ export default function CodeReview() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
+    if (score >= 80) return 'text-blue-600';
     if (score >= 60) return 'text-yellow-600';
     return 'text-red-600';
   };
@@ -354,6 +381,19 @@ export default function CodeReview() {
     }
   };
 
+  // 코드 리뷰 히스토리 삭제
+  const deleteCodeReviewHistoryItem = async (id: number) => {
+    try {
+      const res = await fetch(`/api/code-review/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '삭제에 실패했습니다.');
+      // UI 즉시 반영
+      setReviewHistory(prev => prev.filter(item => item.id !== id));
+    } catch (e: any) {
+      alert(e.message || '삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   // 코드 생성 히스토리 로드
   const loadCodeGenerationHistory = async () => {
     setLoadingHistory(true);
@@ -399,7 +439,16 @@ export default function CodeReview() {
 
   // 코드 생성 히스토리에서 코드 선택
   const selectCodeFromHistory = (item: CodeGenerationHistory) => {
-    setCode(item.generatedCode);
+    let codeOnly = item.generatedCode;
+    try {
+      const parsed = JSON.parse(item.generatedCode);
+      if (parsed && typeof parsed === 'object' && parsed.code) {
+        codeOnly = parsed.code;
+      }
+    } catch (_) {
+      // not JSON, keep as-is
+    }
+    setCode(codeOnly);
     setDetectedLanguage(item.language);
     setShowCodeHistory(false);
     console.log('✅ 코드 생성 히스토리에서 선택:', item.requestText.substring(0, 50) + '...');
@@ -467,7 +516,7 @@ export default function CodeReview() {
                 {/* 코드 검사 섹션 */}
                 <div className="mb-8">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-blue-600" />
+                    <Zap className="w-5 h-5 text-gray-800" />
                     코드를 검사해드릴게요!
                   </h2>
                   
@@ -475,13 +524,13 @@ export default function CodeReview() {
                   
                   <div className="mb-6">
                     <h3 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
-                      <FileCode className="w-4 h-4 text-red-500" />
-                      검사받고 싶은 코드를 붙여넣어 주세요 *
+                      <FileCode className="w-4 h-4 text-gray-800" />
+                      검사받고 싶은 코드를 붙여넣어 주세요 <span className="text-red-500">*</span>
                     </h3>
                     <textarea
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
-                      placeholder="여기에 코드를 붙여넣어 주세요... 걱정마세요, AI가 친절하게 검사해드릴게요!"
+                      placeholder="여기에 코드를 붙여넣어 주세요"
                       rows={12}
                       className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-500 text-black font-mono text-sm resize-none"
                     />
@@ -496,8 +545,8 @@ export default function CodeReview() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-yellow-600 mt-2">
-                      <MessageCircle className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-sm text-blue-600 mt-2">
+                      <Lightbulb className="w-4 h-4 text-gray-800" />
                       팁: 어떤 언어든 상관없어요! AI가 알아서 분석해드립니다
                     </div>
                   </div>
@@ -506,21 +555,21 @@ export default function CodeReview() {
                 {/* 기본 설정 */}
                 <div className="mb-8">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-gray-600" />
+                    <Settings className="w-5 h-5 text-gray-800" />
                     기본 설정
                   </h2>
                   
                   <div className="space-y-6">
                     {/* 언어 자동 감지 */}
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className={`${autoDetectLanguage ? 'bg-blue-50 border-blue-200' : 'bg-gray-100 border-gray-200'} border rounded-lg p-4`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {autoDetectLanguage ? (
-                            <ToggleRight className="w-6 h-6 text-green-600" />
+                            <ToggleRight className="w-6 h-6 text-gray-800" />
                           ) : (
                             <ToggleLeft className="w-6 h-6 text-gray-400" />
                           )}
-                          <span className="text-sm font-medium text-green-800">
+                          <span className={`text-sm font-medium ${autoDetectLanguage ? 'text-blue-800' : 'text-gray-700'}`}>
                             AI가 코드를 보고 자동으로 언어를 감지해드립니다!
                           </span>
                         </div>
@@ -528,7 +577,7 @@ export default function CodeReview() {
                           onClick={() => setAutoDetectLanguage(!autoDetectLanguage)}
                           className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                             autoDetectLanguage
-                              ? 'bg-green-600 text-white'
+                              ? 'bg-blue-600 text-white'
                               : 'bg-gray-300 text-gray-700'
                           }`}
                         >
@@ -540,7 +589,7 @@ export default function CodeReview() {
                     {/* 검사 범위 */}
                     <div>
                       <h3 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
-                        <Search className="w-4 h-4" />
+                        <Search className="w-4 h-4 text-gray-800" />
                         어떻게 검사할까요?
                       </h3>
                       <select
@@ -592,10 +641,7 @@ export default function CodeReview() {
                         AI가 코드를 검사하고 있어요...
                       </>
                     ) : (
-                      <>
-                        <Brain className="w-6 h-6" />
-                        AI에게 코드 검사 맡기기!
-                      </>
+                      <>AI에게 코드 검사 맡기기!</>
                     )}
                   </button>
                                      <p className="text-sm text-gray-600 mt-3">
@@ -619,7 +665,7 @@ export default function CodeReview() {
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <CheckCircle className="w-5 h-5 text-gray-800" />
                         검사 결과가 나왔어요!
                       </h3>
                       {reviewResult.detectedLanguage && (
@@ -649,14 +695,14 @@ export default function CodeReview() {
                    {reviewResult.positives && reviewResult.positives.length > 0 && (
                      <div className="mb-6">
                        <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                         <CheckCircle className="w-5 h-5 text-green-500" />
+                         <CheckCircle className="w-5 h-5 text-gray-800" />
                          잘된 점들 ({reviewResult.positives.length}개)
                        </h4>
                        <div className="space-y-2">
                          {reviewResult.positives.map((positive, idx) => (
-                           <div key={idx} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                             <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                             <p className="text-sm text-green-800">{positive}</p>
+                           <div key={idx} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                             <CheckCircle className="w-4 h-4 text-gray-800 flex-shrink-0 mt-0.5" />
+                             <p className="text-sm text-blue-800">{positive}</p>
                            </div>
                          ))}
                        </div>
@@ -667,13 +713,13 @@ export default function CodeReview() {
                    {reviewResult.improvements && reviewResult.improvements.length > 0 && (
                      <div className="mb-6">
                        <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                         <TrendingUp className="w-5 h-5 text-blue-500" />
+                         <TrendingUp className="w-5 h-5 text-gray-800" />
                          개선 사항 ({reviewResult.improvements.length}개)
                        </h4>
                        <div className="space-y-2">
                          {reviewResult.improvements.map((improvement, idx) => (
                            <div key={idx} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                             <TrendingUp className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                             <TrendingUp className="w-4 h-4 text-gray-800 flex-shrink-0 mt-0.5" />
                              <p className="text-sm text-blue-800">{improvement}</p>
                            </div>
                          ))}
@@ -704,7 +750,7 @@ export default function CodeReview() {
                   {reviewResult.issues && reviewResult.issues.length > 0 && (
                     <div className="mb-6">
                       <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <Bug className="w-5 h-5" />
+                        <Bug className="w-5 h-5 text-gray-800" />
                         발견된 이슈 ({reviewResult.issues.length}개)
                       </h4>
                       <div className="space-y-3">
@@ -738,7 +784,7 @@ export default function CodeReview() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4" />
+                          <TrendingUp className="w-4 h-4 text-gray-800" />
                           개선된 코드 제안
                         </h4>
                         <button
@@ -760,16 +806,13 @@ export default function CodeReview() {
 
                                                   {/* 히스토리 패널 */}
              <div className="lg:col-span-1">
-               <div className="bg-white rounded-lg shadow-md p-6 sticky top-8">
+               <div className="bg-white rounded-lg shadow-md p-6 sticky top-8 min-w-[480px]">
                  {/* 탭 헤더 */}
                  <div className="flex items-center justify-between mb-4">
                    <h3 className="text-md font-semibold text-gray-900 flex items-center gap-2">
-                     <FileCode className="w-4 h-4" />
+                     <History className="w-4 h-4 text-gray-800" />
                      코드 히스토리
                    </h3>
-                   <div className="text-xs text-gray-500">
-                     최근 24시간 기준
-                   </div>
                  </div>
 
                  {/* 탭 네비게이션 */}
@@ -811,37 +854,63 @@ export default function CodeReview() {
                      ) : (
                                                <div className="space-y-4 max-h-96 overflow-y-auto">
                           {reviewHistory.map((review) => (
-                            <div key={review.id} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors cursor-pointer" onClick={() => {
-                              const result: CodeReviewResult = {
-                                detectedLanguage: review.detectedLanguage,
-                                overallScore: review.overallScore,
-                                scores: review.scores,
-                                issues: review.issues,
-                                improvements: review.improvements,
-                                positives: review.positives,
-                                refactoredCode: review.refactoredCode,
-                                summary: review.summary
-                              };
-                              setReviewResult(result);
-                            }}>
-                              <div className="flex items-center gap-2 mb-2">
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                                <span className="text-sm font-medium text-gray-900 truncate">
-                                  {review.summary.substring(0, 30)}...
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  {review.detectedLanguage}
-                                </span>
-                                <span className={`text-xs px-2 py-1 rounded font-medium ${getScoreColor(review.overallScore)}`}>
-                                  {review.overallScore}/100
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                  {new Date(review.createdAt).toLocaleDateString()}
-                                </span>
+                            <div key={review.id} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors">
+                              <div>
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <FileCode className="w-4 h-4 text-gray-800" />
+                                      <span className="text-sm font-medium text-gray-900 truncate">
+                                        {review.summary.substring(0, 30)}...
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteCodeReviewHistoryItem(review.id);
+                                      }}
+                                      className="text-red-500 hover:text-red-700 transition-colors"
+                                      title="삭제"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <p className="text-xs text-gray-500 line-clamp-1 mb-2">
+                                    {review.summary}
+                                  </p>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                        {review.detectedLanguage}
+                                      </span>
+                                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                                        {review.overallScore}/100
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <Clock className="w-3 h-3" />
+                                      {new Date(review.createdAt).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    const result: CodeReviewResult = {
+                                      detectedLanguage: review.detectedLanguage,
+                                      overallScore: review.overallScore,
+                                      scores: review.scores,
+                                      issues: review.issues,
+                                      improvements: review.improvements,
+                                      positives: review.positives,
+                                      refactoredCode: review.refactoredCode,
+                                      summary: review.summary
+                                    };
+                                    setReviewResult(result);
+                                  }}
+                                  className="w-full mt-2 text-xs bg-blue-100 text-blue-800 py-1 rounded hover:bg-blue-200 transition-colors"
+                                >
+                                  리뷰 보기
+                                </button>
                               </div>
                             </div>
                           ))}
@@ -870,30 +939,42 @@ export default function CodeReview() {
                            <div
                              key={item.id}
                              onClick={() => selectCodeFromHistory(item)}
-                             className="border border-gray-200 rounded-lg p-3 hover:border-green-300 hover:bg-green-50 transition-colors cursor-pointer"
+                             className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer"
                            >
                              <div className="flex items-center justify-between mb-2">
                                <div className="flex items-center gap-2">
-                                 <FileCode className="w-4 h-4 text-green-600" />
+                                 <FileCode className="w-4 h-4 text-gray-800" />
                                  <span className="text-sm font-medium text-gray-900 truncate">
                                    {item.requestText.substring(0, 30)}...
+                                 </span>
+                               </div>
+                               <div className="hidden" />
+                             </div>
+                             <p className="text-xs text-gray-500 line-clamp-1 mb-2">
+                               {(() => {
+                                try {
+                                  const parsed = JSON.parse(item.generatedCode);
+                                  const preview = (parsed?.explanation || parsed?.code || '').toString();
+                                  return (preview.replace(/\s+/g, ' ').trim().slice(0, 80) + (preview.length > 80 ? '...' : ''));
+                                } catch {
+                                  const raw = (item.generatedCode || '').replace(/\s+/g, ' ').trim();
+                                  return raw.slice(0, 80) + (raw.length > 80 ? '...' : '');
+                                }
+                              })()}
+                             </p>
+                             <div className="flex items-center justify-between">
+                               <div className="flex items-center gap-2">
+                                 <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                   {item.language}
+                                 </span>
+                                 <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                   {item.complexity}
                                  </span>
                                </div>
                                <div className="flex items-center gap-1 text-xs text-gray-500">
                                  <Clock className="w-3 h-3" />
                                  {new Date(item.createdAt).toLocaleDateString()}
                                </div>
-                             </div>
-                             <p className="text-xs text-gray-500 line-clamp-2 mb-2">
-                               {item.generatedCode.substring(0, 50)}...
-                             </p>
-                             <div className="flex items-center gap-2">
-                               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                 {item.language}
-                               </span>
-                               <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                 {item.complexity}
-                               </span>
                              </div>
                            </div>
                          ))}

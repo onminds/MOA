@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 애니메이션 효과 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* 텍스트 줄 수 제한 유틸리티 */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* 긴 텍스트 처리 */
+.break-words {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* 메시지 컨테이너 */
+.message-content {
+  max-height: none;
+  overflow: visible;
+}
+
+/* 스크롤바 숨김 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -215,3 +269,454 @@ body.bg-geometric {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Report Style - CSS Counter를 사용한 자동 번호 매김 */
+.report-style {
+  counter-reset: section;
+}
+
+.report-style h2 {
+  counter-increment: section;
+}
+
+.report-style h2::before {
+  content: counter(section) ". ";
+  color: #4a5568;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+/* 콘텐츠 본문 스타일 */
+.content-body p { 
+  margin-top: 0.75rem; 
+  margin-bottom: 0.75rem; 
+  line-height: 1.8; 
+}
+
+.content-body ul { 
+  list-style: disc; 
+  padding-left: 1.25rem; 
+  margin: 0.75rem 0; 
+}
+
+.content-body li { 
+  margin: 0.25rem 0; 
+}
+
+.content-body h1, 
+.content-body h2, 
+.content-body h3, 
+.content-body h4, 
+.content-body h5, 
+.content-body h6 { 
+  margin-top: 1.5rem; 
+  margin-bottom: 0.75rem; 
+  font-weight: 600; 
+}
+
+.content-body table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  margin: 0.75rem 0; 
+}
+
+.content-body th, 
+.content-body td { 
+  border: 1px solid #e5e7eb; 
+  padding: 0.5rem; 
+  text-align: left; 
+}
+
+.content-body th { 
+  background-color: #f9fafb; 
+  font-weight: 600; 
+}
+
+/* 장/절 자동 번호 매기기 */
+main { 
+  counter-reset: h2counter; 
+}
+
+.sec { 
+  counter-increment: h2counter; 
+}
+
+.sec > .sec-title::before {
+  content: counter(h2counter) ". ";
+  font-weight: 800; 
+  margin-right: 0.25rem; 
+  color: #1f2937;
+}
+
+.sec .subsec { 
+  counter-reset: h3counter; 
+}
+
+.subsec .subsec-title { 
+  counter-increment: h3counter; 
+}
+
+.subsec .subsec-title::before {
+  content: counter(h2counter) "." counter(h3counter) " ";
+  font-weight: 700; 
+  color: #374151;
+}
+
+/* 표·그림 캡션 */
+.figure, .tablewrap { 
+  margin: 1rem 0; 
+}
+
+.caption { 
+  font-size: 0.875rem; 
+  color: #6b7280; 
+  margin-top: 0.5rem; 
+}
+
+/* 핵심 요약 박스 */
+.key-summary {
+  @apply bg-gray-50 border border-gray-200 rounded-2xl p-5;
+}
+
+.key-summary h3 { 
+  @apply text-gray-900 font-extrabold mb-2; 
+}
+
+.key-summary ul { 
+  @apply list-disc pl-5; 
+}
+
+/* 참고문헌 */
+.references { 
+  @apply bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6; 
+}
+
+.references li { 
+  margin: 0.35rem 0; 
+  font-size: 0.95rem; 
+}
+
+.ref-badge {
+  @apply inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-800 text-white text-xs mr-2;
+}
+
+/* ===== 제출용 레포트 전역 스타일 ===== */
+@media print {
+  aside { display: none !important; }
+  main { max-width: 100% !important; }
+  header, footer { position: static !important; }
+  a[href^="#"]::after { content: ""; }
+}
+
+/* 본문 타이포(플러그인 없이 가독성만 보강) */
+.content-body p{ margin:.75rem 0; line-height:1.9 }
+.content-body ul{ list-style:disc; padding-left:1.25rem; margin:.75rem 0 }
+.content-body ol{ list-style:decimal; padding-left:1.25rem; margin:.75rem 0 }
+.content-body li{ margin:.25rem 0 }
+.content-body h1,.content-body h2,.content-body h3{ margin:1.5rem 0 .75rem; font-weight:700 }
+
+/* 장/절 번호, 그림/표 번호 */
+main { counter-reset: sectionCounter figureCounter tableCounter; }
+section[data-sec] { counter-increment: sectionCounter; }
+section[data-sec] .sec-title::before {
+  content: counter(sectionCounter) ". ";
+  font-weight:800; margin-right:.25rem; color:#111827;
+}
+
+.figure { counter-increment: figureCounter; margin:1rem 0; }
+.figure .caption::before {
+  content: "그림 " counter(figureCounter) ". ";
+  font-weight:600; color:#374151;
+}
+.tablewrap { counter-increment: tableCounter; margin:1rem 0; }
+.tablewrap .caption::before {
+  content: "표 " counter(tableCounter) ". ";
+  font-weight:600; color:#374151;
+}
+
+/* 좌측 TOC 링크 기본/활성 스타일 */
+.toc-link{display:block;padding:.5rem .75rem;border-radius:.6rem;color:#374151}
+.toc-link:hover{background:#eef2ff;color:#1d4ed8}
+.toc-link[aria-current="true"]{background:#eef2ff;color:#1d4ed8;font-weight:600}
+
+/* ===== 제출용 레포트 토큰 시스템 ===== */
+:root{
+  --ink:#111827;         /* 본문 글색 */
+  --ink-sub:#4b5563;     /* 보조 글색 */
+  --line:#e5e7eb;        /* 경계선 */
+  --paper:#ffffff;       /* 카드/섹션 배경 */
+  --bg:#f7f8fb;          /* 페이지 배경 */
+}
+
+body{ color:var(--ink); background:var(--bg); }
+.content p{ margin:.75rem 0; line-height:1.9; }
+.content ul{ list-style:disc; padding-left:1.25rem; margin:.75rem 0; }
+.content ol{ list-style:decimal; padding-left:1.25rem; margin:.75rem 0; }
+.content li{ margin:.25rem 0; }
+.content h2{ margin:1.5rem 0 .75rem; font-weight:800; letter-spacing:-0.2px; }
+.figure,.tablewrap{ margin:1rem 0; }
+.caption{ font-size:.875rem; color:var(--ink-sub); margin-top:.5rem; }
+@media print{
+  header, footer{ box-shadow:none !important }
+  a[href^="#"]::after{ content:"" }
+}
+
+/* === Corporate Gray – tokens & body copy === */
+:root{
+  --ink:#111827; --sub:#4b5563; --line:#e5e7eb;
+  --paper:#ffffff; --bg:#eef1f5;
+}
+body{ color:var(--ink); background:var(--bg); }
+.onepage p{ margin:.6rem 0; line-height:1.75 }
+.onepage ul{ list-style:disc; padding-left:1.25rem; margin:.6rem 0 }
+.onepage ol{ list-style:decimal; padding-left:1.25rem; margin:.6rem 0 }
+.onepage li{ margin:.2rem 0 }
+.onepage .caption{ font-size:12px; color:var(--sub); margin-top:.25rem }
+@media print{
+  body{ background:#fff !important }
+  .sheet { width:auto !important; height:auto !important; box-shadow:none !important; border:none !important; }
+}
+
+/* === A4 Sheet 스타일 추가 === */
+.sheet {
+  width: 794px;           /* ~A4 @96dpi */
+  min-height: 1123px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.sheet-header { 
+  padding: 28px 32px 16px; 
+  border-bottom: 1px solid var(--line); 
+  background: #fff; 
+}
+.sheet-footer { 
+  padding: 10px 32px; 
+  border-top: 1px solid var(--line); 
+  color: var(--sub);
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  font-size:12px; 
+}
+.sheet-body { 
+  padding: 22px 28px; 
+  font-size: 13.5px; 
+  line-height: 1.8; 
+}
+.sheet-body p{ margin:.65rem 0 } 
+.sheet-body ul{ list-style:disc; padding-left:1.2rem; margin:.5rem 0 }
+.sheet-body ol{ list-style:decimal; padding-left:1.2rem; margin:.5rem 0 } 
+.sheet-body li{ margin:.2rem 0 }
+.card{ 
+  background:#fff; 
+  border:1px solid var(--line); 
+  border-radius:10px; 
+  padding:16px; 
+  box-shadow:0 1px 4px rgba(0,0,0,.03); 
+}
+.caption{ font-size:12px; color:var(--sub); margin-top:.25rem }
+
+/* 인쇄 페이지 설정 */
+@page { size: A4; margin: 16mm 14mm; }
+@media print{
+  body{ background:#fff !important }
+  .sheet{ 
+    width:auto !important; 
+    min-height:auto !important; 
+    border:none !important; 
+    box-shadow:none !important; 
+    page-break-inside: avoid; 
+  }
+  .page-gap{ display:none !important; }
+}
+
+/* 브레이크 유틸 */
+.page-break { break-after: page; }
+.avoid-break { break-inside: avoid; }
+
+/* ===== Report Tone – Corporate Gray (Long Scroll) ===== */
+:root{
+  --ink:#111827; --sub:#4b5563; --line:#e5e7eb; --paper:#ffffff; --bg:#f7f8fb; --accent:#1f3a93; /* 남색 한 톤 */
+}
+html, body { background: var(--bg); color: var(--ink); }
+
+/* 본문 타이포 (가독성 우선, 한국어용 줄바꿈) */
+.report { font-size: 15px; }
+.report p{ margin: .85rem 0; line-height: 1.95; word-break: keep-all; }
+.report ul{ list-style: disc; padding-left: 1.25rem; margin: .6rem 0; }
+.report ol{ list-style: decimal; padding-left: 1.25rem; margin: .6rem 0; }
+.report li{ margin: .25rem 0; }
+.report a{ color: var(--accent); text-underline-position: under; }
+
+/* 섹션: 카드 느낌 최소화 (각 잡힌 문서 톤) */
+.section{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;          /* 둥글기 줄이기 */
+  box-shadow: none;            /* 그림자 제거 */
+  padding: 1.25rem 1.25rem;
+}
+
+/* 장/절 번호 자동 부여 */
+main.report { counter-reset: h2counter h3counter figureCounter tableCounter; }
+.section > .sec-title{
+  counter-increment: h2counter;
+  border-bottom: 1px solid #f0f2f5;
+  padding-bottom: .5rem;
+  margin-bottom: 1rem;
+  font-weight: 800; font-size: 1.125rem; /* text-xl 정도 */
+}
+.section > .sec-title::before{
+  content: counter(h2counter) ". ";
+  font-weight: 900; color:#111827; margin-right: .15rem;
+}
+.section h3{
+  /* 번호 증가 및 표시 제거: 소제목 앞 번호 숨김 */
+  counter-increment: none;
+  margin: 1rem 0 .5rem; font-weight: 700; font-size: 1rem;
+}
+.section h3::before{
+  content: "";
+}
+
+/* 표/그림 + 캡션 번호 */
+.tablewrap{ counter-increment: tableCounter; margin: .75rem 0; }
+.tablewrap .caption::before{ content: "표 " counter(tableCounter) ". "; font-weight:600; color:#374151; }
+.figure{ counter-increment: figureCounter; margin: .75rem 0; }
+.figure .caption::before{ content: "그림 " counter(figureCounter) ". "; font-weight:600; color:#374151; }
+.caption{ font-size: .875rem; color: var(--sub); margin-top: .35rem; }
+
+/* 표 톤(연회색 헤더 + 얇은 보더) */
+.tablewrap table{ width:100%; font-size: .95rem; border-collapse: collapse; }
+.tablewrap thead th{
+  background:#f9fafb; color:#6b7280; text-align:left; padding:.5rem .75rem; border-bottom:1px solid var(--line);
+}
+.tablewrap tbody td{ padding:.5rem .75rem; border-top:1px solid var(--line); }
+
+/* 헤더/푸터: 과장 없이 얇게 */
+.site-header, .site-footer{ background:#fff; border-color: var(--line); }
+
+/* 인쇄 최적화 */
+@page{ size: A4; margin: 16mm 14mm; }
+@media print{
+  body{ background:#fff !important }
+  .site-header, .site-footer{ position: static !important; box-shadow:none !important; }
+  .section{ break-inside: avoid; } /* 표/문단 덩어리 쪼개짐 방지 */
+}
+
+/* ===== HTML/CSS 차트 스타일 ===== */
+/* 막대 차트 */
+.bar-chart {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.bar-chart .chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.bar-chart .bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 200px;
+  padding: 0 1rem;
+  border-bottom: 2px solid var(--line);
+}
+
+.bar-chart .bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  max-width: 80px;
+}
+
+.bar-chart .bar {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 20px;
+  transition: all 0.3s ease;
+}
+
+.bar-chart .bar:hover {
+  background: #2a4ba0;
+}
+
+.bar-chart .bar .value {
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 4px;
+}
+
+.bar-chart .label {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--sub);
+}
+
+.bar-chart .chart-unit {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--sub);
+  margin-top: 0.5rem;
+}
+
+/* 선 차트 (간단한 버전) */
+.line-chart {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.line-chart .chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.line-chart svg {
+  width: 100%;
+  height: auto;
+}
+
+/* 파이 차트 (간단한 버전) */
+.pie-chart {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.pie-chart .chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+

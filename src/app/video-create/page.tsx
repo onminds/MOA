@@ -1,12 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import Header from '../components/Header';
+import { useToast } from "@/contexts/ToastContext";
+import { createUsageToastData, createUsageToastMessage } from "@/lib/toast-utils";
 
 import {
-  Download, X, Paperclip, ChevronDown, RefreshCw, Play, Plus, History, Trash2, Clock
+  Download, X, Paperclip, ChevronDown, RefreshCw, Play, Plus, Trash2, Clock
 } from 'lucide-react';
 
 export default function VideoCreate() {
+  const { showToast } = useToast();
   const [userInput, setUserInput] = useState("");
   const [selectedModel, setSelectedModel] = useState("kling");
   const [selectedSize, setSelectedSize] = useState("16:9");
@@ -21,6 +24,7 @@ export default function VideoCreate() {
   const [showResolutionDropdown, setShowResolutionDropdown] = useState(false);
   const [showDurationDropdown, setShowDurationDropdown] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [mounted, setMounted] = useState(false);
   
   // 영상 히스토리 관련 상태
   const [dbHistory, setDbHistory] = useState<VideoHistoryItem[]>([]);
@@ -42,8 +46,16 @@ export default function VideoCreate() {
     status: string;
   }
 
+  // 컴포넌트 마운트 확인
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // URL 파라미터에서 이미지 URL을 받아서 자동으로 첨부
   useEffect(() => {
+    // 클라이언트 사이드에서만 실행
+    if (!mounted || typeof window === 'undefined') return;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const imageUrl = urlParams.get('imageUrl');
     
@@ -73,7 +85,7 @@ export default function VideoCreate() {
           console.error('이미지 첨부 실패:', error);
         });
     }
-  }, []);
+  }, [mounted]);
 
   // 로딩 진행률 애니메이션
   useEffect(() => {
@@ -220,6 +232,21 @@ export default function VideoCreate() {
     return selectedDurationObj || durations[0];
   };
 
+  // 표시 시간 보정: 서버 UTC(+9 저장) → 화면에서 9시간 빼기
+  const formatAdjustedDateTime = (isoString: string) => {
+    try {
+      const t = new Date(isoString).getTime() - 9 * 60 * 60 * 1000;
+      return new Date(t).toLocaleDateString('ko-KR', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return new Date(isoString).toLocaleDateString('ko-KR');
+    }
+  };
+
   const getContainerStyle = () => {
     const size = getSelectedSize();
     const aspectRatio = size.width / size.height;
@@ -335,6 +362,19 @@ export default function VideoCreate() {
         setTimeout(() => {
           loadHistory();
         }, 1000); // 1초 후 히스토리 새로고침
+
+        // 사용량 토스트 알림 (API 응답의 usage 사용)
+        if (data.usage) {
+          const current = (data.usage.limitCount ?? 0) - (data.usage.remainingCount ?? 0);
+          const limit = data.usage.limitCount ?? 0;
+          const toastData = createUsageToastData('video-generate', current, limit);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        }
       } else {
         throw new Error('영상 생성에 실패했습니다. 유효한 URL을 받지 못했습니다.');
       }
@@ -441,6 +481,21 @@ export default function VideoCreate() {
   useEffect(() => {
     loadHistory();
   }, []);
+
+  // 컴포넌트가 마운트되지 않았을 때는 로딩 표시
+  if (!mounted) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500">로딩 중...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -870,8 +925,7 @@ export default function VideoCreate() {
               {/* 영상 생성 히스토리 섹션 */}
               <div className="mt-8 max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <History className="w-5 h-5" />
+                  <h3 className="text-lg font-semibold text-gray-800">
                     최근 생성된 영상
                   </h3>
                   <button
@@ -891,16 +945,15 @@ export default function VideoCreate() {
                   </div>
                 ) : dbHistory.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 rounded-xl">
-                    <History className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                     <p className="text-gray-500 text-sm">생성된 영상이 없습니다</p>
                     <p className="text-gray-400 text-xs mt-1">영상을 생성하면 여기에 표시됩니다</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
                     {dbHistory.map((item) => (
                       <div
                         key={item.id}
-                        className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group"
+                        className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group flex flex-col h-full"
                       >
                         {/* 영상 썸네일 */}
                         <div className="relative aspect-video bg-gray-100 overflow-hidden">
@@ -919,7 +972,7 @@ export default function VideoCreate() {
                         </div>
 
                         {/* 영상 정보 */}
-                        <div className="p-4">
+                        <div className="p-4 flex flex-col flex-1">
                           <div className="flex items-start justify-between mb-2">
                             <h4 className="font-medium text-gray-900 text-sm line-clamp-2 flex-1">
                               {item.title}
@@ -945,21 +998,16 @@ export default function VideoCreate() {
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mt-auto">
                             <div className="flex items-center gap-1 text-xs text-gray-400">
                               <Clock className="w-3 h-3" />
                               <span>
-                                {new Date(item.createdAt).toLocaleDateString('ko-KR', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+                                {formatAdjustedDateTime(item.createdAt)}
                               </span>
                             </div>
                             <button
                               onClick={() => loadHistoryItem(item)}
-                              className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                              className="bg-black text-white py-1 px-3 rounded hover:bg-gray-800 transition-colors text-xs"
                             >
                               불러오기
                             </button>

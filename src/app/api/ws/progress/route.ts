@@ -9,15 +9,31 @@ import { progressManager } from '@/lib/websocket-manager';
 
 // WebSocket 서버 인스턴스 (싱글톤)
 let wss: WebSocketServer | null = null;
+let wsPort: number | null = null;
 
 // WebSocket 서버 초기화
 function initializeWebSocketServer() {
+  // Vercel/Production 환경에서는 별도 포트를 열 수 없으므로 스킵
+  if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') {
+    console.log('WS init skipped on serverless/production environment');
+    return wss;
+  }
   if (wss) return wss;
 
-  wss = new WebSocketServer({ 
-    port: 8080,
-    path: '/ws/progress'
-  });
+  try {
+    const desired = Number(process.env.WS_PORT || 8080);
+    wss = new WebSocketServer({ 
+      port: desired,
+      path: '/ws/progress'
+    });
+    wsPort = desired;
+  } catch (err: any) {
+    if (err && err.code === 'EADDRINUSE') {
+      console.warn('WS port already in use; skipping re-bind');
+      return wss;
+    }
+    throw err;
+  }
 
   wss.on('connection', (ws: WebSocket, request) => {
     console.log('🔗 새 WebSocket 연결');
@@ -93,7 +109,7 @@ function initializeWebSocketServer() {
     });
   });
 
-  console.log('🚀 WebSocket 서버 시작 (포트: 8080)');
+  console.log('🚀 WebSocket 서버 시작 (포트:', wsPort, ')');
   return wss;
 }
 
@@ -108,7 +124,7 @@ export async function GET(request: NextRequest) {
       const sessionsInfo = progressManager.getActiveSessionsInfo();
       return Response.json({
         success: true,
-        websocketUrl: 'ws://localhost:8080/ws/progress',
+        websocketUrl: (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') ? null : `ws://localhost:${wsPort || process.env.WS_PORT || 8080}/ws/progress`,
         ...sessionsInfo
       });
 
@@ -119,7 +135,7 @@ export async function GET(request: NextRequest) {
         return Response.json({
           success: true,
           message: 'WebSocket 서버가 초기화되었습니다',
-          websocketUrl: 'ws://localhost:8080/ws/progress'
+          websocketUrl: (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') ? null : `ws://localhost:${wsPort || process.env.WS_PORT || 8080}/ws/progress`
         });
       } catch (error) {
         return Response.json({

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireAuth } from '@/lib/auth';
+import { checkUsageLimit, incrementUsage } from '@/lib/auth';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,6 +13,25 @@ const MAX_CODE_LENGTH = 8000; // 코드 길이 제한 (8000자)
 
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
+    
+    // 사용량 체크
+    const usageCheck = await checkUsageLimit(user.id, 'code-review');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: '코드 리뷰 사용량 한도에 도달했습니다.',
+        currentUsage: usageCheck.limit - usageCheck.remaining,
+        maxLimit: usageCheck.limit,
+        resetDate: usageCheck.resetDate
+      }, { status: 429 });
+    }
+
     const { code, language, context, description, autoDetectLanguage, reviewScope, detectedLanguage } = await request.json();
 
     if (!code) {
@@ -366,6 +387,12 @@ ${scopeInstruction ? `검사 범위: ${scopeInstruction}\n\n` : ''}
 
     console.log('코드리뷰 생성 완료');
 
+    // 사용량 증가
+    await incrementUsage(user.id, 'code-review');
+
+    // 증가된 사용량 정보 가져오기
+    const updatedUsageCheck = await checkUsageLimit(user.id, 'code-review');
+
     return NextResponse.json({
       success: true,
       review: reviewData.summary,
@@ -379,7 +406,13 @@ ${scopeInstruction ? `검사 범위: ${scopeInstruction}\n\n` : ''}
       timestamp: new Date().toISOString(),
       isTruncated: isTruncated,
       originalLength: code.length,
-      processedLength: processedCode.length
+      processedLength: processedCode.length,
+      // 사용량 정보 추가
+      usage: {
+        current: updatedUsageCheck.limit - updatedUsageCheck.remaining,
+        limit: updatedUsageCheck.limit,
+        remaining: updatedUsageCheck.remaining
+      }
     });
 
   } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Header from '../../components/Header';
 import { 
   ArrowLeft, 
@@ -12,9 +12,16 @@ import {
   X, 
   HelpCircle, 
   Globe,
-  Search as SearchIcon
+  User,
+  Lightbulb,
+  CheckCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
+import { useToast } from "@/contexts/ToastContext";
+import { createUsageToastData, createUsageToastMessage } from "@/lib/toast-utils";
+import LogoLoading from '@/components/LogoLoading';
+import CoverLetterEditorEmbed from '@/components/CoverLetterEditorEmbed';
 
 interface QuestionItem {
   id: string;
@@ -24,6 +31,8 @@ interface QuestionItem {
 
 export default function CoverLetterPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  type Step = 'company' | 'questions' | 'experience' | 'result';
   const [companyName, setCompanyName] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [keyExperience, setKeyExperience] = useState("");
@@ -31,23 +40,30 @@ export default function CoverLetterPage() {
   const [useSearchResults, setUseSearchResults] = useState(true);
   const [coverLetter, setCoverLetter] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [questions, setQuestions] = useState<QuestionItem[]>([]);
+  const [currentStep, setCurrentStep] = useState<Step>('company');
+  const [questions, setQuestions] = useState<QuestionItem[]>([
+    { id: `${Date.now()}`, question: '' }
+  ]);
   const [companyInfo, setCompanyInfo] = useState<string | null>(null);
   const [loadingCompanyInfo, setLoadingCompanyInfo] = useState(false);
   const [isAnalyzingCompany, setIsAnalyzingCompany] = useState(false);
   const [companyAnalysis, setCompanyAnalysis] = useState<any>(null);
-  const [writingStyle, setWritingStyle] = useState<'connected' | 'separated'>('connected');
+  // 작성 방식 선택 제거: 항상 질문별(분리형)
+  const [manualInputMode, setManualInputMode] = useState(false);
 
   const addQuestion = () => {
     const newQuestion: QuestionItem = {
       id: Date.now().toString(),
       question: '',
-      wordLimit: 0
+      // 글자 수 제한은 기본값 없음 (빈 값 허용)
     };
     setQuestions([...questions, newQuestion]);
   };
 
   const removeQuestion = (id: string) => {
+    if (questions.length <= 1) return; // 최소 1개 유지
+    const firstId = questions[0]?.id;
+    if (id === firstId) return; // 첫 번째 질문 삭제 불가
     setQuestions(questions.filter(q => q.id !== id));
   };
 
@@ -57,13 +73,13 @@ export default function CoverLetterPage() {
     ));
   };
 
-  const updateQuestionWordLimit = (id: string, wordLimit: number) => {
+  const updateQuestionWordLimit = (id: string, wordLimit: number | undefined) => {
     setQuestions(questions.map(q => 
-      q.id === id ? { ...q, wordLimit } : q
+      q.id === id ? { ...q, ...(wordLimit === undefined ? { wordLimit: undefined } : { wordLimit }) } : q
     ));
   };
 
-  // 회사/학교 정보 검색
+  // 회사 정보 검색
   const searchCompanyInfo = async (company: string) => {
     if (!company.trim()) {
       setCompanyInfo(null);
@@ -163,6 +179,8 @@ export default function CoverLetterPage() {
       
       const combinedExperience = `${keyExperience.trim()}\n\n핵심 이력:\n${coreSkills.trim()}`.trim();
       formData.append('keyExperience', combinedExperience);
+      // 보유 이력 별도 전송(서버 필수 검증용)
+      formData.append('coreSkills', coreSkills.trim());
       
       formData.append('useSearchResults', useSearchResults.toString());
       
@@ -172,8 +190,7 @@ export default function CoverLetterPage() {
       if (companyAnalysis) {
         formData.append('companyAnalysis', JSON.stringify(companyAnalysis));
       }
-      
-      formData.append('writingStyle', writingStyle);
+      // 작성 방식 전송 제거 (항상 분리형)
 
       const response = await fetch("/api/cover-letter", {
         method: "POST",
@@ -182,7 +199,29 @@ export default function CoverLetterPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setCoverLetter(data.coverLetterContent || data.coverLetter);
+        const content = data.coverLetterContent || data.coverLetter;
+        setCoverLetter(content);
+        setCurrentStep('result');
+        // 생성 직후 페이지 내 에디터 표시를 위해 상태 유지(아래 내장 에디터가 content를 사용)
+        // 사용량 증가 Toast 알림 표시 (실제 사용량 데이터 사용)
+        if (data.usage) {
+          const toastData = createUsageToastData('cover-letter', data.usage.current, data.usage.limit);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        } else {
+          // Fallback to hardcoded values if usage data is not available
+          const toastData = createUsageToastData('cover-letter', 0, 30);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        }
       } else {
         console.error("자기소개서 생성 실패");
       }
@@ -198,13 +237,30 @@ export default function CoverLetterPage() {
     alert("클립보드에 복사되었습니다!");
   };
 
+  const editorSrc = useMemo(() => {
+    if (!coverLetter) return '';
+    try {
+      const key = `essay-${Date.now()}`;
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(key, coverLetter);
+      }
+      return `/essay-editor?storageKey=${encodeURIComponent(key)}`;
+    } catch {
+      return `/essay-editor?text=${encodeURIComponent(coverLetter.slice(0, 3000))}`;
+    }
+  }, [coverLetter]);
+
+  const canProceedCompany = companyName.trim();
+  const hasValidQuestions = jobTitle.trim() && questions.filter(q => q.question.trim()).length > 0;
+  const canProceedExperience = keyExperience.trim() && coreSkills.trim();
+
   return (
     <>
       <Header />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-screen-2xl mx-auto">
           {/* 뒤로가기 버튼 */}
-          <div className="mb-6">
+          <div className="mb-6 flex items-center justify-start">
             <button
               onClick={() => router.push('/productivity')}
               className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
@@ -222,17 +278,57 @@ export default function CoverLetterPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* 입력 폼 */}
-            <div className="space-y-6">
-              {/* 회사명/학교명 */}
+          {/* 단계 표시 바 - 제목/소개 아래 중앙 정렬 */}
+          <div className="mb-8 flex justify-center">
+            <div className="hidden md:flex items-center justify-between bg-white rounded-xl p-4 shadow-sm w-full max-w-[720px]">
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                currentStep === 'company' ? 'bg-indigo-100 text-indigo-700 font-semibold' : ['questions','experience','result'].includes(currentStep) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+              }`}>
+                <User className="w-4 h-4" />
+                정보 입력
+              </div>
+              <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm ${
+                currentStep === 'questions' ? 'bg-indigo-100 text-indigo-700 font-semibold' : ['experience','result'].includes(currentStep) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+              }`}>
+                <Lightbulb className="w-4 h-4" />
+                질문 문항
+              </div>
+              <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                currentStep === 'experience' ? 'bg-indigo-100 text-indigo-700 font-semibold' : currentStep === 'result' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+              }`}>
+                <FileText className="w-4 h-4" />
+                경험/이력
+              </div>
+              <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                currentStep === 'result' ? 'bg-indigo-100 text-indigo-700 font-semibold' : 'bg-emerald-100 text-emerald-700'
+              }`}>
+                <CheckCircle className="w-4 h-4" />
+                결과
+              </div>
+            </div>
+          </div>
+
+          {/* 단계별 컨텐츠 또는 로딩 */}
+          {isLoading ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="rounded-2xl p-12 flex items-center justify-center min-h-[360px]">
+                <LogoLoading message="자기소개서 생성 중..." subMessage="AI가 내용을 정교하게 작성하고 있어요" transparentBg />
+              </div>
+            </div>
+          ) : currentStep !== 'result' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {currentStep === 'company' && (
+                <>
+              {/* 회사명 */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xl font-semibold text-gray-900">회사명 / 학교명</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">회사명</h2>
                   <span className="text-sm text-red-500 font-medium">*</span>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">지원하는 회사나 학교의 정확한 명칭을 입력해주세요</p>
-                
+                <p className="text-sm text-gray-600 mb-4">지원하는 회사의 정확한 명칭을 입력해주세요</p>
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -244,10 +340,8 @@ export default function CoverLetterPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isLoading}
                   />
-                  
-                  {/* 회사 분석 버튼 */}
                   {(companyName.trim() || companyAnalysis) && (
-                    <div className="mb-4">
+                        <div className="mb-2 flex items-center gap-3">
                       <button
                         onClick={analyzeCompany}
                         disabled={isAnalyzingCompany || !companyName.trim()}
@@ -265,10 +359,33 @@ export default function CoverLetterPage() {
                           </>
                         )}
                       </button>
+                      {!manualInputMode && (
+                        <button
+                          onClick={() => {
+                            setManualInputMode(prev => {
+                              const next = !prev;
+                              if (next && !companyAnalysis) {
+                                setCompanyAnalysis({
+                                  coreValues: [],
+                                  idealCandidate: '',
+                                  vision: '',
+                                  companyCulture: '',
+                                  businessAreas: [],
+                                  keyCompetencies: [],
+                                  originalCompanyName: companyName.trim()
+                                });
+                              }
+                              return next;
+                            });
+                          }}
+                          className={`px-3 py-2 rounded-md border transition-colors bg-white text-gray-700 border-gray-300 hover:bg-gray-50`}
+                        >
+                          수동 입력
+                        </button>
+                      )}
                     </div>
                   )}
                   
-                  {/* 회사 정보 표시 */}
                   {loadingCompanyInfo && (
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                       <div className="flex items-center gap-2">
@@ -292,14 +409,12 @@ export default function CoverLetterPage() {
                     </div>
                   )}
 
-                  {/* 회사 분석 결과 */}
-                  {companyAnalysis && (
+                  {companyAnalysis && !manualInputMode && (
                     <div className="bg-blue-50 rounded-md p-4 border border-blue-200">
                       <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
                         <Globe className="w-4 h-4" />
                         {companyAnalysis.originalCompanyName || companyName} 공식 사이트 분석 결과
                       </h3>
-                      
                       <div className="grid grid-cols-1 gap-3">
                         <div className="bg-white rounded p-3 border border-blue-200">
                           <h4 className="font-medium text-blue-900 mb-1 text-sm">🎯 핵심가치</h4>
@@ -311,33 +426,151 @@ export default function CoverLetterPage() {
                             ))}
                           </div>
                         </div>
-
                         <div className="bg-white rounded p-3 border border-blue-200">
                           <h4 className="font-medium text-blue-900 mb-1 text-sm">👤 인재상</h4>
                           <p className="text-xs text-blue-800">{companyAnalysis.idealCandidate}</p>
                         </div>
-
                         <div className="bg-white rounded p-3 border border-blue-200">
                           <h4 className="font-medium text-blue-900 mb-1 text-sm">🌟 비전/미션</h4>
                           <p className="text-xs text-blue-800">{companyAnalysis.vision}</p>
                         </div>
+                        {Array.isArray(companyAnalysis.businessAreas) && companyAnalysis.businessAreas.length > 0 && (
+                          <div className="bg-white rounded p-3 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-1 text-sm">💼 주요 사업분야</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {companyAnalysis.businessAreas.map((area: string, idx: number) => (
+                                <span key={idx} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">{area}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {companyAnalysis.companyCulture && (
+                          <div className="bg-white rounded p-3 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-1 text-sm">🏢 회사 문화</h4>
+                            <p className="text-xs text-blue-800">{companyAnalysis.companyCulture}</p>
+                          </div>
+                        )}
+                        {Array.isArray(companyAnalysis.keyCompetencies) && companyAnalysis.keyCompetencies.length > 0 && (
+                          <div className="bg-white rounded p-3 border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-1 text-sm">💪 중요 역량</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {companyAnalysis.keyCompetencies.map((c: string, idx: number) => (
+                                <span key={idx} className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">{c}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-3 text-right">
+                        <button
+                          onClick={() => setManualInputMode(true)}
+                          className="inline-flex items-center text-blue-700 hover:text-blue-900 text-xs font-medium underline underline-offset-2"
+                        >
+                          편집하기
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {companyAnalysis && manualInputMode && (
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-md p-4 border border-gray-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Globe className="w-4 h-4" />
+                          {companyAnalysis.originalCompanyName || companyName || '회사'} 분석 정보 직접 입력
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">🎯 핵심가치</h4>
+                          <textarea
+                            placeholder="쉼표(,)로 구분 (예: 혁신, 성장, 협업)"
+                            value={(companyAnalysis.coreValues || []).join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, coreValues: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">👤 인재상</h4>
+                          <textarea
+                            placeholder="회사가 원하는 인재상"
+                            value={companyAnalysis.idealCandidate || ''}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, idealCandidate: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">🌟 비전/미션</h4>
+                          <textarea
+                            placeholder="회사 비전/미션"
+                            value={companyAnalysis.vision || ''}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, vision: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">🏢 회사 문화</h4>
+                          <textarea
+                            placeholder="회사 문화"
+                            value={companyAnalysis.companyCulture || ''}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, companyCulture: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">💼 주요 사업분야</h4>
+                          <textarea
+                            placeholder="쉼표(,)로 구분 (예: AI, 클라우드)"
+                            value={(companyAnalysis.businessAreas || []).join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, businessAreas: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="bg-white rounded p-3 border border-gray-200">
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">💪 중요 역량</h4>
+                          <textarea
+                            placeholder="쉼표(,)로 구분 (예: 문제해결능력, 소통능력)"
+                            value={(companyAnalysis.keyCompetencies || []).join(', ')}
+                            onChange={(e) => setCompanyAnalysis({ ...companyAnalysis, keyCompetencies: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-black text-sm"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3 text-right">
+                        <button
+                          onClick={() => setManualInputMode(false)}
+                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700"
+                        >
+                          저장하기
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* 지원 직무/지원 학과 */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+                  {/* 지원 직무: 2단계로 이동 (여기서는 숨김) */}
+                </>
+              )}
+
+              {currentStep === 'questions' && (
+                <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+              {/* 지원 직무 */}
+                  <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xl font-semibold text-gray-900">지원 직무 / 지원 학과</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">지원 직무</h2>
                   <span className="text-sm text-red-500 font-medium">*</span>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">지원하는 직무나 학과를 정확히 입력해주세요</p>
-                
+                <p className="text-sm text-gray-600 mb-4">지원하는 직무를 정확히 입력해주세요</p>
                 <input
                   type="text"
-                  placeholder="직무명 / 학과명"
+                  placeholder="직무명"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
                   maxLength={50}
@@ -345,12 +578,10 @@ export default function CoverLetterPage() {
                   disabled={isLoading}
                 />
               </div>
-
-              {/* 회사별 자기소개서 질문 문항 */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-semibold text-gray-900">자기소개서 질문 문항</h2>
+                    <span className="text-sm text-red-500 font-medium">*</span>
                   </div>
                   <button
                     onClick={addQuestion}
@@ -361,8 +592,7 @@ export default function CoverLetterPage() {
                     질문 추가
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">지원하는 회사에서 요구하는 자기소개서 질문들을 입력해주세요. AI가 이 질문들에 맞는 자기소개서를 작성해드립니다.</p>
-                
+                  <p className="text-sm text-gray-600 mb-4">지원하는 회사에서 요구하는 자기소개서 질문을 입력해주세요</p>
                 <div className="space-y-4">
                   {questions.length === 0 ? (
                     <div className="text-center py-6 text-gray-500">
@@ -375,28 +605,31 @@ export default function CoverLetterPage() {
                       <div key={question.id} className="border border-gray-200 rounded-md p-4 bg-gray-50">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-medium text-gray-700">질문 {index + 1}</h4>
-                          <button
-                            onClick={() => removeQuestion(question.id)}
-                            className="text-red-500 hover:text-red-700"
-                            disabled={isLoading}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          {index > 0 && (
+                            <button
+                              onClick={() => removeQuestion(question.id)}
+                              className="text-red-500 hover:text-red-700"
+                              disabled={isLoading}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
-                        
                         <div className="space-y-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">질문</label>
                             <input
                               type="text"
-                              placeholder="예: 지원 동기를 작성해주세요"
+                                placeholder={index === 0 ? '예: 지원 동기를 작성해주세요' : '예: 본인의 강점을 설명해주세요'}
                               value={question.question}
                               onChange={(e) => updateQuestion(question.id, e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               disabled={isLoading}
                             />
+                            {index === 0 && !question.question.trim() && (
+                              <p className="text-xs text-red-500 mt-1">필수 질문입니다</p>
+                            )}
                           </div>
-                          
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               글자 수 제한 (선택)
@@ -404,12 +637,28 @@ export default function CoverLetterPage() {
                             </label>
                             <div className="flex items-center gap-2">
                               <input
-                                type="number"
-                                min="0"
-                                max="2000"
-                                placeholder="예: 500"
-                                value={question.wordLimit || 0}
-                                onChange={(e) => updateQuestionWordLimit(question.id, parseInt(e.target.value) || 0)}
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="\\d*"
+                                  placeholder="예: 500 (비우면 제한 없음)"
+                                  value={
+                                    typeof question.wordLimit === 'number' && !Number.isNaN(question.wordLimit)
+                                      ? String(question.wordLimit)
+                                      : ''
+                                  }
+                                  onChange={(e) => {
+                                    const raw = e.target.value.replace(/[^\d]/g, '');
+                                    if (raw === '') {
+                                      updateQuestionWordLimit(question.id, undefined);
+                                      return;
+                                    }
+                                    const normalized = raw.replace(/^0+(?=\d)/, '');
+                                    const num = parseInt(normalized, 10);
+                                    updateQuestionWordLimit(
+                                      question.id,
+                                      Number.isFinite(num) ? Math.min(Math.max(num, 0), 2000) : undefined
+                                    );
+                                  }}
                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 disabled={isLoading}
                               />
@@ -422,7 +671,10 @@ export default function CoverLetterPage() {
                   )}
                 </div>
               </div>
+              )}
 
+              {currentStep === 'experience' && (
+                <>
               {/* 대표 경험 */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex items-center gap-2 mb-2">
@@ -438,7 +690,6 @@ export default function CoverLetterPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">구체적인 상황과 성과를 중심으로 한 주요 경험을 입력해 주세요</p>
-                
                 <div className="relative">
                   <textarea
                     placeholder="구체적인 상황과 성과를 중심으로 한 주요 경험을 입력해 주세요"
@@ -446,7 +697,7 @@ export default function CoverLetterPage() {
                     onChange={(e) => setKeyExperience(e.target.value)}
                     maxLength={500}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={3}
+                        rows={6}
                     disabled={isLoading}
                   />
                   <div className="absolute bottom-2 right-2 text-xs text-gray-400">
@@ -470,7 +721,6 @@ export default function CoverLetterPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">보유한 자격증, 기술 스킬, 언어 능력 등을 입력해 주세요</p>
-                
                 <div className="relative">
                   <textarea
                     placeholder="보유한 자격증, 기술 스킬, 언어 능력 등을 입력해 주세요"
@@ -478,7 +728,7 @@ export default function CoverLetterPage() {
                     onChange={(e) => setCoreSkills(e.target.value)}
                     maxLength={500}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={2}
+                        rows={5}
                     disabled={isLoading}
                   />
                   <div className="absolute bottom-2 right-2 text-xs text-gray-400">
@@ -487,131 +737,63 @@ export default function CoverLetterPage() {
                 </div>
               </div>
 
-              {/* 작성 방식 선택 */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">작성 방식 선택</h2>
-                <p className="text-sm text-gray-600 mb-4">자기소개서를 어떤 방식으로 작성할지 선택해주세요</p>
-                
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="writingStyle"
-                      value="connected"
-                      checked={writingStyle === 'connected'}
-                      onChange={(e) => setWritingStyle(e.target.value as 'connected' | 'separated')}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">연결형</div>
-                      <div className="text-sm text-gray-600">모든 질문을 하나의 자연스러운 자기소개서로 연결</div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="writingStyle"
-                      value="separated"
-                      checked={writingStyle === 'separated'}
-                      onChange={(e) => setWritingStyle(e.target.value as 'connected' | 'separated')}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">분리형</div>
-                      <div className="text-sm text-gray-600">각 질문별로 개별 답변 작성 (CJ제일제당, 삼성웰스토리 등)</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
+                  {/* 인터넷 검색 결과 활용: 필수 적용 (UI 숨김) */}
+                </>
+              )}
 
-              {/* 인터넷 검색 결과 활용 */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">인터넷 검색 결과 활용하기</h2>
-                    <p className="text-sm text-gray-600">지원 회사/학교와 관련된 정보를 자동으로 검색하여 반영해요</p>
-                  </div>
+              {/* 하단 네비게이션 */}
+              <div className="flex items-center justify-between pt-2">
                   <button
-                    onClick={() => setUseSearchResults(!useSearchResults)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      useSearchResults ? 'bg-blue-500' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        useSearchResults ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                    <SearchIcon className="absolute right-1 w-3 h-3 text-white" />
+                  onClick={() => setCurrentStep(prev => prev === 'company' ? 'company' : prev === 'questions' ? 'company' : 'questions')}
+                  disabled={currentStep === 'company' || isLoading}
+                  className={`px-4 py-2 rounded-md border text-gray-700 bg-white hover:bg-gray-50 transition-colors ${currentStep === 'company' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  이전
                   </button>
-                </div>
-              </div>
-
-              {/* 자기소개서 생성 버튼 */}
+                {currentStep === 'experience' ? (
               <button
-                onClick={handleSubmit}
-                disabled={!companyName.trim() || !jobTitle.trim() || !keyExperience.trim() || isLoading}
-                className="w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-600 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    자기소개서 생성 중...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-5 h-5" />
+                    onClick={(e) => handleSubmit(e as any)}
+                    disabled={!canProceedExperience || !canProceedCompany || !hasValidQuestions || isLoading}
+                    className="px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
                     자기소개서 생성
-                  </>
-                )}
               </button>
-            </div>
+                ) : (
+                  <button
+                    onClick={() => setCurrentStep(prev => prev === 'company' ? 'questions' : 'experience')}
+                    disabled={
+                      (currentStep === 'company' && !canProceedCompany) ||
+                      (currentStep === 'questions' && !hasValidQuestions) ||
+                      isLoading
+                    }
+                    className="px-4 py-2 rounded-md bg-black text-white font-medium hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    다음
+                  </button>
+                )}
+                          </div>
+                              </div>
+          )}
 
-            {/* 결과 영역 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">자기소개서 결과</h2>
-              {coverLetter ? (
-                <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-800">{coverLetter}</pre>
-                  </div>
-                  <div className="flex gap-2">
+          {/* 결과 화면: 에디터만 표시 */}
+          {currentStep === 'result' && (
+            <div className="bg-white rounded-lg shadow-md p-6 max-w-7xl mx-auto">
+              <div className="flex items-start justify-end mb-4">
                     <button
-                      onClick={handleCopy}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                    >
-                      <Copy className="w-4 h-4" />
-                      복사
-                    </button>
-                    <button
-                      onClick={() => {
-                        const blob = new Blob([coverLetter], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${companyName}_자기소개서.txt`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      다운로드
+                  onClick={() => setCurrentStep('company')}
+                  className="text-sm text-gray-600 hover:text-gray-800 underline underline-offset-4"
+                >
+                  다시 작성하기
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <p>자기소개서 결과가 여기에 표시됩니다</p>
-                  <p className="text-sm mt-2">정보를 입력하고 자기소개서 생성을 시작해주세요</p>
+              {coverLetter && (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">자기소개서 결과</h3>
+                  <CoverLetterEditorEmbed initialContent={coverLetter} initialTitle={companyName || '자기소개서'} height={560} layout="split" />
+                </>
+              )}
                 </div>
               )}
-            </div>
-          </div>
         </div>
       </div>
     </>

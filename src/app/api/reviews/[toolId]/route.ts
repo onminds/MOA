@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
+import { invalidateAiServicesCache } from '@/lib/ai-services';
 
 export async function GET(
   request: NextRequest,
@@ -121,6 +122,8 @@ export async function POST(
     
     newReview.userName = userResult.recordset[0]?.userName || '사용자';
     
+    // 리뷰가 추가되었으므로 서비스 목록 캐시 무효화
+    try { invalidateAiServicesCache(); } catch {}
     return NextResponse.json({ review: newReview });
   } catch (error) {
     console.error('리뷰 작성 오류:', error);

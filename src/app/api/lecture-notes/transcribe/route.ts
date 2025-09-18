@@ -14,13 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '오디오 파일이 필요합니다.' }, { status: 400 });
     }
 
-    // 파일 크기 제한 (25MB)
-    const maxSize = 25 * 1024 * 1024; // 25MB
-    if (audioFile.size > maxSize) {
-      return NextResponse.json({ 
-        error: `파일 크기가 너무 큽니다. 최대 25MB까지 지원됩니다. (현재: ${(audioFile.size / 1024 / 1024).toFixed(2)}MB)` 
-      }, { status: 400 });
-    }
+    // 클라이언트에서 대용량은 청크로 분할되어 전송되므로 서버에서 크기 제한을 두지 않습니다.
 
     console.log('음성 변환 시작:', audioFile.name, audioFile.size, 'bytes');
     console.log('파일 타입:', audioFile.type);
@@ -33,21 +27,30 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // OpenAI Whisper API를 사용하여 음성을 텍스트로 변환
+    // OpenAI Whisper API로 1차 STT
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
-      language: 'ko', // 한국어로 설정
+      language: 'ko',
       response_format: 'text',
     });
 
     console.log('음성 변환 완료:', transcription.length, '문자');
 
+    // gpt-5-mini로 문장부호 보정 및 문장 단위 정리
+    const cleaned = await openai.responses.create({
+      model: 'gpt-5-mini',
+      input: `다음 한국어 음성 인식 결과를 문장부호와 띄어쓰기를 보정하고, 구어체를 자연스러운 서면체로 가볍게 정리하세요. 의미 왜곡은 금지합니다.\n\n원문:\n${transcription}`,
+      reasoning: { effort: 'low' }
+    });
+
+    const transcript = cleaned.output_text || transcription;
+
     return NextResponse.json({
       success: true,
-      transcription: transcription,
-      transcript: transcription, // 호환성을 위해 둘 다 제공
-      length: transcription.length
+      transcription: transcript,
+      transcript: transcript,
+      length: transcript.length
     });
 
   } catch (error) {

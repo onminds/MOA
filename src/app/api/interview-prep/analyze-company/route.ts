@@ -266,7 +266,7 @@ ${combinedContent}
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-5-mini',
       messages: [
         {
           role: 'system',
@@ -277,8 +277,7 @@ ${combinedContent}
           content: analysisPrompt
         }
       ],
-      temperature: 0.3,
-      max_tokens: 1500,
+      max_completion_tokens: 1500,
     });
 
     const result = completion.choices[0]?.message?.content;

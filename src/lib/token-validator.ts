@@ -10,6 +10,8 @@ interface TokenValidationResult {
 
 // GPT 모델별 토큰 제한
 const MODEL_LIMITS = {
+  'gpt-5': 131072,
+  'gpt-5-mini': 131072,
   'gpt-4': 8192,
   'gpt-4-turbo': 128000,
   'gpt-3.5-turbo': 4096,
@@ -50,7 +52,7 @@ export function calculateTokens(text: string): number {
 export function validateTokenLimit(
   systemPrompt: string,
   userPrompt: string,
-  model: keyof typeof MODEL_LIMITS = 'gpt-4'
+  model: keyof typeof MODEL_LIMITS = 'gpt-5-mini'
 ): TokenValidationResult {
   const systemTokens = calculateTokens(systemPrompt);
   const userTokens = calculateTokens(userPrompt);
@@ -75,7 +77,7 @@ export function validateTokenLimit(
 export function calculateResponseTokenLimit(
   systemTokens: number,
   userTokens: number,
-  model: keyof typeof MODEL_LIMITS = 'gpt-4'
+  model: keyof typeof MODEL_LIMITS = 'gpt-5-mini'
 ): number {
   const maxTokens = MODEL_LIMITS[model];
   const usedTokens = systemTokens + userTokens;
@@ -91,10 +93,12 @@ export function calculateResponseTokenLimit(
 export function estimateCost(
   inputTokens: number,
   outputTokens: number,
-  model: keyof typeof MODEL_LIMITS = 'gpt-4'
+  model: keyof typeof MODEL_LIMITS = 'gpt-5-mini'
 ): number {
-  const rates = {
-    'gpt-4': { input: 0.03, output: 0.06 }, // $0.03 per 1K input, $0.06 per 1K output
+  const rates: Record<string, { input: number; output: number }> = {
+    'gpt-5': { input: 0.03, output: 0.06 },
+    'gpt-5-mini': { input: 0.0025, output: 0.02 },
+    'gpt-4': { input: 0.03, output: 0.06 },
     'gpt-4-turbo': { input: 0.01, output: 0.03 },
     'gpt-3.5-turbo': { input: 0.0015, output: 0.002 },
     'gpt-3.5-turbo-16k': { input: 0.003, output: 0.004 },

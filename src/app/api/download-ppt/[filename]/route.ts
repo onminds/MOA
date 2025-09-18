@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import PptxGenJS from 'pptxgenjs';
+export const runtime = 'nodejs';
+// pptxgenjs는 Node 환경에서 ESM 번들 시 node:* 스킴을 노출할 수 있어 동적 import 사용
+const loadPptxGen = async () => (await import('pptxgenjs')).default;
 
 // global 타입 확장
 declare global {
@@ -164,6 +166,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 async function generateRealPPTContent(filename: string, pptData?: any): Promise<ArrayBuffer> {
   try {
     // PptxGenJS를 사용한 실제 PPT 생성
+    const PptxGenJS = await loadPptxGen();
     const pptx = new PptxGenJS();
     
     // 프레젠테이션 기본 설정

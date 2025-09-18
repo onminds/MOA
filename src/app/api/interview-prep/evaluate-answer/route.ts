@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireAuth } from '@/lib/auth';
+import { checkUsageLimit, incrementUsage } from '@/lib/auth';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -15,6 +17,16 @@ interface AnswerEvaluationRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
+    
+
+
     const {
       question,
       answer,
@@ -109,27 +121,53 @@ JSON만 응답하고 다른 텍스트는 포함하지 마세요.`;
 
 위 답변을 평가하고 피드백을 제공해주세요.`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt
-      },
-      {
-        role: "user",
-        content: userPrompt
-      }
-    ],
-    max_tokens: 1500,
-    temperature: 0.3, // 일관성 있는 평가를 위해 낮은 값 사용
+  console.log('OpenAI API 호출 시작...', {
+    questionLength: question.length,
+    answerLength: answer.length,
+    category,
+    jobTitle,
+    companyName
   });
 
-  const response = completion.choices[0].message.content;
+  let completion;
+  try {
+    completion = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: userPrompt
+        }
+      ],
+      max_tokens: 1500,
+    });
+  } catch (apiError) {
+    console.error('OpenAI API 호출 오류:', apiError);
+    console.log('기본 평가로 대체합니다.');
+    return getDefaultEvaluation(answer);
+  }
+
+  console.log('OpenAI API 응답 받음:', {
+    choices: completion.choices?.length,
+    finishReason: completion.choices?.[0]?.finish_reason,
+    hasContent: !!completion.choices?.[0]?.message?.content
+  });
+
+  const response = completion.choices?.[0]?.message?.content;
   
   if (!response) {
-    throw new Error('평가 응답이 없습니다.');
+    console.error('OpenAI 응답이 비어있음:', {
+      completion: JSON.stringify(completion, null, 2)
+    });
+    console.log('기본 평가로 대체합니다.');
+    return getDefaultEvaluation(answer);
   }
+
+  console.log('응답 내용 길이:', response.length);
 
   try {
     return JSON.parse(response);

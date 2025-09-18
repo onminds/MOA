@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Download, Save, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 
@@ -38,6 +38,7 @@ interface RemixModeProps {
   handleSaveImage: () => void;
   handleNewImage: () => void;
   handleExitRemixMode: () => void;
+  resetEditingState?: React.MutableRefObject<(() => void) | null>; // 편집 상태 초기화 함수 참조
   startDrawing: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   stopDrawing: () => void;
   draw: (e: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -83,6 +84,7 @@ export default function RemixMode({
   handleSaveImage,
   handleNewImage,
   handleExitRemixMode,
+  resetEditingState,
   startDrawing,
   stopDrawing,
   draw,
@@ -92,20 +94,62 @@ export default function RemixMode({
   setRemixPreview,
   setIsPreviewMode
 }: RemixModeProps) {
+  // 원본 이미지를 추적하는 상태 (Before/After 토글용)
+  const [originalImage, setOriginalImage] = useState<string>(generatedImage);
+  // 편집이 시작되었는지 추적하는 상태
+  const [hasStartedEditing, setHasStartedEditing] = useState<boolean>(false);
+
+  // generatedImage가 변경될 때 원본 이미지 업데이트 (편집이 시작되지 않았을 때만)
+  useEffect(() => {
+    if (!hasStartedEditing) {
+      setOriginalImage(generatedImage);
+    }
+  }, [generatedImage, hasStartedEditing]);
+
+  // remixPreview가 생성되면 편집이 시작된 것으로 표시
+  useEffect(() => {
+    if (remixPreview && !hasStartedEditing) {
+      setHasStartedEditing(true);
+    }
+  }, [remixPreview, hasStartedEditing]);
+
+  // 편집 상태 초기화 함수
+  const resetLocalEditingState = () => {
+    setHasStartedEditing(false);
+    setOriginalImage(generatedImage);
+  };
+
+  // 외부에서 호출할 수 있도록 resetEditingState가 제공되면 등록
+  useEffect(() => {
+    if (resetEditingState) {
+      // 현재 컴포넌트의 리셋 함수를 외부에 제공
+      resetEditingState.current = resetLocalEditingState;
+    }
+  }, [resetEditingState, generatedImage]);
+
   // 카테고리 변경 시 현재 편집된 이미지를 새로운 원본으로 설정하는 함수
   const handleCategoryChange = (newCategory: 'background' | 'subject' | 'other' | 'remove-background' | 'inpaint' | 'recolor' | 'outpaint') => {
     // 현재 편집된 이미지가 있으면 새로운 원본으로 설정
     if (remixPreview && isPreviewMode) {
       setGeneratedImage(remixPreview);
+      // 원본 이미지는 변경하지 않음 - Before/After 토글을 위해 최초 원본 유지
+      // setOriginalImage는 호출하지 않음
     }
     
     // 카테고리 변경
     setRemixCategory(newCategory);
     
-    // 미리보기 상태 초기화
-    setRemixPreview(null);
-    setIsPreviewMode(false);
-    setShowBeforeAfter(false);
+    // 편집된 이미지가 있었다면 미리보기 상태를 유지하되, 새로운 편집을 위해 준비
+    if (remixPreview && isPreviewMode) {
+      // Before/After 상태는 유지하되, 새로운 편집을 위해 After 상태로 설정
+      setShowBeforeAfter(true);
+      // remixPreview는 유지하여 Before/After 토글이 작동하도록 함
+    } else {
+      // 편집된 이미지가 없었다면 초기화
+      setRemixPreview(null);
+      setIsPreviewMode(false);
+      setShowBeforeAfter(false);
+    }
     
     // 입력 필드들 초기화
     setRemixPrompt("");
@@ -523,8 +567,8 @@ export default function RemixMode({
                 <div className="w-full h-full rounded-lg overflow-hidden relative">
                   <Image
                     key={`remix-preview-${imageUpdateKey}`}
-                    src={showBeforeAfter ? remixPreview : generatedImage}
-                    alt={showBeforeAfter ? "편집된 이미지" : "원본 이미지"}
+                    src={showBeforeAfter ? remixPreview : originalImage}
+                    alt={showBeforeAfter ? "편집된 이미지" : "편집 전 이미지"}
                     width={getSelectedSize().width}
                     height={getSelectedSize().height}
                     className="w-full h-full object-cover"
@@ -582,7 +626,7 @@ export default function RemixMode({
           <div className="flex flex-col gap-3 relative">
             {/* 전후 비교 토글 */}
             <div className="text-center mb-5 -mt-40">
-              {remixPreview && isPreviewMode ? (
+              {remixPreview ? (
                 <span className={`text-sm font-medium transition-colors duration-300 ${
                   showBeforeAfter ? 'text-black' : 'text-black'
                 }`}>
@@ -597,10 +641,10 @@ export default function RemixMode({
             <div className="flex justify-center -mt-6">
               <button
                 onClick={() => setShowBeforeAfter(!showBeforeAfter)}
-                disabled={!remixPreview || !isPreviewMode}
+                disabled={!remixPreview}
                 className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
                   showBeforeAfter ? 'bg-black' : 'bg-gray-400'
-                } ${(!remixPreview || !isPreviewMode) ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
+                } ${!remixPreview ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${
                   showBeforeAfter ? 'left-6' : 'left-0.5'

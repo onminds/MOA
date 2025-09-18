@@ -3,31 +3,36 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 
-// PDF 텍스트 추출 함수 (pdf-parse + 대안 방법들)
+// PDF 텍스트 추출 함수 (대안 방법들)
 async function extractPDFText(buffer: Buffer): Promise<string> {
   try {
     console.log('PDF 텍스트 추출 시작...');
     console.log('버퍼 크기:', buffer.length);
     
-    // pdf-parse 라이브러리 로드
-    const pdfParse = require('pdf-parse');
-    console.log('pdf-parse 라이브러리 로드 완료');
-    
-    // PDF 텍스트 추출 시도
-    console.log('PDF 파싱 시작...');
-    const pdfData = await pdfParse(buffer);
-    console.log('PDF 파싱 완료');
-    console.log('페이지 수:', pdfData.numpages);
-    console.log('PDF 정보:', pdfData.info);
-    
-    const extractedText = pdfData.text || '';
-    console.log('추출된 텍스트 길이:', extractedText.length);
-    console.log('텍스트 샘플:', extractedText.substring(0, 200));
-    
-    // 텍스트가 충분히 추출되었는지 확인 (실제 텍스트인지 검증)
-    if (extractedText.trim() && extractedText.trim().length > 50 && isValidText(extractedText)) {
-      console.log('일반 텍스트 추출 성공');
-      return cleanText(extractedText.trim());
+    // 1차: 간단한 구조 기반 추출 (괄호/BT..ET/TJ)
+    const latin = buffer.toString('latin1');
+    const patterns = [
+      /\(([^)]{10,})\)/g,
+      /BT[\s\S]*?ET/g,
+      /TJ\s*\[([\s\S]*?)\]/g
+    ];
+    let collected = '';
+    for (const p of patterns) {
+      let m: RegExpExecArray | null;
+      while ((m = p.exec(latin)) !== null) {
+        const raw = m[1] || m[0];
+        const clean = (raw || '')
+          .replace(/\\\)/g, ')')
+          .replace(/\\\(/g, '(')
+          .replace(/[^\w\s가-힣A-Za-z]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (clean.length > 20) collected += clean + ' ';
+      }
+    }
+    if (collected.trim().length > 80 && isValidText(collected)) {
+      console.log('간단한 구조 기반 추출 성공');
+      return cleanText(collected.trim());
     }
     
     // 텍스트 추출이 실패한 경우 OCR 시도

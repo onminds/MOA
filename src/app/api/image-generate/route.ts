@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { toFile } from 'openai/uploads';
 import Replicate from 'replicate';
 import sharp from 'sharp';
 import { requireAuth } from '@/lib/auth';
@@ -8,6 +9,7 @@ import sql from 'mssql';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+export const runtime = 'nodejs';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -163,7 +165,7 @@ async function checkImageGenerationLimit(userId: string) {
     .input('serviceType', 'image-generate')
     .query('SELECT usage_count FROM usage WHERE user_id = @userId AND service_type = @serviceType');
 
-  let maxLimit = 2; // 기본 (로그인만)
+  let maxLimit = 1; // 기본 (로그인만)
   let planType = 'basic';
   
   // 최근 결제 내역이 있으면 플랜에 따라 제한 설정
@@ -172,13 +174,13 @@ async function checkImageGenerationLimit(userId: string) {
     
     switch (planType) {
       case 'standard':
-        maxLimit = 120;
+        maxLimit = 80;
         break;
       case 'pro':
-        maxLimit = 300;
+        maxLimit = 180;
         break;
       default:
-        maxLimit = 2;
+        maxLimit = 1;
     }
   }
   // 관리자이면서 결제 내역이 없으면 무제한
@@ -217,7 +219,7 @@ async function incrementImageUsage(userId: string) {
         UPDATE SET usage_count = usage_count + 1, updated_at = GETDATE()
       WHEN NOT MATCHED THEN
         INSERT (user_id, service_type, usage_count, limit_count, created_at, updated_at)
-        VALUES (@userId, @serviceType, 1, 2, GETDATE(), GETDATE());
+        VALUES (@userId, @serviceType, 1, 1, GETDATE(), GETDATE());
     `);
 }
 
@@ -256,7 +258,15 @@ const modelConfigs = {
 };
 
 export async function POST(request: NextRequest) {
+  let usageIncremented = false; // 사용량 증가 여부 추적
+  
   try {
+    // 클라이언트 연결 상태 확인
+    if (request.signal?.aborted) {
+      console.log('요청이 이미 취소되었습니다.');
+      return NextResponse.json({ error: '요청이 취소되었습니다.' }, { status: 499 });
+    }
+
     // 인증 체크
     const authResult = await requireAuth();
     if ('error' in authResult) {
@@ -293,6 +303,7 @@ export async function POST(request: NextRequest) {
     const model = formData.get('model') as string;
     const ratio = formData.get('ratio') as string;
     const referenceImages = formData.getAll('referenceImages') as File[];
+    const maskData = (formData.get('maskData') as string) || null;
 
     if (!prompt) {
       return NextResponse.json({ error: '프롬프트가 필요합니다.' }, { status: 400 });
@@ -324,104 +335,65 @@ export async function POST(request: NextRequest) {
     // 크기 설정
     const sizeString = `${width}x${height}`;
     
-    // DALL-E 3 모델의 크기 제한에 맞게 조정
+    // 모델별 크기 제한에 맞게 조정
     let validSize: string;
-    if (width === 1024 && height === 1024) {
-      validSize = "1024x1024";
-    } else if (width === 1792 && height === 1024) {
-      validSize = "1792x1024";
-    } else if (width === 1024 && height === 1792) {
-      validSize = "1024x1792";
+    
+    if (modelConfig.apiType === "openai") {
+      // DALL-E 모델의 크기 제한
+      if (width === 1024 && height === 1024) {
+        validSize = "1024x1024";
+      } else if (width === 1792 && height === 1024) {
+        validSize = "1792x1024";
+      } else if (width === 1024 && height === 1792) {
+        validSize = "1024x1792";
+      } else {
+        validSize = "1024x1024";
+      }
+    } else if (modelConfig.apiType === "replicate") {
+      // Replicate 모델들의 크기 제한 (64~1024, 64의 배수)
+      const getValidReplicateSize = (w: number, h: number) => {
+        // 최대 1024로 제한하고 64의 배수로 조정
+        const maxSize = 1024;
+        const minSize = 64;
+        
+        const clampToValid = (size: number) => {
+          if (size > maxSize) size = maxSize;
+          if (size < minSize) size = minSize;
+          // 64의 배수로 조정
+          return Math.round(size / 64) * 64;
+        };
+        
+        let validW = clampToValid(w);
+        let validH = clampToValid(h);
+        
+        // 비율 유지하면서 조정
+        const originalRatio = w / h;
+        const newRatio = validW / validH;
+        
+        if (Math.abs(originalRatio - newRatio) > 0.1) {
+          if (originalRatio > 1) {
+            // 가로가 더 긴 경우
+            validW = maxSize;
+            validH = clampToValid(maxSize / originalRatio);
+          } else {
+            // 세로가 더 긴 경우
+            validH = maxSize;
+            validW = clampToValid(maxSize * originalRatio);
+          }
+        }
+        
+        return `${validW}x${validH}`;
+      };
+      
+      validSize = getValidReplicateSize(width, height);
+      console.log(`Replicate 모델 해상도 조정: ${width}x${height} → ${validSize}`);
     } else {
-      // 기본값으로 설정
       validSize = "1024x1024";
     }
 
-    // 참고 이미지가 있는 경우 처리
+    // 참고 이미지가 있는 경우: 추가 분석/프롬프트 보강을 생략하고 최종 프롬프트 그대로 사용
     if (referenceImages.length > 0) {
-      console.log('참고 이미지 처리 시작:', {
-        referenceImagesCount: referenceImages.length,
-        originalPrompt: prompt,
-        model: model
-      });
-      
-      // Stable Diffusion XL 모델인 경우 이미지 분석 건너뛰기
-      if (model === "Stable Diffusion XL") {
-        console.log('Stable Diffusion XL 모델: 이미지 분석 건너뛰고 Image-to-Image 모드로 진행');
-        // 프롬프트는 그대로 유지
-      } else {
-        // 다른 모델들에 대해서만 이미지 분석 수행
-        let styleDescription = "";
-        
-        try {
-          // 모든 참고 이미지를 분석하여 통합된 스타일 설명 생성
-          for (let i = 0; i < referenceImages.length; i++) {
-            const imageFile = referenceImages[i];
-            console.log(`참고 이미지 ${i + 1} 분석:`, {
-              name: imageFile.name,
-              size: imageFile.size,
-              type: imageFile.type
-            });
-            
-            // 파일 크기 검증 (4MB = 4 * 1024 * 1024 bytes)
-            if (imageFile.size > 4 * 1024 * 1024) {
-              return NextResponse.json({ error: '이미지 크기는 4MB 이하여야 합니다.' }, { status: 400 });
-            }
-
-            // 이미지 분석을 통한 스타일 추출
-            const imageBuffer = await imageFile.arrayBuffer();
-            const imageInfo = await sharp(Buffer.from(imageBuffer)).metadata();
-            
-            console.log(`이미지 ${i + 1} 메타데이터:`, {
-              width: imageInfo.width,
-              height: imageInfo.height,
-              format: imageInfo.format,
-              size: imageFile.size
-            });
-            
-            // 이미지 특성에 따른 스타일 설명
-            if (imageInfo.width && imageInfo.height) {
-              const aspectRatio = imageInfo.width / imageInfo.height;
-              
-              if (aspectRatio > 1.5) {
-                styleDescription += "가로형 풍경화 스타일, ";
-              } else if (aspectRatio < 0.7) {
-                styleDescription += "세로형 인물화 스타일, ";
-              } else {
-                styleDescription += "정사각형 구도 스타일, ";
-              }
-            }
-            
-            // 파일 크기로 이미지 품질 추정
-            if (imageFile.size > 2 * 1024 * 1024) {
-              styleDescription += "고해상도 고품질, ";
-            }
-          }
-          
-          // 여러 이미지의 공통 스타일 요소 추가
-          styleDescription += "참고 이미지들과 동일한 아트 스타일, 색상 팔레트, 조명, 브러시 스타일, 질감, 분위기로";
-          
-          console.log('생성된 스타일 설명:', styleDescription);
-          
-          // 참고 이미지의 스타일을 프롬프트에 추가
-          if (model === "DALL-E 3") {
-            // DALL-E 3에서는 더 상세한 캐릭터 분석 추가
-            const hasStyle = modelConfig.supportsStyle && style && style !== "자동 스타일";
-            const characterAnalysis = await analyzeCharacterFromImage(referenceImages[0], !!hasStyle);
-            // 사용자 프롬프트를 강조하고 분석 결과를 간결하게 추가
-            finalPrompt = `${prompt} - ${characterAnalysis}`;
-          } else {
-            // 다른 모델들은 기존 방식 유지
-            finalPrompt = `${prompt}, ${styleDescription} 생성해주세요. 참고 이미지들의 모든 시각적 요소를 그대로 유지하면서`;
-          }
-        } catch (error) {
-          console.error('이미지 분석 오류:', error);
-          styleDescription = "참고 이미지들과 동일한 아트 스타일, 색상 팔레트, 조명, 구도, 브러시 스타일, 질감, 분위기로";
-          finalPrompt = `${prompt}, ${styleDescription} 생성해주세요. 참고 이미지들의 모든 시각적 요소를 그대로 유지하면서`;
-        }
-      }
-      
-      console.log('최종 프롬프트:', finalPrompt);
+      console.log('참고 이미지 감지: 이미지 분석/프롬프트 보강 생략 (번역된 프롬프트 그대로 사용)');
     } else {
       console.log('참고 이미지 없음');
     }
@@ -456,13 +428,416 @@ export async function POST(request: NextRequest) {
     let response;
 
     if (modelConfig.apiType === "openai") {
-      // OpenAI API 사용 (DALL-E 3)
-      response = await openai.images.generate({
-        model: modelConfig.model,
-        prompt: finalPrompt,
-        n: 1,
-        size: validSize as "1024x1024" | "1792x1024" | "1024x1792",
-      });
+      // OpenAI API 사용
+      // DALL-E 3 선택 + 참고 이미지가 있을 때는 Responses API(image_generation) 우선 사용
+      if (model === "DALL-E 3" && referenceImages.length > 0) {
+        console.log('DALL-E 3 + 참고 이미지: Responses API image_generation 사용 (다중 이미지, fidelity 옵션, 마스크 지원)');
+
+        let imageBuffer: Buffer;
+        let contentType = 'image/png';
+        let usedModelForRecord = 'gpt-image-1';
+        try {
+          // content 구성: 텍스트 + 모든 참조 이미지(base64 data URL)
+          const content: any[] = [{ type: 'input_text', text: finalPrompt }];
+          for (const imgFile of referenceImages) {
+            const ab = await imgFile.arrayBuffer();
+            const b64 = Buffer.from(ab).toString('base64');
+            const dataUrl = `data:${imgFile.type};base64,${b64}`;
+            content.push({ type: 'input_image', image_url: dataUrl });
+          }
+
+          // 마스크가 있으면 Files API로 업로드하여 file_id 전달
+          let maskId: string | undefined;
+          if (maskData) {
+            try {
+              const base64Part = maskData.includes(',') ? maskData.split(',')[1] : maskData;
+              const maskBuf = Buffer.from(base64Part, 'base64');
+              const maskFile = await toFile(new Blob([maskBuf], { type: 'image/png' }), 'mask.png');
+              const uploaded = await openai.files.create({ file: maskFile as any, purpose: 'vision' });
+              maskId = uploaded.id;
+            } catch (e) {
+              console.log('마스크 업로드 실패(무시):', e instanceof Error ? e.message : e);
+            }
+          }
+
+          const tool: any = { type: 'image_generation', input_fidelity: 'high' };
+          if (maskId) {
+            tool.input_image_mask = { file_id: maskId };
+          }
+
+          const resp = await openai.responses.create({
+            model: 'gpt-5',
+            input: [
+              {
+                role: 'user',
+                content
+              }
+            ],
+            tools: [tool]
+          });
+
+          // 결과 파싱
+          let imageBase64: string | undefined;
+          const outputs: any[] = (resp as any).output || [];
+          const imageCalls = outputs.filter((o: any) => o?.type === 'image_generation_call');
+          if (imageCalls.length > 0 && imageCalls[0]?.result) {
+            imageBase64 = imageCalls[0].result;
+          }
+          if (!imageBase64) {
+            const maybe = outputs?.[0]?.content?.[0];
+            const maybeB64 = maybe?.image?.b64_json || maybe?.['image_base64'];
+            if (maybeB64) imageBase64 = maybeB64;
+          }
+          if (!imageBase64) {
+            throw new Error('Responses API에서 이미지 결과를 찾을 수 없습니다.');
+          }
+          imageBuffer = Buffer.from(imageBase64, 'base64');
+          contentType = 'image/png';
+        } catch (err: any) {
+          const msg = typeof err?.message === 'string' ? err.message : '';
+          console.log('⚠️ Responses API 실패, Images Edit로 재시도:', msg);
+          try {
+            const first = referenceImages[0];
+            const uploadFile = await toFile(
+              new Blob([Buffer.from(await first.arrayBuffer())], { type: first.type }),
+              first.name
+            );
+            const editResult = await openai.images.edit({
+              model: 'gpt-image-1',
+              image: uploadFile,
+              prompt: finalPrompt,
+              size: validSize as any,
+            });
+            let imageBase64: string | undefined;
+            if (editResult.data?.[0]?.b64_json) {
+              imageBase64 = editResult.data[0].b64_json as string;
+            }
+            if (!imageBase64 && editResult.data?.[0]?.url) {
+              const imageResp = await fetch(editResult.data[0].url as string);
+              if (!imageResp.ok) throw new Error(`이미지 다운로드 실패: ${imageResp.status}`);
+              const arrBuf = await imageResp.arrayBuffer();
+              imageBuffer = Buffer.from(arrBuf);
+              contentType = imageResp.headers.get('content-type') || 'image/png';
+            } else if (imageBase64) {
+              imageBuffer = Buffer.from(imageBase64, 'base64');
+              contentType = 'image/png';
+            } else {
+              throw new Error('gpt-image-1 편집 결과가 비어 있습니다.');
+            }
+          } catch (secondaryErr: any) {
+            console.log('⚠️ gpt-image-1 편집 실패, SDXL img2img 폴백 시도:', secondaryErr?.message || secondaryErr);
+            usedModelForRecord = 'Stable Diffusion XL (fallback)';
+
+          // Replicate SDXL Image-to-Image 폴백
+          // 참고 이미지 비율에 맞춰 출력 크기 보정
+          let targetW = parseInt((validSize as string).split('x')[0]);
+          let targetH = parseInt((validSize as string).split('x')[1]);
+          try {
+            const refAbMeta = await referenceImages[0].arrayBuffer();
+            const meta = await sharp(Buffer.from(refAbMeta)).metadata();
+            if (meta.width && meta.height) {
+              const ar = meta.width / meta.height;
+              if (ar > 1.3) { targetW = 1792; targetH = 1024; }
+              else if (ar < 0.77) { targetW = 1024; targetH = 1792; }
+              else { targetW = 1024; targetH = 1024; }
+            }
+          } catch {}
+          const sizeParts = [String(targetW), String(targetH)];
+          const fallbackPrompt = `${finalPrompt}, preserve original subject identity, composition, colors, clothing and background context from the reference; adhere closely to reference; tight framing (head-and-shoulders or waist-up), subject fills ~70-80% of frame, do not show full body, no wide shot, no wide angle`;
+          const negativeExtra = "different person, change face, change hair, change outfit, extra fingers, extra limbs, extra characters, text, watermark, logo, full body, long shot, wide shot, wide angle, far distance, crowded background";
+          const inputParams: any = {
+            prompt: fallbackPrompt,
+            width: parseInt(sizeParts[0]),
+            height: parseInt(sizeParts[1]),
+            num_outputs: 1,
+            scheduler: "K_EULER",
+            num_inference_steps: 40,
+            guidance_scale: 6.0,
+            negative_prompt: `blurry, low quality, distorted, ugly, bad anatomy, ${negativeExtra}`
+          };
+
+          const referenceImage = referenceImages[0];
+          const ab = await referenceImage.arrayBuffer();
+          const b64ref = Buffer.from(ab).toString('base64');
+          const dataUrl = `data:${referenceImage.type};base64,${b64ref}`;
+          inputParams.init_image = dataUrl;
+          inputParams.strength = 0.4; // 원본 보존 강화
+
+          const prediction = await replicate.predictions.create({
+            version: modelConfigs["Stable Diffusion XL"].model,
+            input: inputParams
+          });
+
+          let finalPrediction = prediction;
+          let attempts = 0;
+          const maxAttempts = 60;
+          while (finalPrediction.status !== 'succeeded' && finalPrediction.status !== 'failed' && attempts < maxAttempts) {
+            // 클라이언트 연결 상태 확인
+            if (request.signal?.aborted) {
+              console.log(`Replicate 폴백 폴링 중단 (${attempts}/${maxAttempts}) - 클라이언트 연결 끊김`);
+              try {
+                await replicate.predictions.cancel(prediction.id);
+                console.log('Replicate 폴백 prediction 취소 완료:', prediction.id);
+              } catch (cancelError) {
+                console.log('Replicate 폴백 prediction 취소 실패 (무시):', cancelError);
+              }
+              return NextResponse.json({ error: '요청이 취소되었습니다.' }, { status: 499 });
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            finalPrediction = await replicate.predictions.get(prediction.id);
+            attempts++;
+            console.log(`Replicate 폴백 상태 (${attempts}/${maxAttempts}):`, finalPrediction.status);
+          }
+          if (finalPrediction.status !== 'succeeded') {
+            console.log('⚠️ SDXL img2img 1차 실패 상태:', finalPrediction.status, 'logs:', (finalPrediction as any)?.logs || (finalPrediction as any)?.error);
+            // 대안 1: init_image 대신 image 파라미터로 재시도
+            try {
+              const size2 = (validSize as string).split('x');
+              const inputParams2: any = {
+                prompt: fallbackPrompt,
+                width: parseInt(size2[0]),
+                height: parseInt(size2[1]),
+                num_outputs: 1,
+                scheduler: "K_EULER",
+                num_inference_steps: 40,
+                guidance_scale: 6.0,
+                negative_prompt: `blurry, low quality, distorted, ugly, bad anatomy, ${negativeExtra}`
+              };
+              const refAb = await referenceImages[0].arrayBuffer();
+              const refB64 = Buffer.from(refAb).toString('base64');
+              const refDataUrl = `data:${referenceImages[0].type};base64,${refB64}`;
+              inputParams2.image = refDataUrl;
+              inputParams2.strength = 0.4;
+
+              let retryPred = await replicate.predictions.create({
+                version: modelConfigs["Stable Diffusion XL"].model,
+                input: inputParams2
+              });
+              let retryAttempts = 0;
+              while (retryPred.status !== 'succeeded' && retryPred.status !== 'failed' && retryAttempts < 60) {
+                // 클라이언트 연결 상태 확인
+                if (request.signal?.aborted) {
+                  console.log(`Replicate 대안 폴링 중단 (${retryAttempts}/60) - 클라이언트 연결 끊김`);
+                  try {
+                    await replicate.predictions.cancel(retryPred.id);
+                    console.log('Replicate 대안 prediction 취소 완료:', retryPred.id);
+                  } catch (cancelError) {
+                    console.log('Replicate 대안 prediction 취소 실패 (무시):', cancelError);
+                  }
+                  return NextResponse.json({ error: '요청이 취소되었습니다.' }, { status: 499 });
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                retryPred = await replicate.predictions.get(retryPred.id);
+                retryAttempts++;
+                console.log(`Replicate 대안(image) 상태 (${retryAttempts}/60):`, retryPred.status);
+              }
+              if (retryPred.status !== 'succeeded') {
+                console.log('⚠️ SDXL img2img 대안(image)도 실패:', retryPred.status, 'logs:', (retryPred as any)?.logs || (retryPred as any)?.error);
+                // 대안 2: 텍스트→이미지로 최종 재시도 (참고 이미지 미사용)
+                const size3 = (validSize as string).split('x');
+                const inputParams3: any = {
+                  prompt: fallbackPrompt,
+                  width: parseInt(size3[0]),
+                  height: parseInt(size3[1]),
+                  num_outputs: 1,
+                  scheduler: "K_EULER",
+                  num_inference_steps: 40,
+                  guidance_scale: 6.0,
+                  negative_prompt: `blurry, low quality, distorted, ugly, bad anatomy, ${negativeExtra}`
+                };
+                let textPred = await replicate.predictions.create({
+                  version: modelConfigs["Stable Diffusion XL"].model,
+                  input: inputParams3
+                });
+                let textAttempts = 0;
+                while (textPred.status !== 'succeeded' && textPred.status !== 'failed' && textAttempts < 60) {
+                  // 클라이언트 연결 상태 확인
+                  if (request.signal?.aborted) {
+                    console.log(`Replicate 텍스트 재시도 폴링 중단 (${textAttempts}/60) - 클라이언트 연결 끊김`);
+                    try {
+                      await replicate.predictions.cancel(textPred.id);
+                      console.log('Replicate 텍스트 재시도 prediction 취소 완료:', textPred.id);
+                    } catch (cancelError) {
+                      console.log('Replicate 텍스트 재시도 prediction 취소 실패 (무시):', cancelError);
+                    }
+                    return NextResponse.json({ error: '요청이 취소되었습니다.' }, { status: 499 });
+                  }
+                  
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  textPred = await replicate.predictions.get(textPred.id);
+                  textAttempts++;
+                  console.log(`Replicate 텍스트 재시도 상태 (${textAttempts}/60):`, textPred.status);
+                }
+                if (textPred.status !== 'succeeded') {
+                  throw new Error(`Replicate 폴백 실패: ${finalPrediction.status} / 대안(image) 실패: ${retryPred.status} / 텍스트 실패: ${textPred.status}`);
+                }
+                finalPrediction = textPred;
+              } else {
+                finalPrediction = retryPred;
+              }
+            } catch (secondErr) {
+              throw new Error(`Replicate 폴백 예외: ${secondErr instanceof Error ? secondErr.message : 'unknown'}`);
+            }
+          }
+
+          let imageUrl: string;
+          if (Array.isArray(finalPrediction.output)) {
+            imageUrl = finalPrediction.output[0];
+          } else if (typeof finalPrediction.output === 'string') {
+            imageUrl = finalPrediction.output;
+          } else {
+            throw new Error('Replicate 폴백에서 유효한 출력 형식을 찾지 못했습니다.');
+          }
+
+          const imageResp = await fetch(imageUrl);
+          if (!imageResp.ok) {
+            throw new Error(`Replicate 폴백 이미지 다운로드 실패: ${imageResp.status}`);
+          }
+          const arrBuf = await imageResp.arrayBuffer();
+          imageBuffer = Buffer.from(arrBuf);
+          contentType = imageResp.headers.get('content-type') || 'image/png';
+        }
+      }
+
+        // DB 저장
+        const pool = await sql.connect({
+          server: process.env.DB_SERVER || '',
+          database: process.env.DB_NAME || '',
+          user: process.env.DB_USER || '',
+          password: process.env.DB_PASSWORD || '',
+          options: { encrypt: true, trustServerCertificate: true },
+        });
+
+        let userId: number;
+        if (typeof user.id === 'string' && user.id.includes('@')) {
+          const userResult = await pool.request()
+            .input('userEmail', sql.VarChar, user.id)
+            .query(`SELECT id FROM users WHERE email = @userEmail`);
+          if (userResult.recordset.length === 0) {
+            throw new Error('사용자 정보를 찾을 수 없습니다.');
+          }
+          userId = userResult.recordset[0].id;
+        } else {
+          userId = parseInt(user.id as string);
+        }
+
+        const insertResult = await pool.request()
+          .input('userId', sql.Int, userId)
+          .input('prompt', sql.NVarChar, finalPrompt)
+          .input('imageData', sql.VarBinary(sql.MAX), Buffer.from(imageBuffer))
+          .input('contentType', sql.NVarChar, contentType)
+          .input('model', sql.NVarChar, usedModelForRecord)
+          .input('size', sql.NVarChar, `${width}x${height}`)
+          .input('style', sql.NVarChar, style || 'unknown')
+          .input('quality', sql.NVarChar, 'standard')
+          .input('title', sql.NVarChar, originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt)
+          .query(`
+            INSERT INTO image_generation_history 
+            (user_id, prompt, image_data, content_type, model, size, style, quality, title, created_at, status)
+            VALUES 
+            (@userId, @prompt, @imageData, @contentType, @model, @size, @style, @quality, @title, GETDATE(), 'success')
+            SELECT SCOPE_IDENTITY() as id
+          `);
+
+        const imageId = insertResult.recordset[0].id;
+        console.log('💾 gpt-image-1/폴백 이미지 DB 저장 완료, ID:', imageId);
+
+        response = { data: [{ url: `/api/image/${imageId}`, id: imageId }] } as any;
+      } else {
+        // 기본: DALL-E 3 텍스트→이미지
+        const dalleResponse = await openai.images.generate({
+          model: modelConfig.model,
+          prompt: finalPrompt,
+          n: 1,
+          size: validSize as "1024x1024" | "1792x1024" | "1024x1792",
+        });
+
+      // DALL-E 3 이미지를 다운로드하여 DB에 저장
+      if (dalleResponse.data && dalleResponse.data[0] && dalleResponse.data[0].url) {
+        console.log('🔄 DALL-E 3 이미지 다운로드 시작:', dalleResponse.data[0].url);
+        
+        try {
+          // Azure Blob Storage에서 이미지 다운로드
+          const imageResponse = await fetch(dalleResponse.data[0].url);
+          if (!imageResponse.ok) {
+            throw new Error(`이미지 다운로드 실패: ${imageResponse.status}`);
+          }
+          
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
+          
+          console.log('✅ DALL-E 3 이미지 다운로드 완료, 크기:', imageBuffer.byteLength, 'bytes');
+          
+          // DB에 이미지 데이터 저장
+          const pool = await sql.connect({
+            server: process.env.DB_SERVER || '',
+            database: process.env.DB_NAME || '',
+            user: process.env.DB_USER || '',
+            password: process.env.DB_PASSWORD || '',
+            options: {
+              encrypt: true,
+              trustServerCertificate: true,
+            },
+          });
+
+          // user.id가 숫자인지 이메일인지 확인
+          let userId: number;
+          
+          if (typeof user.id === 'string' && user.id.includes('@')) {
+            const userResult = await pool.request()
+              .input('userEmail', sql.VarChar, user.id)
+              .query(`SELECT id FROM users WHERE email = @userEmail`);
+            
+            if (userResult.recordset.length === 0) {
+              throw new Error('사용자 정보를 찾을 수 없습니다.');
+            }
+            
+            userId = userResult.recordset[0].id;
+          } else {
+            userId = parseInt(user.id as string);
+          }
+
+          // 이미지 데이터를 DB에 저장
+          const insertResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .input('prompt', sql.NVarChar, finalPrompt)
+            .input('imageData', sql.VarBinary(sql.MAX), Buffer.from(imageBuffer))
+            .input('contentType', sql.NVarChar, contentType)
+            .input('model', sql.NVarChar, model)
+            .input('size', sql.NVarChar, `${width}x${height}`)
+            .input('style', sql.NVarChar, style || 'unknown')
+            .input('quality', sql.NVarChar, 'standard')
+            .input('title', sql.NVarChar, originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt)
+            .query(`
+              INSERT INTO image_generation_history 
+              (user_id, prompt, image_data, content_type, model, size, style, quality, title, created_at, status)
+              VALUES 
+              (@userId, @prompt, @imageData, @contentType, @model, @size, @style, @quality, @title, GETDATE(), 'success')
+              SELECT SCOPE_IDENTITY() as id
+            `);
+
+          const imageId = insertResult.recordset[0].id;
+          console.log('💾 DALL-E 3 이미지 DB 저장 완료, ID:', imageId);
+
+          // 내부 URL로 응답 생성
+          response = {
+            data: [{
+              url: `/api/image/${imageId}`,
+              id: imageId
+            }]
+          };
+
+        } catch (error) {
+          console.error('❌ DALL-E 3 이미지 처리 실패:', error);
+          throw new Error(`DALL-E 3 이미지 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        }
+      } else {
+        throw new Error('DALL-E 3에서 유효한 이미지 URL을 받지 못했습니다.');
+      }
+      }
     } else if (modelConfig.apiType === "replicate") {
       // Replicate API 사용 (다른 모델들)
       console.log('Replicate API 호출 시작:', {
@@ -520,6 +895,19 @@ export async function POST(request: NextRequest) {
       const maxAttempts = 60; // 최대 60초 대기
       
       while (finalPrediction.status !== 'succeeded' && finalPrediction.status !== 'failed' && attempts < maxAttempts) {
+        // 클라이언트 연결 상태 확인
+        if (request.signal?.aborted) {
+          console.log(`Prediction 폴링 중단 (${attempts}/${maxAttempts}) - 클라이언트 연결 끊김`);
+          // Replicate prediction 취소 시도
+          try {
+            await replicate.predictions.cancel(prediction.id);
+            console.log('Replicate prediction 취소 완료:', prediction.id);
+          } catch (cancelError) {
+            console.log('Replicate prediction 취소 실패 (무시):', cancelError);
+          }
+          return NextResponse.json({ error: '요청이 취소되었습니다.' }, { status: 499 });
+        }
+        
         await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
         finalPrediction = await replicate.predictions.get(prediction.id);
         attempts++;
@@ -552,28 +940,21 @@ export async function POST(request: NextRequest) {
         throw new Error('Replicate API에서 빈 URL을 받았습니다.');
       }
       
-      console.log('최종 이미지 URL:', imageUrl);
+      console.log('🔄 Replicate 이미지 다운로드 시작:', imageUrl);
       
-      response = {
-        data: [{
-          url: imageUrl
-        }]
-      };
-    } else {
-      throw new Error(`지원하지 않는 API 타입: ${modelConfig.apiType}`);
-    }
-
-    if (response.data && response.data[0] && response.data[0].url) {
-      console.log('이미지 생성 성공:', response.data[0].url);
-      
-      // 사용량 증가
-      await incrementImageUsage(user.id);
-      
-      // 업데이트된 사용량 정보 반환
-      const updatedUsage = await checkImageGenerationLimit(user.id);
-      
-      // DB에 이미지 히스토리 저장
       try {
+        // Replicate에서 이미지 다운로드
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          throw new Error(`이미지 다운로드 실패: ${imageResponse.status}`);
+        }
+        
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const contentType = imageResponse.headers.get('content-type') || 'image/png';
+        
+        console.log('✅ Replicate 이미지 다운로드 완료, 크기:', imageBuffer.byteLength, 'bytes');
+        
+        // DB에 이미지 데이터 저장
         const pool = await sql.connect({
           server: process.env.DB_SERVER || '',
           database: process.env.DB_NAME || '',
@@ -585,87 +966,82 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        console.log('💾 DB 저장 시작 - 사용자:', user.id);
-        
         // user.id가 숫자인지 이메일인지 확인
         let userId: number;
         
         if (typeof user.id === 'string' && user.id.includes('@')) {
-          // 이메일인 경우: users 테이블에서 ID 조회
-          console.log('📧 이메일로 사용자 ID 조회 중:', user.id);
           const userResult = await pool.request()
             .input('userEmail', sql.VarChar, user.id)
             .query(`SELECT id FROM users WHERE email = @userEmail`);
           
           if (userResult.recordset.length === 0) {
-            console.error('❌ 사용자를 찾을 수 없습니다:', user.id);
-            return NextResponse.json({ error: '사용자 정보를 찾을 수 없습니다.' }, { status: 404 });
+            throw new Error('사용자 정보를 찾을 수 없습니다.');
           }
           
           userId = userResult.recordset[0].id;
-          console.log('👤 이메일로 조회된 사용자 ID:', userId);
         } else {
-          // 이미 숫자 ID인 경우: 그대로 사용
           userId = parseInt(user.id as string);
-          console.log('👤 직접 사용자 ID:', userId);
-        }
-        
-        // 현재 사용자의 히스토리 개수 확인
-        const checkResult = await pool.request()
-          .input('userId', sql.Int, userId)
-          .query(`SELECT COUNT(*) as count FROM image_generation_history WHERE user_id = @userId`);
-
-        const currentCount = checkResult.recordset[0].count;
-        console.log('📊 현재 히스토리 개수:', currentCount);
-
-        // 10개가 넘으면 가장 오래된 것 삭제
-        if (currentCount >= 10) {
-          console.log('🗑️ 오래된 히스토리 삭제 중...');
-          await pool.request()
-            .input('userId', sql.Int, userId)
-            .query(`
-              DELETE FROM image_generation_history
-              WHERE id IN (
-                SELECT TOP 1 id FROM image_generation_history 
-                WHERE user_id = @userId 
-                ORDER BY created_at ASC
-              )
-            `);
-          console.log('✅ 오래된 히스토리 삭제 완료');
         }
 
-        // 새로운 이미지 생성 히스토리 저장
-        console.log('💾 새 히스토리 저장 중...');
-        
-        // 제목을 사용자가 입력한 원본 프롬프트로 설정 (50자 제한)
-        const title = originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt;
-        
+        // 이미지 데이터를 DB에 저장
         const insertResult = await pool.request()
           .input('userId', sql.Int, userId)
           .input('prompt', sql.NVarChar, finalPrompt)
-          .input('generatedImageUrl', sql.NVarChar, response.data[0].url)
+          .input('imageData', sql.VarBinary(sql.MAX), Buffer.from(imageBuffer))
+          .input('contentType', sql.NVarChar, contentType)
           .input('model', sql.NVarChar, model)
           .input('size', sql.NVarChar, `${width}x${height}`)
           .input('style', sql.NVarChar, style || 'unknown')
           .input('quality', sql.NVarChar, 'standard')
-          .input('title', sql.NVarChar, title)
+          .input('title', sql.NVarChar, originalPrompt.length > 50 ? originalPrompt.substring(0, 50) + '...' : originalPrompt)
           .query(`
             INSERT INTO image_generation_history 
-            (user_id, prompt, generated_image_url, model, size, style, quality, title, created_at, status)
-            VALUES (@userId, @prompt, @generatedImageUrl, @model, @size, @style, @quality, @title, GETDATE(), 'success');
-            SELECT SCOPE_IDENTITY() as id;
+            (user_id, prompt, image_data, content_type, model, size, style, quality, title, created_at, status)
+            VALUES 
+            (@userId, @prompt, @imageData, @contentType, @model, @size, @style, @quality, @title, GETDATE(), 'success')
+            SELECT SCOPE_IDENTITY() as id
           `);
 
-        console.log('✅ 이미지 히스토리가 DB에 저장되었습니다. ID:', insertResult.recordset[0]?.id);
-      } catch (dbError) {
-        console.error('❌ DB 저장 실패:', dbError);
-        // DB 저장 실패는 이미지 생성 성공에 영향을 주지 않음
+        const imageId = insertResult.recordset[0].id;
+        console.log('💾 Replicate 이미지 DB 저장 완료, ID:', imageId);
+
+        // 내부 URL로 응답 생성
+        response = {
+          data: [{
+            url: `/api/image/${imageId}`,
+            id: imageId
+          }]
+        };
+
+      } catch (error) {
+        console.error('❌ Replicate 이미지 처리 실패:', error);
+        throw new Error(`Replicate 이미지 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
       }
+    } else {
+      throw new Error(`지원하지 않는 API 타입: ${modelConfig.apiType}`);
+    }
+
+    if (response.data && response.data[0] && response.data[0].url) {
+      console.log('이미지 생성 성공:', response.data[0].url);
+      
+      // 클라이언트 연결 상태 재확인 (사용량 증가 전)
+      if (request.signal?.aborted) {
+        console.log('이미지 생성 완료 후 클라이언트 연결 끊김 감지 - 사용량 증가 없음');
+        return NextResponse.json({ error: '요청이 취소되었습니다.' }, { status: 499 });
+      }
+      
+      // 사용량 증가
+      await incrementImageUsage(user.id);
+      usageIncremented = true;
+      
+      // 업데이트된 사용량 정보 반환
+      const updatedUsage = await checkImageGenerationLimit(user.id);
+      
+      // 모든 모델이 이제 DB에 바이너리로 저장되므로 추가 저장 로직 제거
 
       return NextResponse.json({ 
         url: response.data[0].url,
-        usage: updatedUsage,
-        prompt: finalPrompt
+        usage: updatedUsage
       });
     } else {
       console.error('이미지 생성 응답 오류:', response);
@@ -673,6 +1049,12 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('이미지 생성 오류:', error);
+    
+    // 클라이언트 연결 끊김으로 인한 에러는 사용량 증가하지 않음
+    if (request.signal?.aborted) {
+      console.log('클라이언트 연결 끊김으로 인한 에러 - 사용량 증가 없음');
+      return NextResponse.json({ error: '요청이 취소되었습니다.' }, { status: 499 });
+    }
     
     // API별 에러 처리
     if (error instanceof Error) {

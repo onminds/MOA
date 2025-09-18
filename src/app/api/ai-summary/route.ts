@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth, checkUsageLimit, incrementUsage } from '@/lib/auth';
 import { getConnection } from '@/lib/db';
 import { extractYouTubeContent } from '@/lib/youtube-extractor';
 import { extractDocumentContent, extractWebsiteContent } from '@/lib/content-extractor';
@@ -16,6 +16,17 @@ export async function POST(request: NextRequest) {
     }
 
     const { user } = authResult;
+
+    // 사용량 체크 (AI 완벽요약)
+    const usageCheck = await checkUsageLimit(user.id, 'ai-summary');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({
+        error: 'AI 완벽요약 사용량 한도에 도달했습니다.',
+        currentUsage: usageCheck.limit - usageCheck.remaining,
+        maxLimit: usageCheck.limit,
+        resetDate: usageCheck.resetDate
+      }, { status: 429 });
+    }
 
     const formData = await request.formData();
     const type = formData.get('type') as string;
@@ -64,6 +75,10 @@ export async function POST(request: NextRequest) {
     console.log('🤖 OpenAI 사용:', costInfo.cost.toFixed(2) + '원');
     const summary = await generateSummary(content, type);
 
+    // 사용량 증가 및 최신 사용량 조회
+    await incrementUsage(user.id, 'ai-summary');
+    const updated = await checkUsageLimit(user.id, 'ai-summary');
+
     return NextResponse.json({ 
       summary,
       costInfo: {
@@ -72,6 +87,11 @@ export async function POST(request: NextRequest) {
         method: 'openai',
         inputTokens: costInfo.inputTokens,
         estimatedOutputTokens: costInfo.estimatedOutputTokens
+      },
+      usage: {
+        current: updated.limit - updated.remaining,
+        limit: updated.limit,
+        remaining: updated.remaining
       }
     });
   } catch (error) {

@@ -403,13 +403,29 @@ export async function POST(request: NextRequest) {
       finalPrompt = prompt;
     }
 
-    // 이미지 처리 - URL인지 Base64인지 확인
+    // 이미지 처리 - URL/상대경로/Base64 모두 지원
     let imageBlob: Blob;
     
-    if (initImage.startsWith('http')) {
-      // URL인 경우 이미지를 다운로드
-      console.log('이미지 URL에서 다운로드:', initImage);
-      const imageResponse = await fetch(initImage);
+    if (initImage.startsWith('data:image/')) {
+      // Base64인 경우
+      console.log('Base64 이미지 처리');
+      const mimeMatch = initImage.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+      const mimeTypeFromData = mimeMatch?.[1] || 'image/jpeg';
+      const base64Image = initImage.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+      const imageBuffer = Buffer.from(base64Image, 'base64');
+      imageBlob = new Blob([imageBuffer], { type: mimeTypeFromData });
+      console.log('Base64 이미지 변환 완료:', {
+        originalLength: base64Image.length,
+        bufferSize: imageBuffer.length,
+        blobSize: imageBlob.size,
+        mimeTypeFromData
+      });
+    } else if (initImage.startsWith('http') || initImage.startsWith('/')) {
+      // URL(절대/상대)인 경우 이미지를 다운로드
+      const origin = new URL(request.url).origin;
+      const absoluteUrl = initImage.startsWith('http') ? initImage : origin + initImage;
+      console.log('이미지 URL에서 다운로드:', absoluteUrl);
+      const imageResponse = await fetch(absoluteUrl, { headers: { Accept: 'image/*' } });
       if (!imageResponse.ok) {
         throw new Error('이미지 다운로드에 실패했습니다.');
       }
@@ -428,17 +444,9 @@ export async function POST(request: NextRequest) {
         type: imageBlob.type
       });
     } else {
-      // Base64인 경우
-      console.log('Base64 이미지 처리');
-      const base64Image = initImage.replace(/^data:image\/[a-z]+;base64,/, '');
-      const imageBuffer = Buffer.from(base64Image, 'base64');
-      imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
-      
-      console.log('Base64 이미지 변환 완료:', {
-        originalLength: base64Image.length,
-        bufferSize: imageBuffer.length,
-        blobSize: imageBlob.size
-      });
+      // 인식 불가 형식 방어 처리
+      console.error('지원하지 않는 initImage 형식:', initImage?.slice(0, 50));
+      return NextResponse.json({ error: '지원하지 않는 이미지 형식입니다.' }, { status: 400 });
     }
 
     let endpoint = '';

@@ -38,43 +38,71 @@ export async function POST(request: NextRequest) {
 
     const currentUser = currentUserResult.recordset[0];
 
-    if (planType === 'basic') {
-      // 기본 플랜으로 변경 (결제 내역 삭제)
-      await db.request().query(`
-        DELETE FROM payments WHERE userId = '${currentUser.id}'
+    // 기존 결제 내역 확인
+    const existingPaymentResult = await db.request()
+      .input('userId', currentUser.id)
+      .query(`
+        SELECT TOP 1 id, plan_type, subscription_status 
+        FROM payments 
+        WHERE user_id = @userId 
+          AND status = 'completed'
+        ORDER BY created_at DESC
       `);
+
+    if (existingPaymentResult.recordset.length > 0) {
+      const existingPayment = existingPaymentResult.recordset[0];
       
-      return NextResponse.json({
-        message: "기본 플랜으로 변경되었습니다. (이미지 생성 2회)",
-        planType: 'basic',
-        imageLimit: 2
-      });
-    } else {
-      // Standard 또는 Pro 플랜 결제 내역 추가
-      const amount = planType === 'standard' ? 9900 : 19900;
-      const creditsAdded = planType === 'standard' ? 120 : 300;
-
-      // 기존 결제 내역 삭제 후 새로 추가
-      await db.request().query(`
-        DELETE FROM payments WHERE userId = '${currentUser.id}'
-      `);
-
-      await db.request().query(`
-        INSERT INTO payments (userId, planType, amount, creditsAdded, paymentMethod, status, transactionId, createdAt)
-        VALUES ('${currentUser.id}', '${planType}', ${amount}, ${creditsAdded}, 'test', 'completed', 'test_${Date.now()}', GETDATE())
-      `);
-
-      return NextResponse.json({
-        message: `${planType.toUpperCase()} 플랜으로 변경되었습니다.`,
-        planType: planType,
-        imageLimit: creditsAdded
-      });
+      // 활성 구독이 있는 경우 취소 처리
+      if (existingPayment.subscription_status === 'active') {
+        await db.request()
+          .input('paymentId', existingPayment.id)
+          .query(`
+            UPDATE payments 
+            SET subscription_status = 'canceled',
+                canceled_at = GETDATE(),
+                auto_renewal = 0,
+                updated_at = GETDATE()
+            WHERE id = @paymentId
+          `);
+      }
     }
 
+    // 새로운 결제 내역 생성 (디버그용 플랜 변경)
+    const amount = planType === 'basic' ? 0 : (planType === 'standard' ? 15900 : 29000);
+    
+    await db.request()
+      .input('userId', currentUser.id)
+      .input('planType', planType)
+      .input('amount', amount)
+      .input('status', 'completed')
+      .input('paymentMethod', 'debug_manual')
+      .query(`
+        INSERT INTO payments (
+          user_id, plan_type, amount, status, payment_method, created_at, updated_at
+        )
+        VALUES (
+          @userId, @planType, @amount, @status, @paymentMethod, GETDATE(), GETDATE()
+        )
+      `);
+
+    console.log('디버그 플랜 변경 완료:', { 
+      userId: currentUser.id, 
+      email: session.user.email, 
+      planType, 
+      amount 
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `플랜이 ${planType}으로 변경되었습니다.`,
+      planType: planType,
+      amount: amount
+    });
+
   } catch (error) {
-    console.error("플랜 설정 오류:", error);
+    console.error('디버그 플랜 변경 오류:', error);
     return NextResponse.json(
-      { error: "서버 오류가 발생했습니다." }, 
+      { error: "플랜 변경 중 오류가 발생했습니다." }, 
       { status: 500 }
     );
   }

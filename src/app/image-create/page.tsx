@@ -1,7 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Header from '../components/Header';
+import { useToast } from "@/contexts/ToastContext";
+import { createUsageToastData, createUsageToastMessage } from "@/lib/toast-utils";
 
 import {
   Download, X, RotateCcw, User, Palette, Ruler, Paperclip, ChevronDown, MoreVertical, Save, RefreshCw, History, FileImage, Trash2, Clock, Loader2
@@ -10,6 +12,11 @@ import RemixMode from './RemixMode';
 
 export default function ImageCreate() {
   const router = useRouter();
+  const { showToast } = useToast();
+  
+  // RemixMode 컴포넌트의 리셋 함수 참조
+  const resetEditingStateRef = useRef<(() => void) | null>(null);
+  
   const [userInput, setUserInput] = useState("");
   const [selectedModel, setSelectedModel] = useState("Stable Diffusion XL");
   const [selectedStyle, setSelectedStyle] = useState("자동 스타일");
@@ -29,6 +36,8 @@ export default function ImageCreate() {
   const [isRemixGenerating, setIsRemixGenerating] = useState(false);
   const [remixPreview, setRemixPreview] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
+  // SSR → CSR 하이드레이션 불일치 방지용 마운트 플래그
+  const [isClient, setIsClient] = useState(false);
   
   // 고급 편집 기능을 위한 상태들
   const [searchPrompt, setSearchPrompt] = useState("");
@@ -45,6 +54,10 @@ export default function ImageCreate() {
   const [isPreviewMode, setIsPreviewMode] = useState(false); // 미리보기 모드 상태
   const [showBeforeAfter, setShowBeforeAfter] = useState(false); // 전후 비교 모드 상태
   const [isImageLoading, setIsImageLoading] = useState(false); // 이미지 로딩 상태
+  // 현재 표시 중인 이미지의 사이즈를 잠그기 위한 상태(생성 완료 후 변경해도 표시 크기는 고정)
+  const [lockedSize, setLockedSize] = useState<string | null>(null);
+  // API 요청 취소를 위한 AbortController
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   
   // 이미지 히스토리 관련 상태
   const [dbHistory, setDbHistory] = useState<ImageHistoryItem[]>([]);
@@ -76,7 +89,8 @@ export default function ImageCreate() {
   ];
 
   const getSelectedSize = () => {
-    const selectedSizeObj = sizes.find(size => size.name === selectedSize);
+    const activeSizeName = generatedImage && lockedSize ? lockedSize : selectedSize;
+    const selectedSizeObj = sizes.find(size => size.name === activeSizeName);
     return selectedSizeObj || sizes[0];
   };
 
@@ -84,6 +98,11 @@ export default function ImageCreate() {
     const size = getSelectedSize();
     return size.width / size.height;
   };
+
+  // 클라이언트 마운트 후에만 드래그 이벤트 핸들러를 바인딩
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 이미지 히스토리 인터페이스 정의
   interface ImageHistoryItem {
@@ -107,9 +126,10 @@ export default function ImageCreate() {
       return {
         aspectRatio: aspectRatio,
         maxWidth: '800px',
-        maxHeight: '450px',
+        maxHeight: '500px',
         width: '100%',
-        height: 'auto'
+        height: '500px', // 고정 높이로 레이아웃 점프 방지 (1:1, 9:16과 동일)
+        minHeight: '500px'
       };
     } else if (aspectRatio < 0.7) {
       // 9:16 (세로형) - 원본 크기 그대로, 오른쪽으로 약간 이동
@@ -118,7 +138,8 @@ export default function ImageCreate() {
         maxWidth: '300px',
         maxHeight: '500px',
         width: '100%',
-        height: 'auto',
+        height: '500px', // 고정 높이로 레이아웃 점프 방지
+        minHeight: '500px',
         marginLeft: '10px'
       };
     } else {
@@ -128,19 +149,20 @@ export default function ImageCreate() {
         maxWidth: '500px',
         maxHeight: '500px',
         width: '100%',
-        height: 'auto'
+        height: '500px', // 고정 높이로 레이아웃 점프 방지
+        minHeight: '500px'
       };
     }
   };
 
   const handleFileAttach = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    setAttachedFiles(prev => [...prev, ...files]);
-    
-    // 자동 프롬프트가 켜져있을 때만 자동으로 프롬프트 생성
-    if (files.length > 0 && autoPrompt) {
-      await generatePromptFromImage(files);
+    // Stable Diffusion XL, Kandinsky, Realistic Vision에서는 첨부 불가
+    if (selectedModel === "Stable Diffusion XL" || selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") {
+      return;
     }
+    setAttachedFiles(prev => [...prev, ...files]);
+    // 이미지 분석 프롬프트가 입력창에 채워지는 문제 방지를 위해 자동 생성 호출 비활성화
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -157,13 +179,13 @@ export default function ImageCreate() {
     e.preventDefault();
     setIsDragOver(false);
     
+    // Stable Diffusion XL, Kandinsky, Realistic Vision에서는 드래그 앤 드롭 첨부 불가
+    if (selectedModel === "Stable Diffusion XL" || selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") {
+      return;
+    }
     const files = Array.from(e.dataTransfer.files);
     setAttachedFiles(prev => [...prev, ...files]);
-    
-    // 자동 프롬프트가 켜져있을 때만 자동으로 프롬프트 생성
-    if (files.length > 0 && autoPrompt) {
-      await generatePromptFromImage(files);
-    }
+    // 이미지 분석 프롬프트가 입력창에 채워지는 문제 방지를 위해 자동 생성 호출 비활성화
   };
 
   const generatePromptFromImage = async (imageFiles: File[]) => {
@@ -194,13 +216,10 @@ export default function ImageCreate() {
           }
         }
       }
-      
-      if (combinedPrompt) {
-        setUserInput(combinedPrompt);
-      }
+      // 입력창에 자동으로 채우지 않음 (사용자 입력 보호)
     } catch (error) {
       console.error('이미지 분석 중 오류:', error);
-      setUserInput('이 이미지들을 기반으로 새로운 이미지를 생성해주세요');
+      // 오류 시에도 입력창 내용을 변경하지 않음
     }
   };
 
@@ -250,9 +269,16 @@ export default function ImageCreate() {
   };
 
   const handleNewImage = () => {
+    // 리믹스 모드에서 새로 만들기를 누르면 리믹스 모드 종료
+    if (isRemixMode) {
+      handleExitRemixMode();
+      return;
+    }
+    
     setGeneratedImage(null);
     setUserInput("");
     setAttachedFiles([]);
+    setLockedSize(null); // 잠금 해제하여 미리보기/다음 생성에 선택값 적용
   };
 
   // 이미지 히스토리 로드 함수
@@ -268,11 +294,9 @@ export default function ImageCreate() {
       
       const response = await fetch('/api/image-generate/history');
       const data = await response.json();
-      console.log('📡 API 응답:', { response: response.status, data });
       
       if (response.ok && data.success) {
-        console.log('✅ 히스토리 데이터:', data.history);
-        console.log('📊 히스토리 개수:', data.count);
+        // 모든 히스토리 표시
         setDbHistory(data.history);
       } else {
         console.error('❌ 이미지 히스토리 로드 실패:', data.error);
@@ -303,10 +327,10 @@ export default function ImageCreate() {
   // 이미지 히스토리 항목을 메인 화면에 로드하는 함수
   const loadHistoryItem = (item: ImageHistoryItem) => {
     setUserInput(item.title); // item.prompt 대신 item.title 사용 (사용자 원본 입력)
-    setSelectedModel(item.model !== 'unknown' ? item.model : 'Stable Diffusion XL');
     setSelectedSize(item.size !== 'unknown' ? item.size : '1024x1024');
     setSelectedStyle(item.style !== 'unknown' ? item.style : '자동 스타일');
     setGeneratedImage(item.generatedImageUrl);
+    setLockedSize(item.size && item.size !== 'unknown' ? item.size : '1024x1024');
     
     // 결과 영역으로 스크롤
     setTimeout(() => {
@@ -348,6 +372,18 @@ export default function ImageCreate() {
   const handleGenerate = async () => {
     if (!userInput.trim()) return;
     
+    // 새로운 AbortController 생성
+    const controller = new AbortController();
+    setAbortController(controller);
+    
+    // 이번 생성에서 사용할 사이즈를 잠금
+    setLockedSize(selectedSize);
+    
+    // 생성 중에는 드롭다운들을 닫아 비활성화 상태를 명확히 표시
+    setShowModelDropdown(false);
+    setShowStyleDropdown(false);
+    setShowSizeDropdown(false);
+
     setLoading(true);
     setError(null);
     setGeneratedImage(null);
@@ -381,8 +417,10 @@ export default function ImageCreate() {
           },
           body: JSON.stringify({
             prompt: enhancedPrompt,
-            model: selectedModel
+            model: selectedModel,
+            translateOnly: attachedFiles.length > 0 // 이미지 첨부 시 번역만
           }),
+          signal: controller.signal // AbortController 신호 추가
         });
 
         if (!optimizeResponse.ok) {
@@ -390,7 +428,8 @@ export default function ImageCreate() {
         }
 
         const optimizeData = await optimizeResponse.json();
-        finalPrompt = optimizeData.optimizedPrompt;
+        // Base64로 인코딩된 프롬프트를 디코딩 (브라우저 호환)
+        finalPrompt = optimizeData.data ? atob(optimizeData.data) : optimizeData.optimizedPrompt;
       }
       
       formData.append('prompt', finalPrompt);
@@ -416,7 +455,14 @@ export default function ImageCreate() {
       const res = await fetch("/api/image-generate", {
         method: "POST",
         body: formData,
+        signal: controller.signal // AbortController 신호 추가
       });
+      
+      // 요청이 취소되었는지 확인
+      if (controller.signal.aborted) {
+        console.log('이미지 생성이 사용자에 의해 취소되었습니다.');
+        return;
+      }
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -437,6 +483,18 @@ export default function ImageCreate() {
           if (upgradeMessage) {
             detailedMessage += ` ${upgradeMessage}`;
           }
+
+          // 한도 초과 Toast
+          try {
+            const toastData = createUsageToastData('image-generate', currentUsage, maxLimit);
+            const resetText = errorData?.resetDate ? `\n재설정: ${new Date(errorData.resetDate).toLocaleString('ko-KR')}` : '';
+            showToast({
+              type: 'error',
+              title: `${toastData.serviceName} 한도 초과`,
+              message: `${createUsageToastMessage(toastData)}${resetText}`,
+              duration: 6000
+            });
+          } catch {}
           
           throw new Error(detailedMessage);
         } else if (res.status === 401) {
@@ -465,11 +523,32 @@ export default function ImageCreate() {
         
         // 이미지 생성 성공 후 히스토리 새로고침
         loadHistory();
+
+        // 성공 Toast (사용량 정보가 있으면 통합 표기)
+        try {
+          if (data.usage) {
+            const current = typeof data.usage.current === 'number' ? data.usage.current : (data.usage.usageCount ?? 0);
+            const limit = typeof data.usage.limit === 'number' ? data.usage.limit : (data.usage.limitCount ?? 0);
+            const toastData = createUsageToastData('image-generate', current, limit);
+            showToast({
+              type: 'success',
+              title: `${toastData.serviceName} 사용`,
+              message: createUsageToastMessage(toastData),
+              duration: 5000
+            });
+          }
+        } catch {}
       } else {
         console.error('API에서 유효하지 않은 URL을 받았습니다:', data);
         throw new Error('이미지 생성에 실패했습니다. 유효한 URL을 받지 못했습니다.');
       }
     } catch (err) {
+      // AbortError는 사용자 취소이므로 에러로 처리하지 않음
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('이미지 생성이 취소되었습니다.');
+        return;
+      }
+      
       // 사용자에게는 에러 메시지 표시하되, 콘솔에는 한 번만 로그
       if (err instanceof Error) {
         // 구체적인 에러 메시지가 있으면 그대로 사용
@@ -488,6 +567,7 @@ export default function ImageCreate() {
       }
     } finally {
       setLoading(false);
+      setAbortController(null);
     }
   };
 
@@ -500,7 +580,13 @@ export default function ImageCreate() {
       return;
     }
     
-    if (category !== 'remove-background' && category !== 'background' && !remixPrompt.trim()) {
+    // recolor는 selectPrompt와 colorPrompt가 필요
+    if (category === 'recolor') {
+      if (!selectPrompt.trim() || !colorPrompt.trim()) {
+        setError('색상을 변경할 객체와 새로운 색상 프롬프트를 모두 입력해주세요.');
+        return;
+      }
+    } else if (category !== 'remove-background' && category !== 'background' && !remixPrompt.trim()) {
       setError('프롬프트를 입력해주세요.');
       return;
     }
@@ -516,6 +602,9 @@ export default function ImageCreate() {
       let finalPrompt = '';
       if (category === 'background') {
         finalPrompt = backgroundPrompt || 'background processing';
+      } else if (category === 'recolor') {
+        // recolor는 colorPrompt를 사용
+        finalPrompt = colorPrompt || 'color change';
       } else {
         finalPrompt = remixPrompt || 'background processing';
       }
@@ -530,16 +619,19 @@ export default function ImageCreate() {
             },
             body: JSON.stringify({
               prompt: finalPrompt,
-              model: "Stable Diffusion XL"
+              model: "Stable Diffusion XL",
+              translateOnly: true // 리믹스는 항상 번역만
             }),
           });
 
           if (optimizeResponse.ok) {
             const optimizeData = await optimizeResponse.json();
-            finalPrompt = optimizeData.optimizedPrompt;
+            // Base64로 인코딩된 프롬프트를 디코딩 (브라우저 호환)
+            finalPrompt = optimizeData.data ? atob(optimizeData.data) : optimizeData.optimizedPrompt;
             console.log('리믹스 프롬프트 최적화:', {
-              original: remixPrompt,
-              optimized: finalPrompt
+              category,
+              original: '***', // 보안상 로그에서도 마스킹
+              optimized: '***' // 보안상 로그에서도 마스킹
             });
           }
         } catch (error) {
@@ -679,8 +771,8 @@ export default function ImageCreate() {
           console.log('=== 영역 편집 마스크 데이터 수집 완료 ===');
           break;
         case 'recolor':
-          formData.append('selectPrompt', selectPrompt || 'object');
-          formData.append('colorPrompt', colorPrompt || remixPrompt);
+          formData.append('selectPrompt', selectPrompt);
+          formData.append('colorPrompt', colorPrompt);
           break;
         case 'outpaint':
           formData.append('outpaintDirection', outpaintDirections.join(','));
@@ -696,7 +788,16 @@ export default function ImageCreate() {
         backgroundPrompt,
         backgroundPromptLength: backgroundPrompt?.length,
         backgroundPromptTrimmed: backgroundPrompt?.trim(),
-        isEmpty: !backgroundPrompt?.trim()
+        isEmpty: !backgroundPrompt?.trim(),
+        // recolor 특별 디버깅
+        ...(category === 'recolor' && {
+          selectPrompt,
+          colorPrompt,
+          selectPromptLength: selectPrompt?.length,
+          colorPromptLength: colorPrompt?.length,
+          selectPromptTrimmed: selectPrompt?.trim(),
+          colorPromptTrimmed: colorPrompt?.trim()
+        })
       });
       
       // FormData 내용 확인
@@ -915,6 +1016,11 @@ export default function ImageCreate() {
   };
 
   const handleExitRemixMode = () => {
+    // RemixMode 컴포넌트의 편집 상태 초기화
+    if (resetEditingStateRef.current) {
+      resetEditingStateRef.current();
+    }
+    
     // 상태 초기화를 먼저 수행
     setRemixPrompt("");
     setRemixCategory(null);
@@ -1020,6 +1126,94 @@ export default function ImageCreate() {
     console.log('Loading 상태 변경:', loading);
   }, [loading]);
 
+  // 페이지 이탈 시 생성 중단 처리 (강화된 버전)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (loading && abortController) {
+        // 생성 중단
+        abortController.abort();
+        console.log('페이지 이탈로 인한 이미지 생성 중단');
+        
+        // 브라우저에게 페이지를 떠나려고 한다고 알림
+        e.preventDefault();
+        e.returnValue = '';
+        
+        // 강제로 상태 초기화
+        setLoading(false);
+        setError(null);
+        setAbortController(null);
+      }
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (loading && abortController) {
+        // 뒤로가기로 인한 생성 중단
+        abortController.abort();
+        console.log('뒤로가기로 인한 이미지 생성 중단');
+        setLoading(false);
+        setError(null);
+        setAbortController(null);
+        
+        // 히스토리 조작 방지
+        e.preventDefault();
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+
+    // 실제 페이지 종료 시에만 작업 중단 (탭 전환은 허용)
+    const handlePageHide = (e: Event) => {
+      // pagehide 이벤트에서 persisted 속성 확인
+      const pageHideEvent = e as any;
+      // persisted가 false인 경우에만 실제 페이지 종료로 간주
+      if (!pageHideEvent.persisted && loading && abortController) {
+        abortController.abort();
+        console.log('페이지 완전 종료로 인한 이미지 생성 중단');
+        setLoading(false);
+        setError(null);
+        setAbortController(null);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (loading && abortController) {
+        // F5와 Alt+F4만 중단 처리
+        if ((e.altKey && e.key === 'F4') || // Alt+F4 (창 닫기)
+            e.key === 'F5') { // F5 (새로고침)
+          abortController.abort();
+          console.log('키보드 단축키로 인한 이미지 생성 중단');
+          setLoading(false);
+          setError(null);
+          setAbortController(null);
+        }
+      }
+    };
+
+    // 모든 이벤트 리스너 등록
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('keydown', handleKeyDown);
+
+    // 히스토리 조작 방지 (생성 중일 때)
+    if (loading) {
+      window.history.pushState(null, '', window.location.href);
+    }
+
+    return () => {
+      // 컴포넌트 언마운트 시 모든 이벤트 리스너 제거
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('keydown', handleKeyDown);
+      
+      // 진행 중인 요청이 있으면 취소
+      if (abortController) {
+        abortController.abort();
+        console.log('컴포넌트 언마운트로 인한 이미지 생성 중단');
+      }
+    };
+  }, [loading, abortController]);
+
   // 컴포넌트 마운트 시 히스토리 로드
   useEffect(() => {
     loadHistory();
@@ -1027,8 +1221,7 @@ export default function ImageCreate() {
 
   // dbHistory 상태 변경 감지
   useEffect(() => {
-    console.log('🔄 dbHistory 상태 변경:', dbHistory);
-    console.log('📊 dbHistory 길이:', dbHistory.length);
+    // 상태 변경 감지 (로그 제거)
   }, [dbHistory]);
 
   // inpaint 카테고리 변경 시 캔버스 초기화
@@ -1046,14 +1239,9 @@ export default function ImageCreate() {
       <Header />
       <div className="min-h-screen bg-white">
         <div className="flex">
-          <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-8">
-            {!loading && !generatedImage && (
-              <div className="text-center mb-12">
-                <h1 className="text-4xl font-semibold text-gray-800 mb-2">
-                  이미지를 생성해드립니다!
-                </h1>
-              </div>
-            )}
+          <div className="flex-1 flex flex-col items-center justify-start min-h-[calc(100vh-64px)] p-8">
+            {/* 상단 안내 문구 제거: 고정 높이 스페이서로 위치만 유지 */}
+            <div className="mb-12" style={{ height: '72px' }} />
 
             {isRemixMode && generatedImage && remixCategory ? (
               <RemixMode
@@ -1099,6 +1287,7 @@ export default function ImageCreate() {
                 setGeneratedImage={setGeneratedImage}
                 setRemixPreview={setRemixPreview}
                 setIsPreviewMode={setIsPreviewMode}
+                resetEditingState={resetEditingStateRef}
               />
             ) : (
               /* 기본 모드 레이아웃 */
@@ -1106,10 +1295,10 @@ export default function ImageCreate() {
                 <div className="mb-16">
                   <div className="bg-white rounded-2xl flex items-center justify-center relative" style={getContainerStyle()}>
                     {loading ? (
-                      <div className="text-center w-full h-full flex flex-col items-center justify-center bg-white rounded-xl">
-                        <div className="relative flex items-center justify-center">
-                          <div className="text-black font-bold text-5xl z-10 relative">MOA</div>
-                          <div className="absolute top-16 text-black text-lg font-medium z-10 text-left w-full whitespace-nowrap -ml-6">AI가 이미지 제작중</div>
+                      <div className="text-center w-full h-full flex flex-col items-center justify-center bg-white rounded-xl relative z-0">
+                        <div className="relative flex items-center justify-center" style={{ transform: 'translateY(2rem)' }}>
+                          <div className="text-black font-bold text-5xl relative">MOA</div>
+                          <div className="absolute top-16 left-1/2 -translate-x-1/2 transform text-black text-lg font-medium whitespace-nowrap">AI가 이미지 제작중</div>
                           <div className="absolute w-60 h-60 border-2 border-black border-t-transparent rounded-full animate-spin flex items-center justify-center">
                             <div className="w-48 h-48 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '2s'}}></div>
                           </div>
@@ -1179,8 +1368,8 @@ export default function ImageCreate() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center w-full h-full flex items-center justify-center">
-                        {/* 빈 상태 */}
+                      <div className="w-full h-full flex items-center justify-center">
+                        <h2 className="text-4xl font-semibold text-gray-800 text-center whitespace-nowrap">이미지를 생성해드립니다!</h2>
                       </div>
                     )}
                   </div>
@@ -1251,7 +1440,8 @@ export default function ImageCreate() {
                         /* 기본 모드에서는 모델 선택 가능 */
                         <button
                           onClick={handleModelDropdown}
-                          className="flex items-center gap-2 px-3 py-2 border-2 border-gray-400 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md w-[200px] hover:border-gray-500 hover:shadow-lg transition-all"
+                          disabled={loading}
+                          className={`flex items-center gap-2 px-3 py-2 border-2 border-gray-400 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md w-[200px] hover:border-gray-500 hover:shadow-lg transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <div className="w-8 h-8 rounded overflow-hidden">
                             {(() => {
@@ -1289,7 +1479,7 @@ export default function ImageCreate() {
                           <ChevronDown className="w-4 h-4 text-gray-700" />
                         </button>
                       )}
-                      {showModelDropdown && !isRemixMode && (
+                      {showModelDropdown && !isRemixMode && !loading && (
                         <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                           {models.map((model) => (
                             <button
@@ -1344,6 +1534,7 @@ export default function ImageCreate() {
                         type="checkbox"
                         checked={autoPrompt}
                         onChange={(e) => handleAutoPromptChange(e.target.checked)}
+                        disabled={loading}
                         className="w-5 h-5 text-white bg-black border-black rounded focus:ring-black checked:bg-black checked:border-black"
                         style={{
                           accentColor: 'black',
@@ -1357,12 +1548,13 @@ export default function ImageCreate() {
                     <div className="relative">
                       <button
                         onClick={handleStyleDropdown}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-sm min-w-[120px]"
+                        disabled={loading}
+                        className={`flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-sm min-w-[120px] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <span className="font-medium">{selectedStyle}</span>
                         <ChevronDown className="w-4 h-4 text-gray-500" />
                       </button>
-                      {showStyleDropdown && (
+                      {showStyleDropdown && !loading && (
                         <div className="absolute bottom-full left-0 mb-1 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
                           <div className="grid grid-cols-3 gap-3">
                             {styles.map((style) => (
@@ -1436,15 +1628,15 @@ export default function ImageCreate() {
                     <div className="relative">
                       <button
                         onClick={handleSizeDropdown}
-                        disabled={generatedImage !== null}
+                        disabled={loading}
                         className={`flex items-center gap-2 px-3 py-2 border-2 border-gray-400 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md min-w-[120px] hover:border-gray-500 hover:shadow-lg transition-all ${
-                          generatedImage !== null ? 'opacity-50 cursor-not-allowed' : ''
+                          loading ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
                         <span className="font-medium text-gray-800">{selectedSize}</span>
                         <ChevronDown className="w-4 h-4 text-gray-700" />
                       </button>
-                      {showSizeDropdown && generatedImage === null && (
+                      {showSizeDropdown && !loading && (
                         <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                           {sizes.map((size) => (
                             <button
@@ -1481,26 +1673,23 @@ export default function ImageCreate() {
                                 handleGenerate();
                               }
                             }}
-                            onDragOver={(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") ? undefined : handleDragOver}
-                            onDragLeave={(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") ? undefined : handleDragLeave}
-                            onDrop={(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") ? undefined : handleDrop}
+                            onDragOver={!isClient || (selectedModel === "Kandinsky" || selectedModel === "Realistic Vision" || selectedModel === "Stable Diffusion XL") ? undefined : handleDragOver}
+                            onDragLeave={!isClient || (selectedModel === "Kandinsky" || selectedModel === "Realistic Vision" || selectedModel === "Stable Diffusion XL") ? undefined : handleDragLeave}
+                            onDrop={!isClient || (selectedModel === "Kandinsky" || selectedModel === "Realistic Vision" || selectedModel === "Stable Diffusion XL") ? undefined : handleDrop}
                           />
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                            <label className={`cursor-pointer p-1 transition-colors ${
-                              (selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") 
-                                ? 'text-gray-300 cursor-not-allowed' 
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`} title="파일 첨부">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileAttach}
-                                multiple
-                                disabled={selectedModel === "Kandinsky" || selectedModel === "Realistic Vision"}
-                                className="hidden"
-                              />
-                              <Paperclip className="w-4 h-4" />
-                            </label>
+                            {!(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision" || selectedModel === "Stable Diffusion XL") && (
+                              <label className={`cursor-pointer p-1 transition-colors text-gray-500 hover:text-gray-700`} title="파일 첨부">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleFileAttach}
+                                  multiple
+                                  className="hidden"
+                                />
+                                <Paperclip className="w-4 h-4" />
+                              </label>
+                            )}
                           </div>
                           
                           {/* 첨부된 이미지들 - 입력창 안에 배치 */}
@@ -1548,9 +1737,14 @@ export default function ImageCreate() {
                         </div>
                         
                         {/* 모델별 안내문구 */}
-                        {(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision") && (
+                        {(selectedModel === "Kandinsky" || selectedModel === "Realistic Vision" || selectedModel === "Stable Diffusion XL") && (
                           <div className="mt-2 text-xs text-gray-500">
                             <strong>{selectedModel}</strong> 모델은 이미지 첨부 기능을 지원하지 않습니다.
+                          </div>
+                        )}
+                        {selectedModel === "DALL-E 3" && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            <strong>DALL-E 3</strong> 모델은 이미지 첨부 기능을 사용할 수 있습니다.
                           </div>
                         )}
                       </div>
@@ -1566,7 +1760,7 @@ export default function ImageCreate() {
                           }
                         }}
                         disabled={loading}
-                        className={`px-6 py-3 rounded-xl transition-all flex items-center gap-2 border-2 shadow-md text-base font-medium ${
+                        className={`px-6 py-3 rounded-xl transition-all flex items-center gap-2 border-2 shadow-md text-base font-medium -mt-5 ${
                           !userInput.trim() 
                             ? 'bg-gray-400 text-gray-600 border-gray-400 cursor-pointer hover:bg-gray-500 hover:border-gray-500' 
                             : loading 
@@ -1589,22 +1783,21 @@ export default function ImageCreate() {
                     </div>
                   </div>
 
-                  {/* 이미지 히스토리 섹션 */}
-                  <div className="mt-8">
+                  {/* 이미지 히스토리 섹션 - 상단 고정 레이아웃을 밀지 않도록 최대 높이 스크롤 */}
+                  <div className="mt-8 max-h-[480px] overflow-y-auto">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                        <History className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-lg font-semibold text-gray-800">
                         최근 생성된 이미지
                       </h3>
                       <button
                         onClick={loadHistory}
                         disabled={loadingHistory}
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 transition-colors bg-transparent border-none p-2 rounded-md hover:bg-blue-50"
+                        className="flex items-center gap-2 text-sm text-gray-900 hover:text-black transition-colors bg-transparent border-none p-2 rounded-md hover:bg-gray-100"
                       >
                         {loadingHistory ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-900" />
                         ) : (
-                          <RefreshCw className="w-4 h-4" />
+                          <RefreshCw className="w-4 h-4 text-gray-900" />
                         )}
                         새로고침
                       </button>
@@ -1615,9 +1808,9 @@ export default function ImageCreate() {
                         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                       </div>
                     ) : dbHistory.length > 0 ? (
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch">
                         {dbHistory.map((item) => (
-                          <div key={item.id} className="group relative bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-all duration-200">
+                          <div key={item.id} className="group relative bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-all duration-200 flex flex-col h-full">
                             <div className="aspect-square mb-3 relative overflow-hidden rounded-md">
                               <img
                                 src={item.generatedImageUrl}
@@ -1653,7 +1846,7 @@ export default function ImageCreate() {
                             
                             <button
                               onClick={() => loadHistoryItem(item)}
-                              className="w-full mt-2 text-xs bg-blue-100 text-blue-800 py-1 rounded hover:bg-blue-200 transition-colors"
+                              className="w-full mt-auto text-xs bg-black text-white py-1 rounded hover:bg-gray-800 transition-colors"
                             >
                               불러오기
                             </button>

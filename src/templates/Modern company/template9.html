@@ -1,194 +1,60 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>{{TITLE}}</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet"/>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      font-family: 'Nanum Gothic Coding', monospace;
-    }
-
-    .slide-container {
-      width: 1280px;
-      height: 720px;
-      background-color: #FFFFFF;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .header {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      padding: 15px 40px;
-      color: #1E3A8A;
-      border-bottom: 1px solid rgba(30, 58, 138, 0.2);
-    }
-
-    .content {
-      display: flex;
-      height: calc(100% - 60px);
-      padding: 40px;
-    }
-
-    .left-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding-right: 40px;
-    }
-
-    .right-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .title {
-      font-size: 4.5rem;
-      font-weight: bold;
-      color: #1E3A8A;
-      margin-bottom: 30px;
-      font-family: 'Noto Serif KR', serif;
-    }
-
-    .description {
-      font-size: 1.1rem;
-      color: #6B7280;
-      line-height: 1.6;
-      margin-bottom: 40px;
-      max-width: 500px;
-    }
-
-    .section-title {
-      font-weight: bold;
-      font-size: 1.1rem;
-      color: #1E3A8A;
-      margin: 16px 0 10px;
-    }
-
-    .gauge-container {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .stat-text {
-      font-size: 2.2rem;
-      font-weight: bold;
-      color: #1E3A8A;
-      margin-right: 20px;
-      min-width: 110px;
-      text-align: right;
-    }
-
-    .stat-description {
-      font-size: 1rem;
-      color: #1E40AF;
-      max-width: 300px;
-    }
-
-    .stat-divider {
-      height: 1px;
-      background-color: rgba(30, 58, 138, 0.2);
-      width: 100%;
-      margin: 20px 0;
-    }
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .stat-percentage {
-      font-weight: bold;
-      margin-right: 12px;
-      min-width: 60px;
-      text-align: right;
-      color: #1E3A8A;
-    }
-
-    .comparison-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 8px;
-    }
-
-    .comparison-table td {
-      font-size: 0.95rem;
-      padding-right: 10px;
-    }
-
-    .country {
-      font-weight: bold;
-      color: #1E3A8A;
-    }
-
-    .percentage {
-      color: #1E40AF;
-    }
-
-    .circle {
-      position: absolute;
-      border-radius: 50%;
-      background-color: rgba(191, 219, 254, 0.3);
-      z-index: -1;
-    }
-
-    .circle-1 {
-      width: 600px;
-      height: 600px;
-      top: -150px;
-      left: -150px;
-    }
-
-    .circle-2 {
-      width: 400px;
-      height: 400px;
-      bottom: -100px;
-      right: -100px;
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="이 템플릿은 섹션 9 전용 레이아웃입니다. 텍스트 슬롯에만 값을 채우세요.
+입력: 제목, 내용, 키포인트. 출력은 HTML이 아니라, 상위 로직에서 제공하는 값으로 치환됩니다."/>
+<title>{{TITLE}}</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+  @import url("https://www.genspark.ai/image_placeholder.png");
+  body, html { margin:0; padding:0; }
+  .slide-container { width:1280px; height:720px; background-color:#FFFFFF; position:relative; overflow:hidden; }
+  .header { display:grid; grid-template-columns:1fr 1fr 1fr; padding:15px 40px; color:#1E3A8A; border-bottom:1px solid rgba(30,58,138,.2); font-family:'Nanum Gothic Coding', monospace; }
+  .content { display:flex; height:calc(100% - 60px); padding:40px; }
+  .left-content { flex:1; display:flex; flex-direction:column; justify-content:center; padding-right:40px; }
+  .right-content { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; }
+  .title { font-family:'Noto Serif KR', serif; font-size:4.5rem; line-height:1.1; color:#1E3A8A; margin-bottom:30px; }
+  .subtitle { font-family:'Noto Serif KR', serif; font-size:1.8rem; color:#1E3A8A; margin-bottom:15px; }
+  .description { font-family:'Nanum Gothic Coding', monospace; font-size:1.1rem; color:#6B7280; line-height:1.5; margin-bottom:20px; max-width:500px; }
+  .step-box { font-family:'Nanum Gothic Coding', monospace; color:white; padding:20px 30px; border-radius:10px; margin-bottom:20px; width:100%; text-align:center; font-size:1.2rem; min-height:64px; display:flex; align-items:center; justify-content:center; line-height:1.4; }
+  .step-box-1 { background-color:#1E3A8A; }
+  .step-box-2 { background-color:#1E40AF; }
+  .step-box-3 { background-color:#3B82F6; }
+  .circle { position:absolute; border-radius:50%; background-color:rgba(191,219,254,0.4); z-index:-1; }
+  .circle-1 { width:600px; height:600px; top:-150px; right:-150px; }
+  .circle-2 { width:350px; height:350px; bottom:-100px; left:50%; }
+  .circle-3 { width:450px; height:450px; top:150px; right:50px; }
+</style>
 </head>
 <body>
-  <div class="slide-container">
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
-
-    <!-- Header -->
-    <div class="header">
-      <div class="header-left">{{HEADER_LEFT}}</div>
-      <div class="header-center text-center">{{HEADER_CENTER}}</div>
-      <div class="header-right text-right">{{HEADER_RIGHT}}</div>
+<div class="slide-container">
+  <!-- Background Circles -->
+  <div class="circle circle-1"></div>
+  <div class="circle circle-2"></div>
+  <div class="circle circle-3"></div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">{{HEADER_LEFT}}</div>
+    <div class="header-center text-center">{{HEADER_CENTER}}</div>
+    <div class="header-right text-right">{{HEADER_RIGHT}}</div>
+  </div>
+  <!-- Content -->
+  <div class="content">
+    <div class="left-content">
+      <h1 class="title">{{TITLE}}</h1>
+      <h2 class="subtitle">{{SUBTITLE}}</h2>
+      <p class="description">{{DESCRIPTION}}</p>
     </div>
-
-    <!-- Content -->
-    <div class="content">
-      <div class="left-content">
-        <h1 class="title">{{TITLE}}</h1>
-        <p class="description">{{DESCRIPTION}}</p>
-      </div>
-      <div class="right-content">
-        <div class="section-title">규모별 통계</div>
-        {{SCALE_STATS}}
-        <div class="stat-divider"></div>
-        <div class="section-title">분야별 통계</div>
-        {{INDUSTRY_STATS}}
-        <div class="stat-divider"></div>
-        <div class="section-title">국가별 통계</div>
-        <table class="comparison-table">
-          {{COUNTRY_STATS}}
-        </table>
-      </div>
+    <div class="right-content">
+      <div class="step-box step-box-1">{{STEP1_TEXT}}</div>
+      <div class="step-box step-box-2">{{STEP2_TEXT}}</div>
+      <div class="step-box step-box-3">{{STEP3_TEXT}}</div>
     </div>
   </div>
+</div>
+<script src="/slide-autofill.js" defer></script>
 </body>
-</html> 
+</html>

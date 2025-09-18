@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta name="template-prompt" content="아래 입력만 사용하여 토큰을 채우세요. 다른 텍스트/주석 금지.
+
+입력
+- 제목: {{SECTION_TITLE}}
+- 내용: {{SECTION_CONTENT}}
+- 키포인트: {{SECTION_KEYPOINTS}}
+
+토큰 규칙
+- {{TITLE}}: 1줄
+- {{SUBTITLE}}: 1줄 요약(줄바꿈 금지)
+- 중앙 본문: {{CONTENT_BOX}} (약 4줄, <br/>로 줄바꿈)
+- 좌/우 텍스트: 게이지/통계 설명 사용
+- {{LEFT_ICON}}, {{RIGHT_ICON}}: FontAwesome 아이콘 클래스
+"/>
+  <title>{{TITLE}}</title>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Noto+Serif+KR:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* 메타 프롬프트 완전 숨기기 */
+    meta[name="template-prompt"] { display: none !important; visibility: hidden !important; position: absolute !important; left: -9999px !important; }
+    meta[name="template-prompt"]:before, meta[name="template-prompt"]:after { display: none !important; }
+    
+    /* 상단 텍스트 노드 숨기기 */
+    body::before, body::after { display: none !important; content: none !important; }
+    html::before, html::after { display: none !important; content: none !important; }
+    
+    /* 깔끔한 레이아웃을 위한 기본 스타일 */
+    
+    /* 바디 최상단에 남는 텍스트 노드를 완전히 숨김 (실제 콘텐츠는 컨테이너에서 다시 보이게) */
+    body { margin:0; padding:0; font-family:'Noto Sans KR',sans-serif; background:#fff; overflow:hidden; font-size:0; line-height:0; color:transparent; }
+    .slide-container { width:1280px; min-height:720px; position:relative; overflow:hidden; font-size:16px; line-height:normal; color:#000; }
+    .slide-container * { line-height:inherit; color:inherit; }
+    .title { font-family:'Noto Serif KR',serif; font-size:3.5rem; font-weight:bold; color:#000; margin-bottom:.5rem; text-align:center; }
+    .subtitle { font-family:'Noto Serif KR',serif; font-size:2.0rem; color:#000; margin:.5rem 0 2rem; text-align:center; }
+    .content-box { background:#000; color:#fff; padding:1.5rem 2rem; border-radius:1rem; max-width:650px; margin:2rem auto; text-align:center; font-size:1.2rem; line-height:1.6; position:relative; z-index:10; min-height:6.8rem; }
+    .footer { position:absolute; bottom:0; left:0; width:100%; background:#000; color:#fff; padding:.5rem; text-align:center; }
+    .icon-left,.icon-right { position:absolute; bottom:240px; text-align:center; }
+    .icon-left { left:100px; }
+    .icon-right { right:100px; }
+    .icon-container { 
+      width:120px; 
+      height:120px; 
+      border-radius:50%; 
+      background:#f5f5f5; 
+      border: 2px solid #ddd;
+      display:flex; 
+      justify-content:center; 
+      align-items:center; 
+      margin-bottom:1rem; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .icon-container i {
+      font-size: 3.5rem !important;
+      color: #333 !important;
+      display: block !important;
+      font-weight: 900 !important;
+    }
+    .icon-text { font-size:1.1rem; color:#000; font-weight:bold; max-width:220px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div style="padding:2rem;">
+      <h1 class="title">{{TITLE}}</h1>
+      <h2 class="subtitle">{{SUBTITLE}}</h2>
+      <!-- Left Icon -->
+      <div class="icon-left">
+        <div class="icon-container">
+          <i class="{{LEFT_ICON}}" onerror="this.className='fas fa-lightbulb'"></i>
+        </div>
+        <div class="icon-text">{{GAUGE_DESCRIPTION}}</div>
+      </div>
+      <!-- Content box -->
+      <div style="display:flex;justify-content:center;margin-top:4rem;">
+        <div class="content-box">{{CONTENT_BOX}}</div>
+      </div>
+      <!-- Right Icon -->
+      <div class="icon-right">
+        <div class="icon-container">
+          <i class="{{RIGHT_ICON}}" onerror="this.className='fas fa-chart-line'"></i>
+        </div>
+        <div class="icon-text">{{STAT_DESCRIPTION}}</div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="footer"></div>
+  </div>
+  <script src="/slide-autofill.js" defer></script>
+  <script>
+    // 메타 프롬프트 텍스트 제거
+    document.addEventListener('DOMContentLoaded', function() {
+      // head 내부 메타 태그 자체를 화면에서만 숨김 (DOM에는 유지)
+      try {
+        const meta = document.querySelector('meta[name="template-prompt"]');
+        if (meta) {
+          meta.setAttribute('style', 'display:none!important;visibility:hidden!important;position:absolute!important;left:-9999px!important');
+        }
+      } catch {}
+
+      function removeMetaPromptText() {
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        
+        const textNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+          textNodes.push(node);
+        }
+        
+        textNodes.forEach(function(textNode) {
+          const text = textNode.textContent || '';
+          // 템플릿 안내문 조각(줄바꿈, 좌/우 텍스트, FontAwesome 등) 제거
+          const patterns = [
+            /아래\s*입력만\s*사용하여/i,
+            /토큰을\s*채우세요/i,
+            /토큰\s*규칙/i,
+            /<br\/>로\s*줄바꿈/i,
+            /좌\/?우\s*텍스트/i,
+            /FontAwesome\s*아이콘\s*클래스/i
+          ];
+          if (patterns.some(p => p.test(text))) {
+            textNode.textContent = '';
+          }
+        });
+      }
+      
+      removeMetaPromptText();
+      
+      // 1초 후 다시 확인
+      setTimeout(removeMetaPromptText, 1000);
+      // 3초 후 최종 확인
+      setTimeout(removeMetaPromptText, 3000);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="template-prompt" content="아래 입력만 사용하여 토큰을 채우세요. 다른 텍스트나 주석 금지.
+
+입력
+- 제목: {{SECTION_TITLE}}
+- 내용: {{SECTION_CONTENT}}
+- 키포인트: {{SECTION_KEYPOINTS}}
+
+토큰 규칙(섹션8 전용)
+- {{TITLE}}: 메인 제목(1줄)
+- {{DESCRIPTION}}: 상단 부제/요약(1줄 고정)
+- 왼쪽 컬럼: {{FEEDBACK1_TEXT}}(굵은 텍스트), {{FEEDBACK2_TEXT}}(설명, 2줄 이하)
+- 오른쪽 컬럼: {{STAT_PERCENTAGE}}(굵은 텍스트), {{STAT_DESCRIPTION}}(설명, 2줄 이하)
+"/>
+<title>{{TITLE}}</title>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Noto+Serif+KR:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+        body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #ececec; overflow: hidden; }
+        .slide-container { width: 1280px; min-height: 720px; position: relative; overflow: hidden; }
+        .main-content { padding: 2rem 4rem; }
+        .title { font-family: 'Noto Serif KR', serif; font-size: 3.5rem; font-weight: bold; color: #000000; margin-bottom: 0.5rem; }
+        .subtitle { font-family: 'Noto Serif KR', serif; font-size: 2.2rem; color: #333333; margin-top: 0.5rem; margin-bottom: 3rem; }
+        .content-columns { display: flex; justify-content: space-between; gap: 2rem; margin-top: 2rem; }
+        .content-column { width: 48%; text-align: center; }
+        .image-container { width: 100%; height: 250px; background-color: #ffffff; border-radius: 10px; overflow: hidden; margin-bottom: 1.5rem; display: flex; justify-content: center; align-items: center; border: 1px solid #cccccc; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .column-text { font-family: 'Noto Sans KR', sans-serif; font-size: 1.5rem; font-weight: 700; color: #000000; text-align: center; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .description-text { font-family: 'Noto Sans KR', sans-serif; font-size: 1.2rem; color: #333333; text-align: center; margin-top: 0.8rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .footer { position: absolute; bottom: 0; left: 0; width: 100%; background-color: #000000; color: #ffffff; padding: 0.5rem; text-align: center; font-family: 'Noto Sans KR', sans-serif; }
+        .icon-container { font-size: 4rem; color: #000000; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+<div class="main-content">
+<h1 class="title">{{TITLE}}</h1>
+<h2 class="subtitle">{{DESCRIPTION}}</h2>
+<div class="content-columns">
+<!-- 왼쪽 컬럼 - 데이터 기반 AI 예측모델 -->
+<div class="content-column">
+<div class="image-container">
+<!-- 데이터 분석 아이콘/일러스트 -->
+<img src="{{IMAGE1_URL}}" alt="관련 이미지" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+<div class="icon-container" style="display: none;">
+<i class="fas fa-database"></i>
+<i class="fas fa-chart-line"></i>
+</div>
+</div>
+<div class="column-text">{{FEEDBACK1_TEXT}}</div>
+<div class="description-text">{{FEEDBACK2_TEXT}}</div>
+</div>
+<!-- 오른쪽 컬럼 - 실시간 분석 시스템 -->
+<div class="content-column">
+<div class="image-container">
+<!-- 실시간 모니터링 아이콘/일러스트 -->
+<img src="{{IMAGE2_URL}}" alt="관련 이미지" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+<div class="icon-container" style="display: none;">
+<i class="fas fa-heartbeat"></i>
+<i class="fas fa-laptop-medical"></i>
+</div>
+</div>
+<div class="column-text">{{STAT_PERCENTAGE}}</div>
+<div class="description-text">{{STAT_DESCRIPTION}}</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<div class="footer"></div>
+</div>
+<!-- 쿼리스트링으로 컨텍스트 변경 가능: ?topic=...&audience=...&purpose=...&date=...&brand=...&handle=... -->
+<script src="/slide-autofill.js" defer></script>
+
+</body>
+</html>

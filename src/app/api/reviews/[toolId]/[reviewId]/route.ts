@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
+import { invalidateAiServicesCache } from '@/lib/ai-services';
 
 export async function PATCH(
   request: NextRequest,
@@ -138,6 +139,8 @@ export async function PATCH(
     
     const updatedReview = result.recordset[0];
     
+    // 투표 변경 반영을 위해 목록 캐시 무효화
+    try { invalidateAiServicesCache(); } catch {}
     return NextResponse.json({ review: updatedReview });
   } catch (error) {
     console.error('리뷰 평가 오류:', error);

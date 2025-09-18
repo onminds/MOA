@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import Header from '../components/Header';
+import { useSession } from 'next-auth/react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import {
   Star
@@ -17,9 +19,11 @@ const productivityTools = [
     favorite: false
   },
 
+
+
   {
     id: 2,
-    title: '레포트작성',
+    title: 'AI 레포트 작성',
     description: '긴 글 작성을 AI로 쉽고 빠르게 완성합니다.',
     icon: '/images/productivity/report-writer.png',
     favorite: false
@@ -103,6 +107,8 @@ const basicTools = [
 export default function Productivity() {
   const [tools, setTools] = useState(productivityTools);
   const router = useRouter();
+  const { data: session } = useSession();
+  const { t } = useLanguage();
 
   const toggleFavorite = (id: number) => {
     setTools(tools.map(tool => 
@@ -111,14 +117,18 @@ export default function Productivity() {
   };
 
   const handleToolClick = (toolId: number) => {
+    // 로그인 체크
+    if (!session) {
+      alert(t('login_required') || '이 기능을 사용하려면 로그인이 필요합니다.');
+      router.push('/auth/signin');
+      return;
+    }
+
     // AI 완벽요약 도구 클릭 시 해당 페이지로 이동
     if (toolId === 1) {
       router.push('/productivity/ai-summary');
     }
-    // 레포트 작성 도구 클릭 시 해당 페이지로 이동
-    else if (toolId === 2) {
-      router.push('/productivity/report-writer');
-    }
+
     // 자기소개서 도구 클릭 시 해당 페이지로 이동
     else if (toolId === 3) {
       router.push('/productivity/cover-letter');
@@ -133,7 +143,7 @@ export default function Productivity() {
     }
     // PPT 초안 도구 클릭 시 해당 페이지로 이동
     else if (toolId === 6) {
-      router.push('/productivity/ppt-draft');
+      router.push('/ppt-template');
     }
     // 발표 대본 도구 클릭 시 해당 페이지로 이동
     else if (toolId === 7) {
@@ -147,6 +157,21 @@ export default function Productivity() {
     else if (toolId === 9) {
       router.push('/productivity/code-review');
     }
+    // AI 레포트 작성 도구 클릭 시 해당 페이지로 이동
+    else if (toolId === 2) {
+      router.push('/productivity/report-writers');
+    }
+  };
+
+  // 기본 도구 클릭 핸들러 (로그인 체크 포함)
+  const handleBasicToolClick = (path: string) => {
+    if (!session) {
+      // 로그인이 필요하다는 알림
+      alert(t('login_required') || '이 기능을 사용하려면 로그인이 필요합니다.');
+      router.push('/auth/signin');
+      return;
+    }
+    router.push(path);
   };
 
   return (
@@ -171,7 +196,7 @@ export default function Productivity() {
                   {tools.map((tool) => (
                     <div
                       key={tool.id}
-                      className="bg-white rounded-xl p-6 border border-black hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:scale-[1.03] active:scale-[0.98] cursor-pointer relative"
+                      className={'bg-white rounded-xl p-6 border border-black hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:scale-[1.03] active:scale-[0.98] cursor-pointer relative'}
                       onClick={() => handleToolClick(tool.id)}
                     >
                       <button
@@ -179,7 +204,7 @@ export default function Productivity() {
                           e.stopPropagation();
                           toggleFavorite(tool.id);
                         }}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-yellow-500 transition-colors"
+                        className={`absolute top-4 right-4 text-gray-400 hover:text-yellow-500 transition-colors`}
                       >
                         <Star className={`w-5 h-5 ${tool.favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                       </button>
@@ -187,8 +212,8 @@ export default function Productivity() {
                         <div className="p-4 rounded-lg bg-white mb-2">
                           <img src={tool.icon} alt={tool.title} className="w-16 h-16 object-cover" />
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{tool.title}</h3>
-                        <p className="text-base text-gray-600 h-12">{tool.description}</p>
+                        <h3 className={`text-xl font-semibold mb-2 text-gray-900`}>{tool.title}</h3>
+                        <p className={`text-base h-12 text-gray-600`}>{tool.description}</p>
                       </div>
                     </div>
                   ))}
@@ -206,7 +231,7 @@ export default function Productivity() {
                     <div
                       key={tool.id}
                       className="bg-white rounded-xl p-6 border border-black hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:scale-[1.03] active:scale-[0.98] cursor-pointer relative"
-                      onClick={() => router.push(tool.path)}
+                      onClick={() => handleBasicToolClick(tool.path)}
                     >
                       <div className="flex flex-col items-center text-center">
                         <div className="p-4 rounded-lg bg-white mb-2">

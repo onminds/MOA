@@ -35,6 +35,13 @@ export function handleOpenAIError(error: unknown, context?: ErrorContext): NextR
     });
   }
   
+  // 개발 환경에서 에러 상세 포함 유틸
+  const devDetails = (extra?: Record<string, unknown>) => (
+    process.env.NODE_ENV !== 'production'
+      ? { details: error instanceof Error ? error.message : '알 수 없는 오류', ...(extra || {}) }
+      : {}
+  );
+
   // OpenAI API 오류인지 확인
   if (error instanceof Error) {
     const errorMessage = error.message.toLowerCase();
@@ -42,49 +49,49 @@ export function handleOpenAIError(error: unknown, context?: ErrorContext): NextR
     if (errorMessage.includes('insufficient_quota')) {
       console.error('💰 OpenAI API 할당량 부족');
       return NextResponse.json(
-        { error: 'OpenAI API 할당량이 부족합니다. 잠시 후 다시 시도해주세요.' },
+        { error: 'OpenAI API 할당량이 부족합니다. 잠시 후 다시 시도해주세요.', ...devDetails() },
         { status: 500 }
       );
     } else if (errorMessage.includes('rate_limit')) {
       console.error('⏰ OpenAI API 속도 제한');
       return NextResponse.json(
-        { error: 'API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.' },
+        { error: 'API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.', ...devDetails() },
         { status: 500 }
       );
     } else if (errorMessage.includes('authentication') || errorMessage.includes('invalid api key')) {
       console.error('🔑 OpenAI API 인증 오류');
       return NextResponse.json(
-        { error: 'OpenAI API 인증에 실패했습니다. API 키를 확인해주세요.' },
+        { error: 'OpenAI API 인증에 실패했습니다. API 키를 확인해주세요.', ...devDetails() },
         { status: 500 }
       );
     } else if (errorMessage.includes('maximum context length') || errorMessage.includes('8192 tokens') || errorMessage.includes('context length')) {
       console.error('📏 토큰 제한 초과');
       return NextResponse.json(
-        { error: '참고 자료가 너무 깁니다. 더 짧은 내용으로 다시 시도해주세요.' },
+        { error: '참고 자료가 너무 깁니다. 더 짧은 내용으로 다시 시도해주세요.', ...devDetails() },
         { status: 500 }
       );
     } else if (errorMessage.includes('timeout') || errorMessage.includes('request timeout') || errorMessage.includes('호출 시간이 초과')) {
       console.error('⏱️ 요청 타임아웃');
       return NextResponse.json(
-        { error: '요청 시간이 초과되었습니다. Vercel의 타임아웃 제한으로 인해 발생할 수 있습니다. 더 짧은 내용으로 다시 시도해주세요.' },
+        { error: '요청 시간이 초과되었습니다. Vercel의 타임아웃 제한으로 인해 발생할 수 있습니다. 더 짧은 내용으로 다시 시도해주세요.', ...devDetails() },
         { status: 500 }
       );
     } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
       console.error('🌐 네트워크 오류');
       return NextResponse.json(
-        { error: '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.' },
+        { error: '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.', ...devDetails() },
         { status: 500 }
       );
-    } else if (errorMessage.includes('model') || errorMessage.includes('gpt-4')) {
+    } else if (errorMessage.includes('model') || errorMessage.includes('gpt-4') || errorMessage.includes('gpt-5')) {
       console.error('🤖 모델 오류');
       return NextResponse.json(
-        { error: 'AI 모델에 문제가 있습니다. 잠시 후 다시 시도해주세요.' },
+        { error: 'AI 모델에 문제가 있습니다. 잠시 후 다시 시도해주세요.', ...devDetails() },
         { status: 500 }
       );
     } else if (errorMessage.includes('vercel') || errorMessage.includes('function timeout')) {
       console.error('🚀 Vercel 함수 타임아웃');
       return NextResponse.json(
-        { error: 'Vercel 함수 실행 시간이 초과되었습니다. 더 짧은 내용으로 다시 시도해주세요.' },
+        { error: 'Vercel 함수 실행 시간이 초과되었습니다. 더 짧은 내용으로 다시 시도해주세요.', ...devDetails() },
         { status: 500 }
       );
     }
@@ -93,7 +100,7 @@ export function handleOpenAIError(error: unknown, context?: ErrorContext): NextR
   // 일반적인 오류 메시지
   console.error('❓ 알 수 없는 오류 유형');
   return NextResponse.json(
-    { error: '발표 대본 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' },
+    { error: '발표 대본 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', ...devDetails() },
     { status: 500 }
   );
 } 

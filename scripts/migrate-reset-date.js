@@ -37,7 +37,7 @@ async function migrateResetDate() {
     console.log('2. 기존 데이터 마이그레이션 중...');
     const migrationResult = await sql.query(`
       UPDATE usage 
-      SET next_reset_date = DATEADD(day, 7, u.created_at)
+      SET next_reset_date = DATEADD(month, 1, u.created_at)
       FROM usage us
       INNER JOIN users u ON us.user_id = u.id
       WHERE us.next_reset_date IS NULL 
@@ -45,11 +45,11 @@ async function migrateResetDate() {
     `);
     console.log(`${migrationResult.rowsAffected[0]}개 레코드 마이그레이션 완료`);
 
-    // 3. next_reset_date가 여전히 NULL인 경우 현재 시간 기준으로 일주일 후로 설정
+    // 3. next_reset_date가 여전히 NULL인 경우 현재 시간 기준으로 정확히 한 달 후로 설정
     console.log('3. NULL 값 처리 중...');
     const nullUpdateResult = await sql.query(`
       UPDATE usage 
-      SET next_reset_date = DATEADD(day, 7, GETDATE())
+      SET next_reset_date = DATEADD(month, 1, GETDATE())
       WHERE next_reset_date IS NULL
     `);
     console.log(`${nullUpdateResult.rowsAffected[0]}개 NULL 값 업데이트 완료`);

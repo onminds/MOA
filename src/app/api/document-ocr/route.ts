@@ -17,68 +17,100 @@ async function extractSimpleTextFromPDF(buffer: Buffer): Promise<string> {
   try {
     console.log('📄 간단한 PDF 텍스트 추출 시도...');
     
-    // PDF 파일의 기본 구조에서 텍스트 추출 시도
-    const pdfContent = buffer.toString('utf8', 0, Math.min(buffer.length, 10000)); // 처음 10KB만 읽기
+    // PDF 파일의 기본 구조에서 텍스트 추출 시도 (범위 확장, 디코딩 개선)
+    const sliceSize = Math.min(buffer.length, 2_000_000); // 최대 2MB 스캔
+    const pdfContent = buffer.toString('latin1', 0, sliceSize);
     
-    // PDF 텍스트 패턴 찾기
+    let extractedText = '';
+
+    // 1) 괄호/배열/텍스트 블록 패턴
     const textPatterns = [
       /\(([^)]{10,})\)/g, // 괄호 안의 긴 텍스트
       /\[([^\]]{10,})\]/g, // 대괄호 안의 긴 텍스트
-      /BT\s*([^E]{10,})\s*ET/g, // PDF 텍스트 블록
+      /BT[\s\S]*?ET/g, // PDF 텍스트 블록 (폭넓게)
       /Tj\s*\(([^)]{10,})\)/g, // PDF 텍스트 객체
+      /TJ\s*\[([\s\S]*?)\]/g // PDF 텍스트 배열
     ];
-    
-    let extractedText = '';
-    
+
     for (const pattern of textPatterns) {
-      const matches = pdfContent.match(pattern);
-      if (matches) {
-        for (const match of matches) {
-          // 특수 문자 제거 및 텍스트 정리
-          const cleanText = match
-            .replace(/[^\w\s가-힣]/g, ' ') // 특수 문자 제거
-            .replace(/\s+/g, ' ') // 연속 공백 제거
-            .trim();
-          
-          if (cleanText.length > 10) {
-            extractedText += cleanText + ' ';
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(pdfContent)) !== null) {
+        const raw = match[1] || match[0];
+        const clean = (raw || '')
+          .replace(/\\\)/g, ')')
+          .replace(/\\\(/g, '(')
+          .replace(/<</g, ' ')
+          .replace(/>>/g, ' ')
+          .replace(/[^\w\s가-힣A-Za-z]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (clean.length > 10) {
+          extractedText += clean + ' ';
+        }
+      }
+    }
+
+    // 2) 헥스 문자열(<...>) 내부 텍스트 추출 (UTF-16BE/LE 추정 디코딩)
+    const hexPattern = /<([0-9A-Fa-f\s]{20,})>/g;
+    let hexMatch: RegExpExecArray | null;
+    while ((hexMatch = hexPattern.exec(pdfContent)) !== null) {
+      try {
+        const hex = hexMatch[1].replace(/\s+/g, '');
+        if (hex.length % 2 !== 0) continue;
+        const bytes = Buffer.from(hex, 'hex');
+        let decoded = '';
+        if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+          // UTF-16BE with BOM
+          for (let i = 2; i + 1 < bytes.length; i += 2) {
+            decoded += String.fromCharCode((bytes[i] << 8) | bytes[i + 1]);
           }
+        } else if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+          // UTF-16LE with BOM
+          for (let i = 2; i + 1 < bytes.length; i += 2) {
+            decoded += String.fromCharCode(bytes[i] | (bytes[i + 1] << 8));
+          }
+        } else if (bytes.length % 2 === 0) {
+          // 시도1: BE
+          let be = '';
+          for (let i = 0; i + 1 < bytes.length; i += 2) {
+            be += String.fromCharCode((bytes[i] << 8) | bytes[i + 1]);
+          }
+          // 시도2: LE
+          let le = '';
+          for (let i = 0; i + 1 < bytes.length; i += 2) {
+            le += String.fromCharCode(bytes[i] | (bytes[i + 1] << 8));
+          }
+          decoded = be.length >= le.length ? be : le;
+        } else {
+          decoded = bytes.toString('latin1');
         }
-      }
+        const clean = decoded
+          .replace(/[^\w\s가-힣A-Za-z]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (clean.length > 10) {
+          extractedText += clean + ' ';
+        }
+      } catch {}
     }
-    
-    // 한글 텍스트 패턴 추가 검색
+
+    // 3) 한글/영문 일반 패턴 보강 검색
     const koreanPattern = /[가-힣\s]{10,}/g;
-    const koreanMatches = pdfContent.match(koreanPattern);
-    if (koreanMatches) {
-      for (const match of koreanMatches) {
-        const cleanText = match.trim();
-        if (cleanText.length > 5) {
-          extractedText += cleanText + ' ';
-        }
-      }
-    }
-    
-    // 영문 텍스트 패턴 추가 검색
     const englishPattern = /[A-Za-z\s]{20,}/g;
-    const englishMatches = pdfContent.match(englishPattern);
-    if (englishMatches) {
-      for (const match of englishMatches) {
-        const cleanText = match.trim();
-        if (cleanText.length > 10) {
-          extractedText += cleanText + ' ';
-        }
-      }
+    const korMatches = pdfContent.match(koreanPattern) || [];
+    const engMatches = pdfContent.match(englishPattern) || [];
+    for (const m of [...korMatches, ...engMatches]) {
+      const clean = m.trim();
+      if (clean.length > 10) extractedText += clean + ' ';
     }
-    
+
     const finalText = extractedText.trim();
     console.log('📝 간단한 텍스트 추출 결과 길이:', finalText.length);
-    
     if (finalText.length > 0) {
       console.log('📝 추출된 텍스트 미리보기:', finalText.substring(0, 200) + '...');
       return finalText;
     }
-    
+
     throw new Error('PDF에서 텍스트를 추출할 수 없습니다.');
   } catch (error) {
     console.error('❌ 간단한 PDF 텍스트 추출 실패:', error);
@@ -206,10 +238,58 @@ export async function POST(request: NextRequest) {
         } catch (simpleError) {
           console.error('❌ 간단한 PDF 텍스트 추출도 실패:', simpleError);
         }
+
+        // pdf-parse 폴백 제거됨: 내부 pdf-parser 경로로 바로 진행
       } else {
         console.log('❌ PDF 파일이 아니므로 간단한 텍스트 추출을 시도하지 않음');
       }
       
+      // 추가 폴백: 내부 PDF 파서 API 호출 시도
+      try {
+        console.log('🔄 추가 폴백: 내부 PDF 파서 호출 시도');
+        const proto = (request.headers.get('x-forwarded-proto') || 'http');
+        const host = (request.headers.get('host') || 'localhost:3000');
+        const baseUrl = `${proto}://${host}`;
+        const fd = new FormData();
+        fd.append('file', file);
+        const pdfParserResp = await fetch(`${baseUrl}/api/pdf-parser`, {
+          method: 'POST',
+          body: fd
+        });
+        console.log('📡 내부 PDF 파서 응답 상태:', pdfParserResp.status, pdfParserResp.statusText);
+        if (pdfParserResp.ok) {
+          const parsed = await pdfParserResp.json();
+          const pages = parsed.pages || [];
+          const combined = pages.map((p: any) => (p.text || '').trim()).filter((t: string) => t.length > 0).join('\n\n');
+          if (combined && combined.length > 0) {
+            console.log('✅ 내부 PDF 파서 성공, 길이:', combined.length);
+            return NextResponse.json({
+              success: true,
+              totalPages: pages.length || 1,
+              results: [{
+                page: 1,
+                text: combined,
+                success: true,
+                error: undefined,
+                extractionMethod: 'Internal PDF Parser',
+                slideType: 'pdf-parser',
+                environment: isVercel ? 'Vercel' : '호스트'
+              }],
+              successCount: 1,
+              errorCount: 0,
+              environment: isVercel ? 'Vercel' : '호스트'
+            });
+          } else {
+            console.log('❌ 내부 PDF 파서 결과가 비어있음');
+          }
+        } else {
+          const txt = await pdfParserResp.text().catch(() => '');
+          console.log('❌ 내부 PDF 파서 실패:', txt);
+        }
+      } catch (innerErr) {
+        console.error('❌ 내부 PDF 파서 호출 오류:', innerErr);
+      }
+
       // 모든 방법 실패 시 오류 반환
       console.log('❌ 모든 방법 실패 - 오류 반환');
       return NextResponse.json({
@@ -283,8 +363,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('API 처리 중 오류:', error);
+    const details = error instanceof Error ? error.message : '알 수 없는 오류';
     return NextResponse.json(
-      { error: '문서 처리 중 오류가 발생했습니다.' },
+      { error: '문서 처리 중 오류가 발생했습니다.', details: process.env.NODE_ENV !== 'production' ? details : undefined },
       { status: 500 }
     );
   }
@@ -330,6 +411,11 @@ async function analyzeDocumentWithAzure(buffer: Buffer, fileName: string): Promi
     console.log('  - API 키 존재:', !!AZURE_API_KEY);
     console.log('  - 파일 크기:', buffer.length, 'bytes');
     
+    const isPDF = fileName.endsWith('.pdf');
+    const contentType = isPDF
+      ? 'application/pdf'
+      : 'application/octet-stream';
+
     for (const apiPath of apiPaths) {
       try {
         const fullUrl = `${cleanEndpoint}${apiPath}`;
@@ -339,7 +425,8 @@ async function analyzeDocumentWithAzure(buffer: Buffer, fileName: string): Promi
           method: 'POST',
           headers: {
             'Ocp-Apim-Subscription-Key': AZURE_API_KEY,
-            'Content-Type': 'application/octet-stream'
+            'Content-Type': contentType,
+            'Accept': 'application/json'
           },
           body: buffer
         });
@@ -391,7 +478,8 @@ async function analyzeDocumentWithAzure(buffer: Buffer, fileName: string): Promi
       });
       
       if (!statusResponse.ok) {
-        throw new Error(`상태 확인 실패: ${statusResponse.status}`);
+        const errText = await statusResponse.text().catch(() => '');
+        throw new Error(`상태 확인 실패: ${statusResponse.status} ${errText}`);
       }
       
       result = await statusResponse.json();

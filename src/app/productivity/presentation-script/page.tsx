@@ -3,9 +3,12 @@ import { useState } from "react";
 import Header from '../../components/Header';
 import { Presentation, Clock, Users, Target, Lightbulb, FileText, Download, Copy, RefreshCw, Upload, X, Plus, CheckCircle, AlertCircle, Info, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useToast } from "@/contexts/ToastContext";
+import { createUsageToastData, createUsageToastMessage } from "@/lib/toast-utils";
 
 export default function PresentationScript() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     topic: '',
     duration: '10',
@@ -307,7 +310,9 @@ export default function PresentationScript() {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: 문서 처리에 실패했습니다.`;
         console.error('API 오류:', errorMessage);
-        throw new Error(errorMessage);
+        console.error('오류 데이터:', errorData);
+        const combined = errorData.details ? `${errorMessage} (${errorData.details})` : errorMessage;
+        throw new Error(combined);
       }
       
       const data = await response.json();
@@ -653,6 +658,26 @@ export default function PresentationScript() {
       }
       
       setGeneratedScript(removeMarkdownSymbols(data.script));
+
+      // 사용량 증가 Toast 알림 표시 (실제 사용량 데이터 사용)
+      if (data.usage) {
+        const toastData = createUsageToastData('presentation-script', data.usage.current, data.usage.limit);
+        showToast({
+          type: 'success',
+          title: `${toastData.serviceName} 사용`,
+          message: createUsageToastMessage(toastData),
+          duration: 5000
+        });
+      } else {
+        const toastData = createUsageToastData('presentation-script', 0, 30);
+        showToast({
+          type: 'success',
+          title: `${toastData.serviceName} 사용`,
+          message: createUsageToastMessage(toastData),
+          duration: 5000
+        });
+      }
+
       console.log('🎉 대본 생성 성공, 길이:', data.script.length);
       console.log('📄 대본 미리보기:', data.script.substring(0, 200) + '...');
       
@@ -810,11 +835,10 @@ export default function PresentationScript() {
           {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <Presentation className="w-12 h-12 text-blue-600 mr-3" />
               <h1 className="text-3xl font-bold text-gray-900">AI 발표 대본 생성</h1>
             </div>
             <p className="text-gray-600 text-lg mb-6">
-              발표 자료, 시간, 주제를 입력하면 AI가 대본을 완성합니다. 이미지를 붙여넣어 참고 자료로 활용할 수 있습니다.
+              발표 주제, 자료, 시간을 입력하면 AI가 대본을 완성합니다.
             </p>
           </div>
 
@@ -831,7 +855,7 @@ export default function PresentationScript() {
                 <div className="mb-6">
                   <label className="block text-base font-medium text-gray-800 mb-2">
                     <FileText className="w-4 h-4 inline mr-1" />
-                    발표 주제
+                    발표 주제 <span className="text-red-500 align-middle">*</span>
                   </label>
                   <input
                     type="text"
@@ -847,7 +871,7 @@ export default function PresentationScript() {
                   <div className="flex items-center mb-2">
                     <label className="block text-base font-medium text-gray-800">
                       <FileText className="w-4 h-4 inline mr-1" />
-                      참고 자료 및 추가 정보
+                      참고 자료 및 추가 정보 <span className="text-red-500 align-middle">*</span>
                     </label>
                     <div className="relative">
                       <button
@@ -1080,7 +1104,7 @@ export default function PresentationScript() {
                 <div className="mb-6">
                   <label className="block text-base font-medium text-gray-800 mb-2">
                     <Users className="w-4 h-4 inline mr-1" />
-                    발표 대상
+                    발표 대상 <span className="text-red-500 align-middle">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {audienceOptions.map((option) => (
@@ -1127,7 +1151,7 @@ export default function PresentationScript() {
                 <div className="mb-6">
                   <label className="block text-base font-medium text-gray-800 mb-2">
                     <Target className="w-4 h-4 inline mr-1" />
-                    발표 목적
+                    발표 목적 <span className="text-red-500 align-middle">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {purposeOptions.map((option) => (

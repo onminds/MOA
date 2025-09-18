@@ -1,6 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Header from '../../components/Header';
+import { useToast } from "@/contexts/ToastContext";
+import { createUsageToastData, createUsageToastMessage } from "@/lib/toast-utils";
 
 // CSS 애니메이션 스타일
 const audioGaugeStyles = `
@@ -58,6 +60,7 @@ interface InterviewQuestion {
 
 export default function InterviewPrep() {
   const router = useRouter();
+  const { showToast } = useToast();
   
   // CSS 스타일 적용
   useEffect(() => {
@@ -314,6 +317,26 @@ export default function InterviewPrep() {
       if (data.success && data.questions) {
         setQuestions(data.questions);
         setCurrentStep('questions');
+        
+        // 사용량 증가 Toast 알림 표시 (실제 사용량 데이터 사용)
+        if (data.usage) {
+          const toastData = createUsageToastData('interview-prep', data.usage.current, data.usage.limit);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        } else {
+          // Fallback to hardcoded values if usage data is not available
+          const toastData = createUsageToastData('interview-prep', 0, 30);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        }
       } else {
         throw new Error('면접 질문을 받지 못했습니다.');
       }

@@ -23,12 +23,15 @@ interface UsageInfo {
   resetDate: string;
 }
 
-// UTC 시간을 한국 시간으로 변환하는 함수
-function convertToKoreanTime(utcDateString: string): string {
+// UTC 시간을 한국 시간으로 변환하는 함수 (더 이상 사용하지 않음)
+// API에서 이미 한국 시간으로 계산된 resetDate를 받아서 9시간을 빼서 정확한 시간 표시
+function formatDisplayTime(dateString: string): string {
   try {
-    const date = new Date(utcDateString);
-    return date.toLocaleString('ko-KR', {
-      timeZone: 'Asia/Seoul',
+    const date = new Date(dateString);
+    // 9시간을 빼서 정확한 시간 계산
+    const correctedDate = new Date(date.getTime() - (9 * 60 * 60 * 1000));
+    
+    return correctedDate.toLocaleString('ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -38,8 +41,8 @@ function convertToKoreanTime(utcDateString: string): string {
       hour12: false
     });
   } catch (error) {
-    console.error('시간 변환 오류:', error);
-    return utcDateString; // 변환 실패 시 원본 반환
+    console.error('시간 포맷팅 오류:', error);
+    return dateString; // 변환 실패 시 원본 반환
   }
 }
 
@@ -50,9 +53,11 @@ export default function UsagePage() {
   const [usageData, setUsageData] = useState<{
     'image-generate': UsageInfo | null;
     'video-generate': UsageInfo | null;
+    'productivity': UsageInfo | null;
   }>({
     'image-generate': null,
     'video-generate': null,
+    'productivity': null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +75,7 @@ export default function UsagePage() {
 
   const fetchUsageData = async () => {
     setLoading(true);
-    const services = ['image-generate', 'video-generate'];
+    const services = ['image-generate', 'video-generate', 'productivity'];
     
     try {
       const promises = services.map(async (service) => {
@@ -102,7 +107,7 @@ export default function UsagePage() {
       case 'image-generate':
         return {
           name: '이미지 생성',
-          icon: <ImageIcon className="w-6 h-6" />,
+          icon: <img src="/images/image-gen.jpg" alt="이미지 생성" className="w-6 h-6 rounded object-cover" />,
           color: 'text-yellow-500',
           bgColor: 'bg-yellow-50',
           borderColor: 'border-yellow-200'
@@ -110,10 +115,82 @@ export default function UsagePage() {
       case 'video-generate':
         return {
           name: '영상 생성',
-          icon: <Video className="w-6 h-6" />,
+          icon: <img src="/images/video-gen.mp4" alt="영상 생성" className="w-6 h-6 rounded object-cover" />,
           color: 'text-red-500',
           bgColor: 'bg-red-50',
           borderColor: 'border-red-200'
+        };
+      case 'productivity':
+        return {
+          name: '생산성 도구 (통합)',
+          icon: <TrendingUp className="w-6 h-6" />,
+          color: 'text-green-600',
+          bgColor: 'bg-green-50',
+          borderColor: 'border-green-200'
+        };
+      case 'ai-summary':
+        return {
+          name: 'AI 완벽요약',
+          icon: <img src="/images/productivity/ai-summary.png" alt="AI 완벽요약" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-blue-500',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200'
+        };
+      case 'cover-letter':
+        return {
+          name: '자기소개서',
+          icon: <img src="/images/productivity/cover-letter.png" alt="자기소개서" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-blue-500',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200'
+        };
+      case 'interview-prep':
+        return {
+          name: '면접 준비',
+          icon: <img src="/images/productivity/interview-prep.png" alt="면접 준비" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-purple-500',
+          bgColor: 'bg-purple-50',
+          borderColor: 'border-purple-200'
+        };
+      case 'code-generate':
+        return {
+          name: '코드 생성',
+          icon: <img src="/images/productivity/code-generate.png" alt="코드 생성" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-indigo-500',
+          bgColor: 'bg-indigo-50',
+          borderColor: 'border-indigo-200'
+        };
+      case 'lecture-notes':
+        return {
+          name: '강의 노트',
+          icon: <img src="/images/productivity/lecture-notes.png" alt="강의 노트" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-teal-500',
+          bgColor: 'bg-teal-50',
+          borderColor: 'border-teal-200'
+        };
+      case 'report-writers':
+        return {
+          name: '레포트 작성',
+          icon: <img src="/images/productivity/report-writer.png" alt="레포트 작성" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-orange-500',
+          bgColor: 'bg-orange-50',
+          borderColor: 'border-orange-200'
+        };
+      case 'presentation-script':
+        return {
+          name: '발표 대본',
+          icon: <img src="/images/productivity/presentation-script.png" alt="발표 대본" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-pink-500',
+          bgColor: 'bg-pink-50',
+          borderColor: 'border-pink-200'
+        };
+      case 'code-review':
+        return {
+          name: '코드 리뷰',
+          icon: <img src="/images/productivity/code-review.png" alt="코드 리뷰" className="w-6 h-6 rounded object-cover" />,
+          color: 'text-cyan-500',
+          bgColor: 'bg-cyan-50',
+          borderColor: 'border-cyan-200'
         };
       default:
         return {
@@ -206,71 +283,63 @@ export default function UsagePage() {
                 <p className="text-gray-600">사용량 정보를 불러오는 중...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Object.entries(usageData).map(([serviceType, usage]) => {
-                  if (!usage) return null;
-                  
-                  const serviceInfo = getServiceInfo(serviceType);
-                  const percentage = (usage.usageCount / usage.limitCount) * 100;
-                  
-                  return (
-                    <div
-                      key={serviceType}
-                      className={`bg-white rounded-xl shadow-lg border-2 ${serviceInfo.borderColor} p-6 hover:shadow-xl transition-shadow`}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-3 rounded-xl ${serviceInfo.bgColor}`}>
-                            <div className={serviceInfo.color}>
-                              {serviceInfo.icon}
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <div className="w-1 h-6 bg-blue-500 rounded mr-3"></div>
+                    사용량 개요
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {(['image-generate','video-generate','productivity'] as const).map((serviceType) => {
+                      const usage = usageData[serviceType];
+                      if (!usage) return null;
+                      const serviceInfo = getServiceInfo(serviceType);
+                      const percentage = (usage.usageCount / usage.limitCount) * 100;
+                      return (
+                        <div key={serviceType} className={`bg-white rounded-xl shadow-lg border-2 ${serviceInfo.borderColor} p-6 hover:shadow-xl transition-shadow`}>
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className={`p-3 rounded-xl ${serviceInfo.bgColor}`}>
+                                <div className={serviceInfo.color}>{serviceInfo.icon}</div>
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-gray-900">{serviceInfo.name}</h3>
+                                <div className="flex items-center space-x-2">
+                                  {getPlanIcon(usage.planType || 'basic')}
+                                  <span className="text-sm text-gray-600">{getPlanName(usage.planType || 'basic')}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-gray-900">{usage.usageCount}</div>
+                              <div className="text-sm text-gray-500">사용 횟수</div>
                             </div>
                           </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{serviceInfo.name}</h3>
-                            <div className="flex items-center space-x-2">
-                              {getPlanIcon(usage.planType || 'basic')}
-                              <span className="text-sm text-gray-600">{getPlanName(usage.planType || 'basic')}</span>
+                          <div className="space-y-3">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">사용량</span>
+                              <span className="font-medium">{usage.usageCount} / {usage.limitCount}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className={`h-2 rounded-full transition-all duration-300 ${percentage > 80 ? 'bg-red-500' : percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${Math.min(percentage, 100)}%` }} />
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">남은 횟수</span>
+                              <span className="font-medium text-green-600">{usage.remainingCount}회</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm text-gray-500">
+                              <div className="flex items-center space-x-1">
+                                <Clock className="w-4 h-4" />
+                                <span>다음 초기화</span>
+                              </div>
+                              <span>{formatDisplayTime(usage.resetDate)}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-gray-900">{usage.usageCount}</div>
-                          <div className="text-sm text-gray-500">사용 횟수</div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">사용량</span>
-                          <span className="font-medium">{usage.usageCount} / {usage.limitCount}</span>
-                        </div>
-                        
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              percentage > 80 ? 'bg-red-500' : 
-                              percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}
-                            style={{ width: `${Math.min(percentage, 100)}%` }}
-                          ></div>
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">남은 횟수</span>
-                          <span className="font-medium text-green-600">{usage.remainingCount}회</span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4" />
-                            <span>다음 초기화</span>
-                          </div>
-                          <span>{convertToKoreanTime(usage.resetDate)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </div>

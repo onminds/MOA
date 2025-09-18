@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireAuth } from '@/lib/auth';
+import { checkUsageLimit, incrementUsage } from '@/lib/auth';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -24,6 +26,25 @@ interface QuestionRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // 인증 체크
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const { user } = authResult;
+    
+    // 사용량 체크
+    const usageCheck = await checkUsageLimit(user.id, 'interview-prep');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: '면접 준비 사용량 한도에 도달했습니다.',
+        currentUsage: usageCheck.limit - usageCheck.remaining,
+        maxLimit: usageCheck.limit,
+        resetDate: usageCheck.resetDate
+      }, { status: 429 });
+    }
+
     const {
       companyName,
       jobTitle,
@@ -50,10 +71,22 @@ export async function POST(request: NextRequest) {
       companyAnalysis
     });
 
+    // 사용량 증가
+    await incrementUsage(user.id, 'interview-prep');
+
+    // 증가된 사용량 정보 가져오기
+    const updatedUsageCheck = await checkUsageLimit(user.id, 'interview-prep');
+
     return NextResponse.json({
       success: true,
       questions,
-      totalCount: questions.length
+      totalCount: questions.length,
+      // 사용량 정보 추가
+      usage: {
+        current: updatedUsageCheck.limit - updatedUsageCheck.remaining,
+        limit: updatedUsageCheck.limit,
+        remaining: updatedUsageCheck.remaining
+      }
     });
 
   } catch (error) {
@@ -80,6 +113,50 @@ async function generateInterviewQuestions({
   skills,
   companyAnalysis
 }: QuestionRequest) {
+  // JSON 응답 안전 파싱 유틸리티
+  function cleanAndExtractJson(raw: string): string | null {
+    if (!raw) return null;
+    let text = raw.trim();
+
+    // 코드펜스 제거
+    text = text.replace(/```json\s*/gi, '').replace(/```/g, '');
+
+    // JSON 블록 정규식으로 1차 추출
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    let candidate = jsonMatch ? jsonMatch[0] : text;
+
+    // 스마트 따옴표 정규화
+    candidate = candidate
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"');
+
+    // 제어문자 정리
+    candidate = candidate
+      .replace(/\r/g, '')
+      .replace(/\t/g, ' ')
+      .replace(/\u0000/g, '')
+      .replace(/\u0001/g, '')
+      .replace(/\u0002/g, '')
+      .replace(/\u0003/g, '')
+      .replace(/\u0004/g, '')
+      .replace(/\u0005/g, '')
+      .replace(/\u0006/g, '')
+      .replace(/\u0007/g, '')
+      .replace(/\u0008/g, '')
+      .replace(/\u000B/g, '')
+      .replace(/\u000C/g, '')
+      .replace(/\u000E/g, '')
+      .replace(/\u000F/g, '');
+
+    // 마지막 쉼표 제거
+    candidate = candidate.replace(/,\s*([}\]])/g, '$1');
+
+    // 비표준 따옴표로 감싼 키를 가능하면 표준화 (간단 케이스)
+    // 예: {id:1} -> {"id":1}
+    candidate = candidate.replace(/([,{\s])([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+
+    return candidate.trim();
+  }
   const careerLevelText = {
     junior: '신입/주니어 (0-2년)',
     mid: '미드레벨 (3-7년)',
@@ -157,28 +234,34 @@ ${skills ? `- 핵심 스킬: ${skills}` : ''}${companyInfoSection}
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
+      model: 'gpt-5-mini',
       messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: `위 지침에 따라 ${companyName}의 ${jobTitle} 직무(${careerLevelText[careerLevel]}) 면접 질문과 팁을 생성해주세요.`,
-        },
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `위 지침에 따라 ${companyName}의 ${jobTitle} 직무(${careerLevelText[careerLevel]}) 면접 질문과 팁을 생성해주세요. 반드시 "questions" 키를 가진 JSON 객체로만 응답하세요.` }
       ],
-      response_format: { type: 'json_object' },
-      temperature: 0.8,
-      max_tokens: 3500,
+      response_format: { type: 'json_object' }
     });
 
-    const result = completion.choices[0]?.message?.content;
+    const result = completion.choices[0]?.message?.content as string | undefined;
     if (!result) {
       throw new Error('질문 생성 결과를 받지 못했습니다.');
     }
     
-    const parsedResult = JSON.parse(result);
+    let parsedResult: any;
+    try {
+      parsedResult = JSON.parse(result);
+    } catch (_e) {
+      const cleaned = cleanAndExtractJson(result);
+      if (!cleaned) {
+        throw new Error('유효한 JSON 응답을 추출하지 못했습니다.');
+      }
+      try {
+        parsedResult = JSON.parse(cleaned);
+      } catch (e2) {
+        console.error('JSON 정리 후에도 파싱 실패:', e2);
+        throw new Error('질문 목록 JSON 파싱에 실패했습니다.');
+      }
+    }
     // 안정성 강화: GPT가 반환할 수 있는 다양한 형식을 모두 처리 (e.g., {questions: [...]}, {response: [...]}, [...])
     const questions = parsedResult.questions || parsedResult.response || (Array.isArray(parsedResult) ? parsedResult : null);
 

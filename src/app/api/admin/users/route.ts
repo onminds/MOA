@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ORDER BY u.created_at DESC
     `);
 
-    // 각 사용자의 사용량 정보 조회
+    // 각 사용자의 사용량 정보 조회 (현재 플랜 기준으로 계산)
     const formattedUsers = await Promise.all(usersResult.recordset.map(async (user: any) => {
       const usageResult = await db.request()
         .input('userId', user.id)
@@ -51,19 +51,96 @@ export async function GET(request: NextRequest) {
           WHERE user_id = @userId
         `);
 
+      // 현재 플랜 기준으로 사용량 한도 계산
+      const planType = user.plan_type || 'basic';
+      const getLimitForService = (serviceType: string, planType: string) => {
+        // 관리자(별도 처리)는 호출부에서 우선 무제한 처리
+        if (serviceType === 'productivity') {
+          // 생산성 통합 버킷
+          switch (planType) {
+            case 'standard': return 120;
+            case 'pro': return 250;
+            default: return 1;
+          }
+        }
+        switch (serviceType) {
+          case 'image-generate':
+          case 'image':
+            switch (planType) {
+              case 'standard': return 80;
+              case 'pro': return 180;
+              default: return 1;
+            }
+          case 'video-generate':
+          case 'video':
+            switch (planType) {
+              case 'standard': return 20;
+              case 'pro': return 40;
+              default: return 1;
+            }
+          default:
+            // 기타 기본값은 0 처리 (표시 제외 대상)
+            return 0;
+        }
+      };
+
+      // 관리자는 무제한
+      const isAdmin = user.role === 'ADMIN';
+      const rawUsages = usageResult.recordset;
+
+      // 생산성 통합: 기존 개별 항목 + 'productivity' 레코드를 하나로 병합
+      const productivityKeys = new Set([
+        'productivity',
+        'ai-summary','report-writers','cover-letter','lecture-notes',
+        'interview-prep','code-review','presentation-script','code-generate','sns-post'
+      ]);
+
+      const imageRow = rawUsages.find((u: any) => u.serviceType === 'image' || u.serviceType === 'image-generate');
+      const videoRow = rawUsages.find((u: any) => u.serviceType === 'video' || u.serviceType === 'video-generate');
+      const prodUnified = rawUsages.find((u: any) => u.serviceType === 'productivity');
+      const prodOthers = rawUsages.filter((u: any) => productivityKeys.has(u.serviceType) && u.serviceType !== 'productivity');
+
+      const imageOut = imageRow ? {
+        id: `${user.id}-image`,
+        serviceType: 'image',
+        usageCount: imageRow.usageCount,
+        limitCount: isAdmin ? 9999 : getLimitForService('image', planType),
+        resetDate: imageRow.resetDate ? imageRow.resetDate.toISOString?.() || imageRow.resetDate : new Date().toISOString()
+      } : {
+        id: `${user.id}-image`, serviceType: 'image', usageCount: 0, limitCount: isAdmin ? 9999 : getLimitForService('image', planType), resetDate: new Date().toISOString()
+      };
+
+      const videoOut = videoRow ? {
+        id: `${user.id}-video`,
+        serviceType: 'video',
+        usageCount: videoRow.usageCount,
+        limitCount: isAdmin ? 9999 : getLimitForService('video', planType),
+        resetDate: videoRow.resetDate ? videoRow.resetDate.toISOString?.() || videoRow.resetDate : new Date().toISOString()
+      } : {
+        id: `${user.id}-video`, serviceType: 'video', usageCount: 0, limitCount: isAdmin ? 9999 : getLimitForService('video', planType), resetDate: new Date().toISOString()
+      };
+
+      let prodUsageCount = 0;
+      if (prodUnified) {
+        prodUsageCount = prodUnified.usageCount || 0;
+      } else if (prodOthers.length > 0) {
+        prodUsageCount = prodOthers.reduce((sum: number, u: any) => sum + (u.usageCount || 0), 0);
+      }
+      const productivityOut = {
+        id: `${user.id}-productivity`,
+        serviceType: 'productivity',
+        usageCount: prodUsageCount,
+        limitCount: isAdmin ? 9999 : getLimitForService('productivity', planType),
+        resetDate: new Date().toISOString()
+      };
+
       return {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        planType: user.plan_type || 'basic',
-        usage: usageResult.recordset.map((usage: any, index: number) => ({
-          id: `${user.id}-${usage.serviceType}-${index}`,
-          serviceType: usage.serviceType,
-          usageCount: usage.usageCount,
-          limitCount: usage.limitCount,
-          resetDate: usage.resetDate.toISOString()
-        })),
+        planType: planType,
+        usage: [imageOut, videoOut, productivityOut],
         createdAt: user.createdAt.toISOString(),
         _count: { payments: user.paymentCount }
       };

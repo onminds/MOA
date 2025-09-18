@@ -63,14 +63,98 @@ export async function extractDocumentContent(file: File): Promise<string> {
         break;
         
       case 'pdf':
-        // PDF 파일 처리 (간단한 텍스트 추출)
+        // PDF 파일 처리 (발표대본과 동일 경로: document-ocr → 간이 추출 → 내부 파서)
         try {
-          // PDF 처리는 별도 라이브러리가 필요하므로 일단 텍스트로 시도
-          const decoder = new TextDecoder('utf-8');
-          textContent = decoder.decode(arrayBuffer);
-          console.log('PDF 파일 파싱 시도:', textContent.length, '문자');
+          const buffer = Buffer.from(arrayBuffer);
+
+          // 0) 먼저 공용 OCR/추출 API(document-ocr) 호출 (발표대본과 동일 경로)
+          try {
+            const baseUrl = getBaseUrl();
+            const fd = new FormData();
+            const originalFile = new File([buffer], file.name, { type: 'application/pdf' });
+            fd.append('file', originalFile);
+
+            const ocrResp = await fetch(`${baseUrl}/api/document-ocr`, {
+              method: 'POST',
+              body: fd
+            });
+
+            if (ocrResp.ok) {
+              const data: any = await ocrResp.json();
+              if (data && data.success) {
+                const results = Array.isArray(data.results) ? data.results : [];
+                const combined = results
+                  .map((r: any) => (r?.text || '').trim())
+                  .filter((t: string) => t.length > 0)
+                  .join('\n\n');
+                if (combined && combined.length > 0) {
+                  textContent = combined;
+                  console.log('document-ocr 경유 PDF 추출 성공:', textContent.length, '문자');
+                  break;
+                }
+              } else {
+                console.log('document-ocr 응답 비성공 또는 결과 없음');
+              }
+            } else {
+              const errTxt = await ocrResp.text().catch(() => '');
+              console.log('document-ocr 호출 실패:', ocrResp.status, ocrResp.statusText, errTxt);
+            }
+          } catch (ocrErr) {
+            console.log('document-ocr 호출 중 예외:', ocrErr);
+          }
+
+          // 1) PDF 시그니처 확인 (폴백 경로)
+          const signature = buffer.toString('hex', 0, 4);
+          if (signature !== '25504446') {
+            throw new Error('유효하지 않은 PDF 파일입니다.');
+          }
+
+          // 2) 간단한 텍스트 추출 시도
+          const simple = extractSimpleTextFromPDFBuffer(buffer);
+          if (simple && simple.trim().length > 20) {
+            textContent = simple.trim();
+            console.log('PDF 간이 텍스트 추출 성공:', textContent.length, '문자');
+            break;
+          }
+
+          // 3) 내부 PDF 파서 API 폴백
+          try {
+            const baseUrl = getBaseUrl();
+            const fd = new FormData();
+            // 서버 환경에서 File을 그대로 전송 가능하도록 새 File 구성
+            const fallbackFile = new File([buffer], file.name, { type: 'application/pdf' });
+            fd.append('file', fallbackFile);
+
+            const resp = await fetch(`${baseUrl}/api/pdf-parser`, {
+              method: 'POST',
+              body: fd
+            });
+
+            if (resp.ok) {
+              const parsed: any = await resp.json();
+              const pages = (parsed.pages || []) as Array<{ text?: string }>;
+              const combined = pages
+                .map(p => (p.text || '').trim())
+                .filter(t => t.length > 0)
+                .join('\n\n');
+              if (combined && combined.length > 0) {
+                textContent = combined;
+                console.log('내부 PDF 파서 성공:', textContent.length, '문자');
+                break;
+              }
+              console.log('내부 PDF 파서 결과 비어있음');
+            } else {
+              const errTxt = await resp.text().catch(() => '');
+              console.log('내부 PDF 파서 호출 실패:', resp.status, resp.statusText, errTxt);
+            }
+          } catch (innerErr) {
+            console.log('내부 PDF 파서 호출 오류:', innerErr);
+          }
+
+          // 4) 최종 실패
+          throw new Error('PDF 텍스트를 추출할 수 없습니다. 스캔 이미지 기반 PDF일 수 있습니다.');
         } catch (pdfError) {
-          console.log('PDF 파일 파싱 실패:', pdfError);
+          console.log('PDF 파일 처리 실패:', pdfError);
           throw new Error('PDF 파일을 읽을 수 없습니다. 지원되는 형식: .docx, .doc, .txt');
         }
         break;
@@ -108,6 +192,54 @@ export async function extractDocumentContent(file: File): Promise<string> {
     console.error('문서 내용 추출 오류:', error);
     throw new Error('문서 내용을 읽을 수 없습니다. 지원되는 형식: .docx, .doc, .txt');
   }
+}
+
+// 간단한 PDF 텍스트 추출 (괄호/BT..ET/TJ 기반)
+function extractSimpleTextFromPDFBuffer(buffer: Buffer): string {
+  try {
+    const latin = buffer.toString('latin1');
+    const patterns = [
+      /\(([^)]{10,})\)/g,
+      /BT[\s\S]*?ET/g,
+      /TJ\s*\(([\s\S]*?)\)/g,
+      /TJ\s*\[([\s\S]*?)\]/g
+    ];
+    let collected = '';
+    for (const p of patterns) {
+      let m: RegExpExecArray | null;
+      while ((m = p.exec(latin)) !== null) {
+        const raw = m[1] || m[0] || '';
+        const clean = raw
+          .replace(/\\\)/g, ')')
+          .replace(/\\\(/g, '(')
+          .replace(/[\n\r\t]/g, ' ')
+          .replace(/<</g, ' ')
+          .replace(/>>/g, ' ')
+          .replace(/\[(?:[^\]]*)\]/g, ' ')
+          .replace(/\d+\s+\d+\s+Td/g, ' ')
+          .replace(/\s*T[Jj]\s*/g, ' ')
+          .replace(/\s*Tj\s*/g, ' ')
+          .replace(/\s*Td\s*/g, ' ')
+          .replace(/\s+/, ' ')
+          .replace(/[^\w\s가-힣A-Za-z]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (clean.length > 20) collected += clean + ' ';
+      }
+    }
+    return collected.trim();
+  } catch {
+    return '';
+  }
+}
+
+// 내부 API 호출용 베이스 URL 결정
+function getBaseUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;
+  if (explicit && explicit.startsWith('http')) return explicit.replace(/\/$/, '');
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) return `https://${vercelUrl}`;
+  return 'http://localhost:3000';
 }
 
 // 웹사이트 내용 추출

@@ -123,6 +123,28 @@ dist
 # Temporary folders
 tmp/
 temp/
+test/
+
+# Test and debug files
+test-*.js
+debug-*.js
+*-test.js
+*-debug.js
+
+# Conflict resolution files
+resolve-conflicts.js
+fix-conflicts.js
+
+# Empty files
+master
+ai-search-frontend@0.1.0
+npm
+node
+
+# Large data files (keep only latest versions)
+AI_Tools_Website/ai_tools_*.json
+!AI_Tools_Website/ai_tools_ultimate_collection.json
+!AI_Tools_Website/ai_tools_500_final.json
 
 # Editor directories and files
 .vscode/*

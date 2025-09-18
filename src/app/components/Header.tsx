@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronDown, Settings, User, LogOut, Crown, Star, Zap } from 'lucide-react';
+import { ChevronDown, Settings, User, LogOut, Crown, Star, Zap, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
@@ -33,40 +33,74 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
   const [planLoading, setPlanLoading] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [planCache, setPlanCache] = useState<Map<string, PlanInfo>>(new Map());
+  const [lastPlanFetch, setLastPlanFetch] = useState<number>(0);
+  const PLAN_CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
   const { data: session, status } = useSession();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // 클라이언트 사이드에서만 배경 설정 확인
+  const [clientBackground, setClientBackground] = useState('default');
+  
+  useEffect(() => {
+    if (mounted) {
+      const savedBackground = localStorage.getItem('selectedBackground');
+      if (savedBackground) {
+        setClientBackground(savedBackground);
+      } else {
+        setClientBackground(currentBackground);
+      }
+    }
+  }, [mounted, currentBackground]);
+
   useEffect(() => {
     if (session?.user?.email) {
-      fetchPlanInfo();
+      // 세션에서 캐시된 플랜 정보 확인
+      const cachedPlan = planCache.get(session.user.email);
+      const now = Date.now();
+      
+      if (cachedPlan && (now - lastPlanFetch) < PLAN_CACHE_DURATION) {
+        // 캐시된 정보가 유효하면 사용
+        setPlanInfo(cachedPlan);
+        setPlanLoading(false);
+      } else {
+        // 캐시가 없거나 만료되었으면 새로 가져오기
+        fetchPlanInfo();
+      }
     }
-  }, [session]);
+  }, [session, planCache, lastPlanFetch]);
 
-  // 페이지 포커스, 결제 완료, 주기적 새로고침
+  // 스마트 폴링: 페이지 포커스, 결제 완료, 백그라운드 체크
   useEffect(() => {
     const handleFocus = () => {
       if (session?.user?.email) {
-        fetchPlanInfo();
+        const now = Date.now();
+        // 포커스 시 캐시가 만료되었으면 새로 가져오기
+        if ((now - lastPlanFetch) >= PLAN_CACHE_DURATION) {
+          fetchPlanInfo();
+        }
       }
     };
 
     const handlePlanUpdated = () => {
       if (session?.user?.email) {
-        // 로그 제거 - 너무 자주 출력되므로 주석 처리
-        // console.log('결제 완료 감지 - 플랜 정보 새로고침');
-        fetchPlanInfo();
+        // 결제 완료 시 즉시 새로고침 (캐시 무시)
+        fetchPlanInfo(true);
       }
     };
 
-    // 주기적 새로고침 (30초마다로 늘림)
+    // 백그라운드 체크 (5분마다)
     const interval = setInterval(() => {
       if (session?.user?.email) {
-        fetchPlanInfo();
+        const now = Date.now();
+        // 백그라운드에서도 캐시가 만료되었을 때만 체크
+        if ((now - lastPlanFetch) >= PLAN_CACHE_DURATION) {
+          fetchPlanInfo();
+        }
       }
-    }, 30000);
+    }, 5 * 60 * 1000); // 5분마다
 
     window.addEventListener('focus', handleFocus);
     window.addEventListener('planUpdated', handlePlanUpdated);
@@ -76,20 +110,27 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
       window.removeEventListener('planUpdated', handlePlanUpdated);
       clearInterval(interval);
     };
-  }, [session]);
+  }, [session, lastPlanFetch]);
 
-  const fetchPlanInfo = async () => {
+  const fetchPlanInfo = async (forceRefresh = false) => {
     const userEmail = session?.user?.email;
     if (!userEmail) return;
 
+    // 강제 새로고침이 아니고 캐시가 유효하면 API 호출하지 않음
+    if (!forceRefresh) {
+      const cachedPlan = planCache.get(userEmail);
+      const now = Date.now();
+      if (cachedPlan && (now - lastPlanFetch) < PLAN_CACHE_DURATION) {
+        return;
+      }
+    }
+
     setPlanLoading(true);
     try {
-      // 항상 최신 데이터를 가져오기 위해 캐시 무시
-      const cacheKey = `plan-${userEmail}-${Date.now()}`;
-      const data = await cachedFetchJson('/api/user/plan', cacheKey, {}, 0); // 캐시 비활성화
+      const data = await cachedFetchJson('/api/user/plan', `plan-${userEmail}`, {}, 0);
       setPlanInfo(data);
-      // 캐시에 저장 (다음 요청 시 사용하지 않음)
       setPlanCache(prev => new Map(prev).set(userEmail, data));
+      setLastPlanFetch(Date.now());
     } catch (error) {
       console.error('플랜 정보 로딩 실패:', error);
     } finally {
@@ -121,34 +162,36 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
   const getPlanIcon = (planType: string) => {
     switch (planType) {
       case 'basic':
-        return <Zap className="w-3 h-3" />;
+        return <Shield className="w-3 h-3" />;
       case 'standard':
-        return <Star className="w-3 h-3" />;
+        return <Zap className="w-3 h-3" />;
       case 'pro':
         return <Crown className="w-3 h-3" />;
       default:
-        return <Zap className="w-3 h-3" />;
+        return <Shield className="w-3 h-3" />;
     }
   };
 
   const getPlanColor = (planType: string) => {
     switch (planType) {
       case 'basic':
-        return 'bg-gray-100 text-gray-700 border-gray-300';
-      case 'standard':
         return 'bg-blue-100 text-blue-700 border-blue-300';
-      case 'pro':
+      case 'standard':
         return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+      case 'pro':
+        return 'bg-purple-100 text-purple-700 border-purple-300';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return 'bg-blue-100 text-blue-700 border-blue-300';
     }
   };
 
   // 배경에 따른 드롭다운 스타일 결정
-  const isCustomBackground = currentBackground !== 'default' && !forceWhiteBackground;
-  const isSpaceBackground = currentBackground === 'space' && !forceWhiteBackground;
-  const isNatureBackground = currentBackground === 'nature' && !forceWhiteBackground;
-  const isGeometricBackground = currentBackground === 'geometric' && !forceWhiteBackground;
+  const isCustomBackground = !forceWhiteBackground;
+  const isSpaceBackground = clientBackground === 'space' && !forceWhiteBackground;
+  const isNatureBackground = clientBackground === 'nature' && !forceWhiteBackground;
+  const isGeometricBackground = clientBackground === 'geometric' && !forceWhiteBackground;
+  
+
   
   const dropdownClasses = isCustomBackground 
     ? 'bg-white/90 backdrop-blur-md border border-white/20 shadow-lg' 
@@ -178,21 +221,12 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
         : 'bg-white border-gray-200'
     }`} style={{
       ...(isCustomBackground && {
-        background: isNatureBackground || isGeometricBackground 
-          ? 'rgba(255, 255, 255, 0.45)' 
-          : 'rgba(255, 255, 255, 0.25)',
-        backdropFilter: isNatureBackground || isGeometricBackground 
-          ? 'blur(12px)' 
-          : 'blur(8px)',
-        WebkitBackdropFilter: isNatureBackground || isGeometricBackground 
-          ? 'blur(12px)' 
-          : 'blur(8px)',
-        border: isNatureBackground || isGeometricBackground 
-          ? '1px solid rgba(255, 255, 255, 0.4)' 
-          : '1px solid rgba(255, 255, 255, 0.3)',
-        boxShadow: isNatureBackground || isGeometricBackground 
-          ? '0 8px 32px 0 rgba(31, 38, 135, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3)' 
-          : '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+        background: 'rgba(255, 255, 255, 0.25) !important',
+        backdropFilter: 'blur(8px) !important',
+        WebkitBackdropFilter: 'blur(8px) !important',
+        border: '1px solid rgba(255, 255, 255, 0.3) !important',
+        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important',
+        zIndex: 1000
       })
     }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -201,6 +235,7 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
             <div
               className="flex items-center cursor-pointer"
               onClick={() => router.push('/')}
+              data-tour="hdr-logo"
             >
               <Image
                 src="/images/Moa_Logo.png"
@@ -215,12 +250,12 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
             </div>
           </div>
           <nav className="hidden md:flex space-x-8">
-            <Link href="/" className={`${textColor} ${hoverColor}`}>{t('home')}</Link>
-            <Link href="/ai-list" className={`${textColor} ${hoverColor}`}>{t('ai_list') || 'AI 목록'}</Link>
-            <Link href="/usage" className={`${textColor} ${hoverColor}`}>{t('usage')}</Link>
-            <Link href="/plan" className={`${textColor} ${hoverColor}`}>{t('plan') || '플랜'}</Link>
-            <Link href="/community" className={`${textColor} ${hoverColor}`}>{t('community')}</Link>
-            <Link href="/contact" className={`${textColor} ${hoverColor}`}>{t('contact') || '문의하기'}</Link>
+            <Link href="/" className={`${textColor} ${hoverColor}`} data-tour="hdr-home">{t('home')}</Link>
+            <Link href="/ai-list" className={`${textColor} ${hoverColor}`} data-tour="hdr-ai-list">{t('ai_list') || 'AI 목록'}</Link>
+            <Link href="/usage" className={`${textColor} ${hoverColor}`} data-tour="hdr-usage">{t('usage')}</Link>
+            <Link href="/plan" className={`${textColor} ${hoverColor}`} data-tour="hdr-plan">{t('plan') || '플랜'}</Link>
+            <Link href="/community" className={`${textColor} ${hoverColor}`} data-tour="hdr-community">{t('community')}</Link>
+            <Link href="/contact" className={`${textColor} ${hoverColor}`} data-tour="hdr-contact">{t('contact') || '문의하기'}</Link>
           </nav>
           <div className="flex items-center space-x-4">
             {!mounted ? (
@@ -229,13 +264,26 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
               <div className={textColor}>{t('loading')}</div>
             ) : session ? (
               <div className="flex items-center space-x-4">
-                {session.user?.email === 'admin@moa.com' && (
-                  <Link 
-                    href="/admin"
-                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
-                  >
-                    {t('admin') || '관리자'}
-                  </Link>
+                {/* 관리자 버튼들 */}
+                {session.user?.role === 'ADMIN' && (
+                  <div className="flex items-center space-x-2">
+                    <Link 
+                      href="/admin"
+                      className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors flex items-center gap-1"
+                    >
+                      <Settings className="w-3 h-3" />
+                      {t('admin') || '관리자'}
+                    </Link>
+                    <Link 
+                      href="/admin/reports"
+                      className="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700 transition-colors flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      신고 관리
+                    </Link>
+                  </div>
                 )}
                 
                 {/* 플랜 표시 */}
@@ -247,6 +295,7 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
                 ) : (
                   <div
                     className={`hidden sm:flex items-center space-x-1 px-2 py-1 rounded-full border text-xs font-medium ${getPlanColor(planInfo.planType)} min-w-[80px] h-[28px]`}
+                    data-tour="hdr-plan-badge"
                   >
                     {getPlanIcon(planInfo.planType)}
                     <span>{planInfo.planInfo.displayName}</span>
@@ -254,10 +303,14 @@ export default function Header({ forceWhiteBackground = false }: HeaderProps) {
                 )}
                 
                 {/* 프로필 드롭다운 */}
-                <div className="relative">
+                <div className="relative" data-tour="hdr-profile">
                   <button
                     onClick={handleDropdownToggle}
-                    className="flex items-center space-x-2 p-2 rounded-lg transition-colors"
+                    className={`flex items-center space-x-2 p-2 rounded-lg transition-colors border ${
+                      isCustomBackground 
+                        ? 'border-white/50 hover:border-white/70 bg-white/20 hover:bg-white/30' 
+                        : 'border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-gray-100'
+                    }`}
                   >
                     <div className="relative">
                       {getProfileImage() ? (

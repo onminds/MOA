@@ -2,9 +2,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import Header from '../../components/Header';
 import {
-  ArrowLeft, Code, Download, Copy, Loader2, FileCode, Play, Lightbulb, GitBranch, Zap, MessageCircle, Settings, ChevronDown, Brain, BarChart3, Globe, RotateCcw, History, Trash2, Clock
+  ArrowLeft, Code, Download, Copy, Loader2, FileCode, Play, Lightbulb, GitBranch, Zap, MessageCircle, Settings, Brain, BarChart3, Globe, RotateCcw, History, Trash2, Clock
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useToast } from "@/contexts/ToastContext";
+import { createUsageToastData, createUsageToastMessage } from "@/lib/toast-utils";
 
 interface GeneratedCode {
   code: string;
@@ -34,13 +36,14 @@ interface QuickStartTemplate {
 
 export default function CodeGenerate() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [language, setLanguage] = useState('javascript');
   const [request, setRequest] = useState('');
   const [complexity, setComplexity] = useState('easy');
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  // 고급 설정은 제거됨
   const [codeHistory, setCodeHistory] = useState<GeneratedCode[]>([]);
   const [dbHistory, setDbHistory] = useState<HistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -60,28 +63,28 @@ export default function CodeGenerate() {
       id: 'simple-function',
       title: '간단한 함수 만들기',
       description: '두 숫자를 더하는 함수를 만들어주세요',
-      icon: <FileCode className="w-5 h-5 text-red-500" />,
+      icon: <FileCode className="w-4 h-4 text-gray-800" />,
       prompt: '두 숫자를 더하는 함수를 만들어주세요'
     },
     {
       id: 'data-processing',
       title: '데이터 처리하기',
       description: '학생들의 점수 평균을 계산하는 코드를 만들어주세요',
-      icon: <BarChart3 className="w-5 h-5 text-blue-500" />,
+      icon: <BarChart3 className="w-4 h-4 text-gray-800" />,
       prompt: '학생들의 점수 평균을 계산하는 코드를 만들어주세요'
     },
     {
       id: 'webpage',
       title: '웹페이지 만들기',
       description: '간단한 회원가입 폼을 만들어주세요',
-      icon: <Globe className="w-5 h-5 text-green-500" />,
+      icon: <Globe className="w-4 h-4 text-gray-800" />,
       prompt: '간단한 회원가입 폼을 만들어주세요'
     },
     {
       id: 'loop',
       title: '반복 작업하기',
       description: '1부터 100까지 숫자를 출력하는 코드를 만들어주세요',
-      icon: <RotateCcw className="w-5 h-5 text-purple-500" />,
+      icon: <RotateCcw className="w-4 h-4 text-gray-800" />,
       prompt: '1부터 100까지 숫자를 출력하는 코드를 만들어주세요'
     }
   ];
@@ -124,17 +127,38 @@ export default function CodeGenerate() {
     }
   };
 
-  // 히스토리 항목 클릭 시 코드 표시
+  // 히스토리 항목 클릭 시 코드 표시 (DB의 generated_code가 JSON이면 상세 정보 즉시 표시)
   const loadHistoryItem = (item: HistoryItem) => {
-    const generatedCode: GeneratedCode = {
-      code: item.generatedCode,
-      explanation: `요청: ${item.requestText}`,
-      usage: `${item.language} 언어로 작성된 코드입니다.`,
-      improvements: [],
-      relatedConcepts: [item.language, item.complexity]
-    };
+    let parsed: any | null = null;
+    if (typeof item.generatedCode === 'string') {
+      const trimmed = item.generatedCode.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch (_) {
+          parsed = null;
+        }
+      }
+    }
+
+    const generatedCode: GeneratedCode = parsed && parsed.code
+      ? {
+          code: parsed.code,
+          explanation: parsed.explanation || `요청: ${item.requestText}`,
+          usage: parsed.usage || `${item.language} 언어로 작성된 코드입니다.`,
+          improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
+          relatedConcepts: Array.isArray(parsed.relatedConcepts) ? parsed.relatedConcepts : [item.language, item.complexity]
+        }
+      : {
+          code: item.generatedCode,
+          explanation: `요청: ${item.requestText}`,
+          usage: `${item.language} 언어로 작성된 코드입니다.`,
+          improvements: [],
+          relatedConcepts: [item.language, item.complexity]
+        };
+
     setGeneratedCode(generatedCode);
-    
+
     // 결과 영역으로 스크롤
     setTimeout(() => {
       resultRef.current?.scrollIntoView({ 
@@ -185,10 +209,30 @@ export default function CodeGenerate() {
         const newCode = data.result;
         setGeneratedCode(newCode);
         
+        // 사용량 증가 Toast 알림 표시 (실제 사용량 데이터 사용)
+        if (data.usage) {
+          const toastData = createUsageToastData('code-generate', data.usage.current, data.usage.limit);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        } else {
+          // Fallback to hardcoded values if usage data is not available
+          const toastData = createUsageToastData('code-generate', 0, 30);
+          showToast({
+            type: 'success',
+            title: `${toastData.serviceName} 사용`,
+            message: createUsageToastMessage(toastData),
+            duration: 5000
+          });
+        }
+        
         // 히스토리에 추가
         setCodeHistory(prev => [newCode, ...prev.slice(0, 9)]); // 최대 10개 유지
         
-        // DB에 저장
+        // DB에 저장: generated_code 칼럼에 상세 정보를 포함한 JSON 문자열로 저장
         try {
           const saveResponse = await fetch('/api/code-generate/save', {
             method: 'POST',
@@ -197,7 +241,7 @@ export default function CodeGenerate() {
             },
             body: JSON.stringify({
               requestText: request,
-              generatedCode: newCode.code,
+              generatedCode: JSON.stringify(newCode),
               language: language,
               complexity: complexity,
             }),
@@ -240,7 +284,7 @@ export default function CodeGenerate() {
     <div className="min-h-screen">
       <Header />
       <div className="min-h-screen bg-gray-50 p-8">
-                        <div className="max-w-4xl mx-auto">
+                        <div className="max-w-7xl mx-auto">
           {/* 뒤로가기 버튼 */}
           <div className="mb-6">
             <button
@@ -260,30 +304,30 @@ export default function CodeGenerate() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* 입력 영역 */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-8 space-y-6">
               <div className="bg-white rounded-lg shadow-md p-8">
                 {/* 빠른 시작 */}
                 <div className="mb-8">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-green-600" />
+                    <Zap className="w-5 h-5 text-gray-800" />
                     어떤 코드가 필요하신가요?
                   </h2>
                   <p className="text-sm text-gray-600 mb-4">빠른 시작 (클릭하면 자동으로 입력됩니다)</p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {quickStartTemplates.map((template) => (
                       <button
                         key={template.id}
                         onClick={() => handleQuickStart(template)}
-                        className="p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all text-left"
+                        className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all text-left min-h-[96px]"
                       >
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-1 leading-4">
                           {template.icon}
-                          <h3 className="font-medium text-gray-900">{template.title}</h3>
+                          <h3 className="font-medium text-gray-900 text-sm truncate leading-4">{template.title}</h3>
                         </div>
-                        <p className="text-sm text-gray-600">{template.description}</p>
+                        <p className="text-xs text-gray-600 leading-snug break-words">{template.description}</p>
                       </button>
                     ))}
                   </div>
@@ -292,18 +336,18 @@ export default function CodeGenerate() {
                 {/* 직접 설명 */}
                 <div className="mb-8">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-green-600" />
-                    또는 직접 설명해주세요 *
+                    <MessageCircle className="w-5 h-5 text-gray-800" />
+                    또는 직접 설명해주세요 <span className="text-red-500">*</span>
                   </h2>
                   <textarea
                     value={request}
                     onChange={(e) => setRequest(e.target.value)}
                     placeholder="예: 학생 성적을 관리하는 프로그램을 만들어주세요"
                     rows={6}
-                    className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder:text-gray-500 text-black resize-none"
+                    className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-500 text-black resize-none"
                   />
-                  <div className="flex items-center gap-2 mt-2 text-sm text-yellow-600">
-                    <Lightbulb className="w-4 h-4" />
+                  <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
+                    <Lightbulb className="w-4 h-4 text-gray-800" />
                     팁: 구체적으로 설명할수록 더 정확한 코드를 만들어드려요!
                   </div>
                 </div>
@@ -311,7 +355,7 @@ export default function CodeGenerate() {
                 {/* 기본 설정 */}
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-green-600" />
+                    <Settings className="w-5 h-5 text-gray-800" />
                     기본 설정
                   </h2>
                   
@@ -324,7 +368,7 @@ export default function CodeGenerate() {
                       <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       >
                         {programmingLanguages.map((lang) => (
                           <option key={lang.value} value={lang.value}>
@@ -342,7 +386,7 @@ export default function CodeGenerate() {
                       <select
                         value={complexity}
                         onChange={(e) => setComplexity(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       >
                         <option value="easy">쉬운 버전 (처음 배우는 분께 추천)</option>
                         <option value="intermediate">일반 버전</option>
@@ -352,31 +396,14 @@ export default function CodeGenerate() {
                   </div>
                 </div>
 
-                {/* 더 자세한 설정 */}
-                <div className="mb-8">
-                  <button
-                    onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-                  >
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedSettings ? 'rotate-180' : ''}`} />
-                    더 자세한 설정
-                  </button>
-                  
-                  {showAdvancedSettings && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        추가 설정 옵션들이 여기에 표시됩니다.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {/* 고급 설정 섹션 제거됨 */}
 
                 {/* 생성 버튼 */}
                 <div className="text-center">
                   <button
                     onClick={generateCode}
                     disabled={loading || !request.trim()}
-                    className="w-full bg-green-500 text-white py-4 rounded-xl hover:bg-green-600 transition-all font-semibold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
+                    className="w-full bg-blue-600 text-white py-4 rounded-xl hover:bg-blue-700 transition-all font-semibold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
                   >
                     {loading ? (
                       <>
@@ -384,10 +411,7 @@ export default function CodeGenerate() {
                         AI가 코드를 생성하고 있어요...
                       </>
                     ) : (
-                      <>
-                        <Brain className="w-6 h-6" />
-                        AI에게 코드 만들어달라고 하기!
-                      </>
+                      <>AI에게 코드 만들어달라고 하기!</>
                     )}
                   </button>
                   <p className="text-sm text-gray-600 mt-3">
@@ -434,33 +458,33 @@ export default function CodeGenerate() {
 
                     {/* 코드 설명 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                          <Lightbulb className="w-4 h-4" />
+                      <div className="bg-white border-[3px] border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-black mb-2 flex items-center gap-2">
+                          <Lightbulb className="w-4 h-4 text-gray-800" />
                           코드 설명
                         </h4>
-                        <p className="text-blue-800 text-sm leading-relaxed">{generatedCode.explanation}</p>
+                        <p className="text-black text-sm leading-relaxed">{generatedCode.explanation}</p>
                       </div>
 
-                      <div className="bg-green-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
-                          <Play className="w-4 h-4" />
+                      <div className="bg-white border-[3px] border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-black mb-2 flex items-center gap-2">
+                          <Play className="w-4 h-4 text-gray-800" />
                           사용 방법
                         </h4>
-                        <p className="text-green-800 text-sm leading-relaxed">{generatedCode.usage}</p>
+                        <p className="text-black text-sm leading-relaxed">{generatedCode.usage}</p>
                       </div>
                     </div>
 
                     {/* 개선 제안 */}
                     {generatedCode.improvements && generatedCode.improvements.length > 0 && (
-                      <div className="bg-yellow-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-yellow-900 mb-3 flex items-center gap-2">
-                          <GitBranch className="w-4 h-4" />
+                      <div className="bg-white border-[3px] border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-black mb-3 flex items-center gap-2">
+                          <GitBranch className="w-4 h-4 text-gray-800" />
                           개선 제안
                         </h4>
                         <ul className="list-disc list-inside space-y-1">
                           {generatedCode.improvements.map((improvement, idx) => (
-                            <li key={idx} className="text-yellow-800 text-sm">{improvement}</li>
+                            <li key={idx} className="text-black text-sm">{improvement}</li>
                           ))}
                         </ul>
                       </div>
@@ -468,11 +492,11 @@ export default function CodeGenerate() {
 
                     {/* 관련 개념 */}
                     {generatedCode.relatedConcepts && generatedCode.relatedConcepts.length > 0 && (
-                      <div className="bg-green-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-green-900 mb-3">관련 개념</h4>
+                      <div className="bg-white border-[3px] border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-black mb-3">관련 개념</h4>
                         <div className="flex flex-wrap gap-2">
                           {generatedCode.relatedConcepts.map((concept, idx) => (
-                            <span key={idx} className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm">
+                            <span key={idx} className="bg-blue-200 text-black px-3 py-1 rounded-full text-sm">
                               {concept}
                             </span>
                           ))}
@@ -485,20 +509,13 @@ export default function CodeGenerate() {
             </div>
 
                          {/* 히스토리 패널 */}
-             <div className="lg:col-span-1">
-               <div className="bg-white rounded-lg shadow-md p-6 sticky top-8">
+             <div className="lg:col-span-4">
+               <div className="bg-white rounded-lg shadow-md p-6 sticky top-8 min-w-[420px]">
                  <div className="flex items-center justify-between mb-4">
                    <h3 className="text-md font-semibold text-gray-900 flex items-center gap-2">
-                     <History className="w-4 h-4" />
+                     <History className="w-4 h-4 text-gray-800" />
                      코드 히스토리 ({dbHistory.length})
                    </h3>
-                                       <button
-                      onClick={() => loadHistory()}
-                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
-                    >
-                      <Loader2 className="w-3 h-3" />
-                      새로고침
-                    </button>
                  </div>
 
                  {loadingHistory ? (
@@ -515,12 +532,12 @@ export default function CodeGenerate() {
                      </p>
                    </div>
                  ) : (
-                   <div className="space-y-3 max-h-96 overflow-y-auto">
+                   <div className="space-y-3 max-h-96 overflow-y-auto overflow-x-hidden">
                      {dbHistory.map((item) => (
-                       <div key={item.id} className="border border-gray-200 rounded-lg p-3 hover:border-green-300 transition-colors">
+                       <div key={item.id} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors">
                          <div className="flex items-center justify-between mb-2">
                            <div className="flex items-center gap-2">
-                             <FileCode className="w-4 h-4 text-green-600" />
+                             <FileCode className="w-4 h-4 text-gray-700" />
                              <span className="text-sm font-medium text-gray-900 truncate">
                                {item.requestText.substring(0, 25)}...
                              </span>
@@ -544,7 +561,7 @@ export default function CodeGenerate() {
                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                {item.language}
                              </span>
-                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                             <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                {item.complexity}
                              </span>
                            </div>
@@ -555,7 +572,7 @@ export default function CodeGenerate() {
                          </div>
                          <button
                            onClick={() => loadHistoryItem(item)}
-                           className="w-full mt-2 text-xs bg-green-100 text-green-800 py-1 rounded hover:bg-green-200 transition-colors"
+                           className="w-full mt-2 text-xs bg-blue-100 text-blue-800 py-1 rounded hover:bg-blue-200 transition-colors"
                          >
                            코드 보기
                          </button>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth, checkUsageLimit, incrementUsage } from '@/lib/auth';
 import { getConnection } from '@/lib/db';
 
 const openai = new OpenAI({
@@ -148,6 +148,17 @@ export async function POST(request: NextRequest) {
     }
 
     const { user } = authResult;
+    
+    // 사용량 체크
+    const usageCheck = await checkUsageLimit(user.id, 'code-generate');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: '코드 생성 사용량 한도에 도달했습니다.',
+        currentUsage: usageCheck.limit - usageCheck.remaining,
+        maxLimit: usageCheck.limit,
+        resetDate: usageCheck.resetDate
+      }, { status: 429 });
+    }
 
     const {
       request: userRequest,
@@ -174,9 +185,21 @@ export async function POST(request: NextRequest) {
       requirements
     });
 
+    // 사용량 증가
+    await incrementUsage(user.id, 'code-generate');
+
+    // 증가된 사용량 정보 가져오기
+    const updatedUsageCheck = await checkUsageLimit(user.id, 'code-generate');
+
     return NextResponse.json({
       success: true,
       result,
+      // 사용량 정보 추가
+      usage: {
+        current: updatedUsageCheck.limit - updatedUsageCheck.remaining,
+        limit: updatedUsageCheck.limit,
+        remaining: updatedUsageCheck.remaining
+      }
     });
 
   } catch (error) {
@@ -220,6 +243,7 @@ async function generateCode({
   complexity,
   requirements
 }: CodeGenerateRequest) {
+  const resolvedCodeType = codeType || 'function';
   const langConfig = languageConfigs[language as keyof typeof languageConfigs] || {
     name: language || 'Unknown',
     conventions: '일반적인 코딩 컨벤션',
@@ -227,7 +251,7 @@ async function generateCode({
     bestPractices: '코드 가독성과 유지보수성'
   };
   
-  const typeConfig = codeTypeConfigs[codeType as keyof typeof codeTypeConfigs] || {
+  const typeConfig = codeTypeConfigs[resolvedCodeType as keyof typeof codeTypeConfigs] || {
     focus: '기본적인 구현',
     structure: '표준 구조'
   };
@@ -245,7 +269,7 @@ async function generateCode({
 - 권장 라이브러리: ${langConfig.commonLibraries}
 - 모범 사례: ${langConfig.bestPractices}
 
-**코드 유형: ${codeType}**
+**코드 유형: ${resolvedCodeType}**
 - 중점사항: ${typeConfig.focus}
 - 구조: ${typeConfig.structure}
 
@@ -261,6 +285,11 @@ ${requirements ? `**추가 요구사항**: ${requirements}` : ''}
 4. 언어별 모범 사례를 따르세요
 5. 가독성과 유지보수성을 중시하세요
 
+[출력 언어 규칙]
+- JSON의 텍스트 필드(explanation, usage, improvements, relatedConcepts)는 반드시 한국어로 작성합니다.
+- code 필드는 선택한 프로그래밍 언어 문법으로 작성하되, 주석과 사용자 메시지는 가능하면 한국어를 사용합니다.
+- 불필요한 영어 문장이나 안내문을 포함하지 않습니다.
+
 응답 형식은 반드시 다음 JSON 형태로만 제공하세요:
 {
   "code": "실제 코드 (문자열, 줄바꿈은 \\n 사용)",
@@ -275,26 +304,19 @@ JSON만 응답하고 다른 텍스트는 포함하지 마세요.`;
   const userPrompt = `
 요청사항: ${userRequest}
 
-${langConfig.name}로 ${codeType} 유형의 코드를 ${complexity} 수준으로 생성해주세요.
+${langConfig.name}로 ${resolvedCodeType} 유형의 코드를 ${complexity} 수준으로 생성해주세요.
 `;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt
-      },
-      {
-        role: "user",
-        content: userPrompt
-      }
+  const completion = await openai.responses.create({
+    model: "gpt-5-mini",
+    input: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
     ],
-    max_tokens: 2500,
-    temperature: 0.7, // 창의적이면서도 일관성 있는 코드 생성
+    reasoning: { effort: "medium" },
   });
 
-  const response = completion.choices[0].message.content;
+  const response = completion.output_text;
   
   if (!response) {
     throw new Error('코드 생성 응답이 없습니다.');
@@ -307,7 +329,7 @@ ${langConfig.name}로 ${codeType} 유형의 코드를 ${complexity} 수준으로
     console.error('응답 내용:', response);
     
     // 파싱 실패 시 기본 응답 반환
-    return getDefaultResponse(userRequest, language, codeType);
+    return getDefaultResponse(userRequest, language, resolvedCodeType);
   }
 }
 
