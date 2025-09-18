@@ -49,18 +49,17 @@ export async function POST(request: NextRequest) {
     if (existingSubscription.recordset.length > 0) {
       const existing = existingSubscription.recordset[0];
       console.log('기존 활성 구독 발견:', existing);
-      
-      // 기존 구독이 같은 플랜인 경우
+
+      // 동일 플랜이면 차단
       if (existing.plan_type === planId) {
         return NextResponse.json({ 
-          error: '이미 동일한 플랜을 구독하고 있습니다. 구독을 해제한 후 다시 시도해주세요.' 
+          error: '이미 동일한 플랜을 구독하고 있습니다.' 
         }, { status: 400 });
       }
-      
-      // 기존 구독이 다른 플랜인 경우 업그레이드/다운그레이드
+
+      // 업그레이드/다운그레이드: 기존 구독을 종료하고 새 플랜으로 시작
       console.log('플랜 변경 요청:', existing.plan_type, '->', planId);
-      
-      // 기존 구독을 inactive로 변경
+
       await db.request()
         .input('subscriptionId', existing.subscription_id)
         .input('userId', session.user.id)
@@ -71,8 +70,17 @@ export async function POST(request: NextRequest) {
               updated_at = GETDATE()
           WHERE subscription_id = @subscriptionId AND user_id = @userId
         `);
-      
-      console.log('기존 구독을 inactive로 변경 완료');
+
+      // 사용량 초기화: 기존 플랜의 제한과 상관없이 다음 결제주기 기준으로 리셋되도록 next_reset_date를 현재 시점으로 설정
+      await db.request()
+        .input('userId', session.user.id)
+        .query(`
+          UPDATE usage 
+          SET usage_count = 0, next_reset_date = GETDATE(), updated_at = GETDATE()
+          WHERE user_id = @userId
+        `);
+
+      console.log('기존 구독 종료 및 사용량 초기화 완료');
     } else {
       console.log('활성 구독이 없습니다. 새로운 구독을 진행합니다.');
     }

@@ -125,20 +125,7 @@ export async function POST(request: NextRequest) {
 
       console.log('결제 내역 저장 완료');
 
-      // 사용자 플랜 정보 업데이트
-      await db.request()
-        .input('userId', session.user.id)
-        .input('planType', planId)
-        .input('subscriptionId', subscriptionId)
-        .query(`
-          UPDATE users 
-          SET plan_type = @planType, 
-              subscription_id = @subscriptionId,
-              updated_at = GETDATE()
-          WHERE id = @userId
-        `);
-
-      console.log('사용자 플랜 정보 업데이트 완료');
+      // 사용자 테이블 업데이트는 생략 (플랜 판정은 payments/subscriptions 기준)
 
       return NextResponse.json({
         success: true,

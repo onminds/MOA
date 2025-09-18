@@ -368,35 +368,9 @@ export default function PlanPage() {
                   )}
                 </div>
 
-                             {/* 구독 해제 버튼 */}
-               {currentPlan !== "basic" && subscriptionInfo && subscriptionInfo.status === "active" && !subscriptionInfo.isCancelled && (
-                 <button
-                   onClick={handleCancelSubscription}
-                   className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mb-2"
-                   disabled={cancelingSubscription}
-                 >
-                   <X className="w-4 h-4" />
-                   <span>{cancelingSubscription ? "해제 중..." : "정기결제 해제"}</span>
-                   {cancelingSubscription && (
-                     <div className="ml-2 animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                   )}
-                 </button>
-               )}
+              {/* 상단 해지 버튼 제거: 구독 취소는 하단 버튼에서만 가능 */}
 
-               {/* 수동 플랜 전환 버튼 (구독 해제 후) */}
-               {currentPlan !== "basic" && subscriptionInfo && (subscriptionInfo.status === "inactive" || subscriptionInfo.isCancelled) && (
-                 <button
-                   onClick={handleManualPlanChange}
-                   className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                   disabled={changingPlan}
-                 >
-                   <Zap className="w-4 h-4" />
-                   <span>{changingPlan ? "전환 중..." : "즉시 Basic Plan으로 전환"}</span>
-                   {changingPlan && (
-                     <div className="ml-2 animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                   )}
-                 </button>
-               )}
+              {/* 취소 후 즉시 Basic 전환 버튼 제거 */}
             </div>
           </div>
 
@@ -508,11 +482,6 @@ export default function PlanPage() {
                       >
                         무료로 시작
                       </button>
-                                         ) : (currentPlan === "standard" || currentPlan === "pro") && plan.id !== currentPlan ? (
-                       // 유료 플랜 사용 중일 때 다른 유료 플랜 선택 시
-                       <div className="w-full h-14 flex items-center justify-center text-center">
-                         <div className="text-sm text-gray-600">기존 구독 해제 후 이용 가능</div>
-                       </div>
                     ) : (
                       <PaymentButton
                         planId={plan.id}

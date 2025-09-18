@@ -140,18 +140,7 @@ export async function POST(request: NextRequest) {
 
       console.log('구독 정보 업데이트 완료');
 
-      // 사용자 플랜 반영
-      await db.request()
-        .input('userId', session.user.id)
-        .input('planType', effectivePlanType)
-        .input('subscriptionId', subscriptionId || null)
-        .query(`
-          UPDATE users
-          SET plan_type = @planType,
-              subscription_id = ${subscriptionId ? '@subscriptionId' : 'subscription_id'},
-              updated_at = GETDATE()
-          WHERE id = @userId
-        `);
+      // 사용자 테이블은 구독/플랜 컬럼이 없을 수 있으므로 업데이트 생략 (플랜 판정은 payments/subscriptions 기준)
 
       return NextResponse.json({
         success: true,

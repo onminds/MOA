@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
     const subscription = subscriptionResult.recordset[0];
     console.log('구독 정보 조회:', subscription);
 
-    // 2. 구독 상태를 inactive로 변경
+    // 2. 이번 달 말까지 이용 유지: status는 유지(active)하고, 자동 갱신만 중단
     await db.request()
       .input('subscriptionId', subscriptionId)
       .input('userId', session.user.id)
       .query(`
         UPDATE subscriptions 
-        SET status = 'inactive', 
+        SET status = CASE WHEN status = 'inactive' THEN 'inactive' ELSE 'active' END,
             auto_renewal = 0,
             updated_at = GETDATE()
         WHERE subscription_id = @subscriptionId AND user_id = @userId
@@ -89,10 +89,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('구독 해제 완료:', {
+    console.log('구독 해제 완료 (갱신만 중단):', {
       subscriptionId,
       userId: session.user.id,
-      status: 'inactive'
+      status: 'active',
+      autoRenewal: 0
     });
 
     return NextResponse.json({
