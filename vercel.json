@@ -1,4 +1,12 @@
 {
+  "crons": [
+    {
+      "path": "/api/billing/execute",
+      "schedule": "0 18 * * *"
+    }
+  ]
+}
+{
   "buildCommand": "npm run vercel-build",
   "installCommand": "npm install",
   "functions": {
@@ -14,11 +22,5 @@
   },
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
-  },
-  "crons": [
-    {
-      "path": "/api/billing/execute",
-      "schedule": "0 18 * * *"
-    }
-  ]
-}
+  }
+} 
