@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "340070891940",
+    "project_id": "moatools-e69c8",
+    "storage_bucket": "moatools-e69c8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340070891940:android:f8eddbcca44cb0d7df8131",
+        "android_client_info": {
+          "package_name": "com.onminds.moatools"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEWC9LmR0VAe0Fz3II1WUqMVlJ7XjoHtw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
