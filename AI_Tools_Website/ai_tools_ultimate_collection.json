@@ -6142,5 +6142,14 @@
     "source": "Famous AI Products",
     "id": "727",
     "pricing": "Unknown"
+  },
+  {
+    "id": "712",
+    "name": "Auferet",
+    "url": "https://auferet.com",
+    "category": "Character AI",
+    "pricing": "Freemium",
+    "collected_date": "2026-06-23T00:00:00",
+    "source": "manual"
   }
 ]
